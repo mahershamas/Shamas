@@ -1220,7 +1220,7 @@
         {
           "id": "lamb-korma",
           "name": "Lamb Korma",
-          "description": "Lamb pieces on bones cooked in Korma sauce",
+          "description": "Lamb pieces on bones cooked in korma sauce",
           "price": 21,
           "dietary": {
             "vegan": false,
@@ -1273,8 +1273,8 @@
       ],
       "items": [
         {
-          "id": "jhingri-malaikari",
-          "name": "Jhingri Malaikari",
+          "id": "chingri-malaikari",
+          "name": "Chingri Malaikari",
           "description": "Tiger shrimp cooked in coconut milk",
           "price": 21,
           "dietary": {

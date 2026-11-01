@@ -91,7 +91,10 @@ printed menu:
 | --- | --- | --- |
 | Vada Pav (Appetizers) | Price completely hidden by glare in the photo | "Ask your server" (`price: null`) |
 | Papadum (Appetizers) | Only the `$` is clear; the digit looks like a 4 | $4 |
-| Mirchi Pakoda (Appetizers) | One word is hidden by glare: "stuffed with **a** cheese mix" vs "with cheese mix" | as transcribed |
+| Mirchi Pakoda (Appetizers) | One word is hidden by glare; measuring the gap fits "stuffed with **a** cheese mix" | "with a cheese mix" |
+| Goat Korma (Goat Curry) | Only "G… Korma" is visible; "Goat" and the first word of the description are inferred | "Goat Korma" |
+| Chingri Malaikari (Seafood Curry) | First letter hidden by glare ("_hingri"); "Chingri" is the standard dish name | "Chingri Malaikari" |
+| Shahi Yellow Rice (Sides) | The word after "Yellow" is hidden by glare | "Shahi Yellow Rice" |
 | Paneer Tikka Masala (Vegetarian Curry) | Printed description "Peas with homemade cottage Cheese" duplicates Matar Paneer's (likely a print error) | as printed |
 | Tandoori Chicken Leg (Tandoor) | $22, more than Chicken Tikka ($18); the price column is offset, but the order mapping is consistent | $22 |
 | Restaurant name | "Jalsa" is taken from dish names (Jalsa Kathi Rolls, Jalsa Garden Dosa, …) | "Jalsa" (`restaurant.name`) |
