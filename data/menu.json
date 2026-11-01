@@ -173,7 +173,7 @@
         {
           "id": "mirchi-pakoda",
           "name": "Mirchi Pakoda",
-          "description": "Chilli Pepper stuffed with cheese mix",
+          "description": "Chilli Pepper stuffed with a cheese mix",
           "price": 12,
           "dietary": {
             "vegan": false,
