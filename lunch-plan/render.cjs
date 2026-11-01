@@ -216,6 +216,9 @@ page("swaps", `
       <ul>${plan.safety_notes.map((b) => `<li>${esc(b)}</li>`).join("")}</ul>
     </div>
   </div>
+  <p class="sources">Based on: WHO healthy-diet and fat guidelines (2023) · ICMR-NIN Dietary Guidelines for Indians (2024) ·
+  Dietary Guidelines for Americans 2020–2025 · USDA FoodData Central &amp; Indian Food Composition Tables (2017).
+  Nutrition numbers are estimates — restaurant cooking varies. This plan is general advice, not medical advice.</p>
 `);
 
 // 11. Progress tracker (12 months)
