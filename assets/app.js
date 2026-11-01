@@ -62,6 +62,17 @@
     }
   }
 
+  // Searchable words for an item's dietary marks, so "vegan" or "gluten free" find the right dishes.
+  function dietWords(item) {
+    var d = item.dietary || {};
+    var w = [];
+    if (d.vegan) w.push("vegan");
+    if (d.vegetarian) w.push("vegetarian veg");
+    if (d.glutenFree) w.push("gluten-free gluten free gf");
+    if (item.containsGluten) w.push("contains gluten");
+    return w.join(" ");
+  }
+
   // Strip a trailing "Contains gluten" phrase; it is shown as a badge instead.
   function displayDescription(item) {
     var d = item.description || "";
@@ -183,7 +194,7 @@
           nameEl: nameEl,
           descEl: descEl,
           desc: desc,
-          haystack: normalize([item.name, item.description, section.name].join(" • "))
+          haystack: normalize([item.name, desc, section.name, dietWords(item)].join(" • "))
         });
       });
 
@@ -229,7 +240,9 @@
     return !!(state.query.trim() || state.vegan || state.vegetarian || state.glutenFree);
   }
 
-  function apply() {
+  // fromUser: true when a search/filter change triggered this (not the first render).
+  function apply(fromUser) {
+    if (!menu) { syncUrl(); return; } // nothing to filter until the data has loaded
     var t = terms();
     var shown = 0;
     var perSection = {};
@@ -258,9 +271,17 @@
     } else {
       var parts = [];
       Object.keys(FILTERS).forEach(function (k) { if (state[k]) parts.push(FILTERS[k].label.toLowerCase()); });
-      var desc = parts.length ? " · " + parts.join(", ") : "";
-      var q = state.query.trim() ? " matching “" + state.query.trim() + "”" : "";
+      var desc = parts.length ? " \u00b7 " + parts.join(", ") : "";
+      var q = state.query.trim() ? " matching \u201c" + state.query.trim() + "\u201d" : "";
       els.status.textContent = "Showing " + shown + " of " + total + " dishes" + q + desc;
+    }
+
+    // If the user was scrolled past the start of the results, bring the results back into view
+    // (otherwise the shrunken page leaves them above the viewport).
+    if (fromUser) {
+      syncToolbarHeight();
+      var top = els.status.getBoundingClientRect().top + window.scrollY - els.toolbar.offsetHeight - 8;
+      if (window.scrollY > top) window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
     }
 
     syncUrl();
@@ -312,6 +333,12 @@
         else if (!current) { current = s; break; }
         else break;
       }
+      var atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (atBottom && window.scrollY > 0) {
+        for (var j = sectionEls.length - 1; j >= 0; j--) {
+          if (!sectionEls[j].el.hidden) { current = sectionEls[j]; break; }
+        }
+      }
       sectionEls.forEach(function (s) {
         if (s === current) {
           if (s.link.getAttribute("aria-current") !== "true") {
@@ -332,17 +359,32 @@
     var navRect = nav.getBoundingClientRect();
     var linkRect = link.getBoundingClientRect();
     var left = nav.scrollLeft + (linkRect.left - navRect.left) - nav.clientWidth / 2 + linkRect.width / 2;
-    try { nav.scrollTo({ left: Math.max(0, left), behavior: "smooth" }); }
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try { nav.scrollTo({ left: Math.max(0, left), behavior: reduce ? "auto" : "smooth" }); }
     catch (e) { nav.scrollLeft = Math.max(0, left); }
   }
 
+  function syncToolbarHeight() {
+    document.documentElement.style.setProperty("--toolbar-h", els.toolbar.offsetHeight + "px");
+  }
+
   function trackToolbarHeight() {
-    var set = function () {
-      document.documentElement.style.setProperty("--toolbar-h", els.toolbar.offsetHeight + "px");
-    };
-    set();
-    if ("ResizeObserver" in window) new ResizeObserver(set).observe(els.toolbar);
-    else window.addEventListener("resize", set);
+    syncToolbarHeight();
+    if ("ResizeObserver" in window) new ResizeObserver(syncToolbarHeight).observe(els.toolbar);
+    else window.addEventListener("resize", syncToolbarHeight);
+  }
+
+  // Scroll to the element named by the URL hash, if it exists and is visible.
+  function scrollToHash() {
+    if (location.hash.length < 2) return;
+    var id = location.hash.slice(1);
+    try { id = decodeURIComponent(id); } catch (e) { /* keep the raw hash */ }
+    var target = document.getElementById(id);
+    if (!target || target.closest("[hidden]")) return;
+    syncToolbarHeight(); // the toolbar grew when the nav links rendered
+    // Jump (don't animate) on first load: the reader asked for this section.
+    try { target.scrollIntoView({ behavior: "instant", block: "start" }); }
+    catch (e) { target.scrollIntoView(); }
   }
 
   /* ---------- wiring ---------- */
@@ -353,14 +395,14 @@
       clearTimeout(debounce);
       debounce = setTimeout(function () {
         state.query = els.search.value;
-        apply();
+        apply(true);
       }, 80);
     });
     els.search.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && els.search.value) {
         els.search.value = "";
         state.query = "";
-        apply();
+        apply(true);
       }
     });
 
@@ -369,7 +411,7 @@
         var key = chip.getAttribute("data-filter");
         state[key] = !state[key];
         chip.setAttribute("aria-pressed", state[key] ? "true" : "false");
-        apply();
+        apply(true);
       });
     });
 
@@ -377,7 +419,7 @@
       state.query = "";
       Object.keys(FILTERS).forEach(function (k) { state[k] = false; });
       syncControls();
-      apply();
+      apply(true);
       els.search.focus();
     });
 
@@ -387,6 +429,13 @@
 
     window.addEventListener("scroll", updateSpy, { passive: true });
     window.addEventListener("resize", updateSpy);
+
+    window.addEventListener("popstate", function () {
+      state = { query: "", vegan: false, vegetarian: false, glutenFree: false };
+      readUrl();
+      syncControls();
+      apply();
+    });
   }
 
   function showError(err) {
@@ -397,6 +446,12 @@
       : "Sorry, the menu could not be loaded right now. Please refresh the page.";
     els.sections.appendChild(h("p", { class: "notice", role: "alert" }, [msg]));
     els.status.textContent = "";
+    els.empty.hidden = true;
+    els.search.disabled = true;
+    els.chips.forEach(function (chip) { chip.disabled = true; });
+    document.querySelectorAll(".site-footer section").forEach(function (sec) {
+      if (!sec.querySelector("li")) sec.hidden = true;
+    });
     if (window.console) console.error(err);
   }
 
@@ -432,13 +487,11 @@
         renderMeta();
         renderSections();
         apply();
-        // Honour a #section hash on first load once the content exists.
-        if (location.hash.length > 1) {
-          var target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-          if (target) target.scrollIntoView();
-        }
       })
-      .catch(showError);
+      .then(function () {
+        // Honour a #section hash on first load once the content exists.
+        try { scrollToHash(); } catch (e) { /* a bad hash must never break the menu */ }
+      }, showError);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

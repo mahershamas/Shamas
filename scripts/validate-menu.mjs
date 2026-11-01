@@ -25,7 +25,10 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const isStr = (v) => typeof v === "string";
 const isNonEmpty = (v) => isStr(v) && v.trim().length > 0;
 
-if (!menu || typeof menu !== "object") err("root must be an object");
+if (!menu || typeof menu !== "object" || Array.isArray(menu)) {
+  console.error(`✗ ${file}: root must be a JSON object`);
+  process.exit(1);
+}
 if (!isNonEmpty(menu.restaurant?.name)) err("restaurant.name is required");
 if (!isNonEmpty(menu.currency) || !/^[A-Z]{3}$/.test(menu.currency)) err("currency must be a 3-letter ISO code");
 if (!Array.isArray(menu.policies) || !menu.policies.every(isNonEmpty)) err("policies must be an array of strings");
@@ -60,7 +63,7 @@ for (const [si, s] of (menu.sections || []).entries()) {
 
     if (it?.price === null) warn(`${w}: no price (shown as "Ask your server")`);
     else if (typeof it?.price !== "number" || !Number.isFinite(it.price) || it.price <= 0) err(`${w}: price must be a positive number or null`);
-    else if (Math.round(it.price * 100) !== it.price * 100) err(`${w}: price has more than 2 decimals`);
+    else if (Math.abs(Math.round(it.price * 100) - it.price * 100) > 1e-6) err(`${w}: price has more than 2 decimals`);
     else if (it.price > 200) warn(`${w}: unusually high price ${it.price}`);
 
     const d = it?.dietary;
@@ -74,9 +77,20 @@ for (const [si, s] of (menu.sections || []).entries()) {
     }
     if (typeof it?.containsGluten !== "boolean") err(`${w}: containsGluten must be boolean`);
     if (it?.printedTag !== undefined && !isStr(it.printedTag)) err(`${w}: printedTag must be a string`);
+    else if (isStr(it?.printedTag) && d && typeof d === "object") {
+      // A printed tag can only add marks, never contradict them: (V) => vegan, (Veg) => vegetarian, (GF) => gluten-free.
+      const toks = new Set(it.printedTag.split(/[^A-Za-z]+/).filter(Boolean));
+      if (toks.has("V") && !d.vegan) err(`${w}: printed tag ${it.printedTag} says vegan but dietary.vegan is false`);
+      if (toks.has("Veg") && !d.vegetarian) err(`${w}: printed tag ${it.printedTag} says vegetarian but dietary.vegetarian is false`);
+      if (toks.has("GF") && !d.glutenFree) err(`${w}: printed tag ${it.printedTag} says gluten-free but dietary.glutenFree is false`);
+    }
     if (/contains gluten/i.test(it?.description || "") && !it?.containsGluten) err(`${w}: description says "Contains gluten" but containsGluten is false`);
-    if (/\b(chicken|lamb|goat|shrimp|salmon|fish|egg|wings)\b/i.test(`${it?.name} ${it?.description}`) && (d?.vegetarian || d?.vegan)) {
+    const text = `${it?.name} ${it?.description}`;
+    if (/\b(chicken|lamb|goat|mutton|beef|pork|shrimps?|prawns?|salmon|fish|eggs?|wings?)\b(?![- ]?(free|less))/i.test(text) && (d?.vegetarian || d?.vegan)) {
       err(`${w}: mentions meat/fish/egg but is marked vegetarian/vegan`);
+    }
+    if (d?.vegan && /\b(paneer|cheese|ghee|yogurt|dahi|butter|cream|malai|milk|honey|lassi)\b/i.test(text.replace(/coconut milk/gi, ""))) {
+      err(`${w}: mentions a dairy/animal ingredient but is marked vegan`);
     }
   }
 }
