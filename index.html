@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Jalsa — Menu</title>
+  <meta name="description" content="Full menu: soups, appetizers, chaat, kathi rolls, South Indian, tandoor, curries, biryani, sides, drinks and desserts. Vegan, vegetarian and gluten-free options marked.">
+  <meta name="theme-color" content="#6b1d2a" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1416" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236b1d2a'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' font-weight='700' text-anchor='middle' fill='%23f4e7cf'%3EJ%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#menu">Skip to menu</a>
+
+  <header class="masthead">
+    <div class="wrap">
+      <h1 class="masthead__title" id="restaurant-name">Jalsa</h1>
+      <p class="masthead__subtitle">Menu</p>
+    </div>
+  </header>
+
+  <div class="toolbar" id="toolbar">
+    <div class="wrap toolbar__inner">
+      <div class="toolbar__row">
+        <label class="search" for="search">
+          <span class="visually-hidden">Search the menu</span>
+          <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10.5 4a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13Zm0-2a8.5 8.5 0 1 0 5.2 15.2l4.6 4.6 1.4-1.4-4.6-4.6A8.5 8.5 0 0 0 10.5 2Z"/></svg>
+          <input id="search" type="search" placeholder="Search dishes…" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="filters" role="group" aria-label="Dietary filters">
+          <button type="button" class="chip" data-filter="vegan" aria-pressed="false"><span class="tag tag--v" aria-hidden="true">V</span> Vegan</button>
+          <button type="button" class="chip" data-filter="vegetarian" aria-pressed="false"><span class="tag tag--veg" aria-hidden="true">Veg</span> Vegetarian</button>
+          <button type="button" class="chip" data-filter="glutenFree" aria-pressed="false"><span class="tag tag--gf" aria-hidden="true">GF</span> Gluten-free</button>
+        </div>
+      </div>
+      <nav class="sections-nav" aria-label="Menu sections">
+        <ul id="section-links"></ul>
+      </nav>
+    </div>
+  </div>
+
+  <main id="menu" class="wrap" tabindex="-1">
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div id="sections" class="sections">
+      <p class="loading">Loading menu…</p>
+    </div>
+    <div class="empty" id="empty" hidden>
+      <p>No dishes match your search and filters.</p>
+      <button type="button" class="button" id="clear-filters">Clear search &amp; filters</button>
+    </div>
+    <noscript>
+      <p class="notice">This menu needs JavaScript to display. Photos of the printed menu are in the <a href="source-photos/">source-photos</a> folder.</p>
+    </noscript>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <section class="legend" aria-labelledby="legend-title">
+        <h2 id="legend-title" class="site-footer__title">Dietary key</h2>
+        <ul class="legend__list" id="legend"></ul>
+        <p class="legend__note">Dietary marks follow the printed menu. Items without a mark have not been labelled by the restaurant.</p>
+      </section>
+      <section aria-labelledby="policies-title">
+        <h2 id="policies-title" class="site-footer__title">Good to know</h2>
+        <ul class="policies" id="policies"></ul>
+      </section>
+    </div>
+  </footer>
+
+  <button type="button" class="to-top" id="to-top" aria-label="Back to top" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5.6 4.7 12.9l1.4 1.4L11 9.4V20h2V9.4l4.9 4.9 1.4-1.4L12 5.6Z"/></svg>
+  </button>
+</body>
+</html>

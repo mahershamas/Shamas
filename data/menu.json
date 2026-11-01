@@ -1,0 +1,1664 @@
+{
+  "restaurant": {
+    "name": "Jalsa"
+  },
+  "currency": "USD",
+  "policies": [
+    "20% gratuity on parties of 6 or more.",
+    "3% extra charge on all card transactions."
+  ],
+  "allergyNotice": "Before placing your order, please inform your server if a person in your party has any food allergy.",
+  "sections": [
+    {
+      "id": "soup",
+      "name": "Soup",
+      "items": [
+        {
+          "id": "spinach-soup",
+          "name": "Spinach Soup",
+          "description": "",
+          "price": 7,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "lentil-soup",
+          "name": "Lentil Soup",
+          "description": "",
+          "price": 7,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "veggie-soup",
+          "name": "Veggie Soup",
+          "description": "",
+          "price": 7,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "chicken-veggie-soup",
+          "name": "Chicken Veggie Soup",
+          "description": "",
+          "price": 8,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(GF)"
+        },
+        {
+          "id": "chicken-thai-soup",
+          "name": "Chicken Thai Soup",
+          "description": "",
+          "price": 8,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "shrimp-thai-soup",
+          "name": "Shrimp Thai Soup",
+          "description": "",
+          "price": 9,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "appetizers",
+      "name": "Appetizers",
+      "items": [
+        {
+          "id": "tandoori-kumbh",
+          "name": "Tandoori Kumbh",
+          "description": "Grilled Mushroom",
+          "price": 13,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg&GF)"
+        },
+        {
+          "id": "jackfruit-shami-kebab-2-pcs",
+          "name": "Jackfruit Shami Kebab (2 pcs)",
+          "description": "",
+          "price": 11,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "lamb-shami-kabab-2-pcs",
+          "name": "Lamb Shami Kabab (2 pcs)",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "fried-shrimp",
+          "name": "Fried Shrimp",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "lollipop-chicken",
+          "name": "Lollipop Chicken",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "paneer-pakoda",
+          "name": "Paneer Pakoda",
+          "description": "",
+          "price": 10,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg&GF)"
+        },
+        {
+          "id": "mirchi-pakoda",
+          "name": "Mirchi Pakoda",
+          "description": "Chilli Pepper stuffed with cheese mix",
+          "price": 12,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg&GF)"
+        },
+        {
+          "id": "kale-pakoda",
+          "name": "Kale Pakoda",
+          "description": "Organic baby kale fritters",
+          "price": 10,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "vada-pav",
+          "name": "Vada Pav",
+          "description": "",
+          "price": null,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "vegetable-samosa-3-pcs",
+          "name": "Vegetable Samosa (3 pcs)",
+          "description": "",
+          "price": 10,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "lamb-samosa",
+          "name": "Lamb Samosa",
+          "description": "",
+          "price": 10,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "papadum",
+          "name": "Papadum",
+          "description": "",
+          "price": 4,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "chicken-dumplings-steamed-fried",
+          "name": "Chicken Dumplings (Steamed/Fried)",
+          "description": "",
+          "price": 15,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "french-fries",
+          "name": "French Fries",
+          "description": "",
+          "price": 6,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V&GF)"
+        },
+        {
+          "id": "hot-wings",
+          "name": "Hot Wings",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "kathi-rolls",
+      "name": "Jalsa Kathi Rolls (Wraps)",
+      "items": [
+        {
+          "id": "chana-kathi-roll",
+          "name": "Chana Kathi Roll",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "paneer-kathi-roll",
+          "name": "Paneer Kathi Roll",
+          "description": "",
+          "price": 14,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "egg-kathi-roll",
+          "name": "Egg Kathi Roll",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-kathi-roll",
+          "name": "Tandoori Chicken Kathi Roll",
+          "description": "",
+          "price": 15,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-lamb-kathi-roll",
+          "name": "Tandoori Lamb Kathi Roll",
+          "description": "",
+          "price": 16,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "chaat",
+      "name": "Chaat",
+      "items": [
+        {
+          "id": "palak-chaat",
+          "name": "Palak Chaat",
+          "description": "Crispy spinach topped with onions, cilantro and tomatoes",
+          "price": 13,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V/Veg&GF)"
+        },
+        {
+          "id": "eggplant-chaat",
+          "name": "Eggplant Chaat",
+          "description": "Savory potato mash topped with crispy eggplant rounds",
+          "price": 11,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V/Veg&GF)"
+        },
+        {
+          "id": "aalu-tikki-chaat",
+          "name": "Aalu Tikki Chaat",
+          "description": "Potato, chickpea patty in choley topped with onions, cilantro and tomatoes",
+          "price": 13,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V/Veg&GF)"
+        },
+        {
+          "id": "samosa-chaat",
+          "name": "Samosa Chaat",
+          "description": "Potato samosa in choley topped with onions, cilantro and tomatoes. Contains gluten",
+          "price": 14,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true,
+          "printedTag": "(V/Veg)"
+        },
+        {
+          "id": "bhelpuri",
+          "name": "Bhelpuri",
+          "description": "Puffed rice and potato topped with onions and cilantro. Contains gluten",
+          "price": 11,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "papri-chaat",
+          "name": "Papri Chaat",
+          "description": "Wheat crackers topped with savory potato mash, yogurt, onion and cilantro. Contains gluten",
+          "price": 11,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "dahi-puri",
+          "name": "Dahi Puri",
+          "description": "Crispy wheat shell filled with savory potato mash, yogurt and cilantro Contains gluten",
+          "price": 14,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "pani-puri",
+          "name": "Pani Puri",
+          "description": "Crispy wheat shell filled with tangy potato mash, served with tangy and Spicy tamarind water. Contains gluten",
+          "price": 11,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "dahi-bhalla",
+          "name": "Dahi Bhalla",
+          "description": "",
+          "price": 14,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        }
+      ]
+    },
+    {
+      "id": "south-indian",
+      "name": "South Indian",
+      "notes": [
+        "Gunpowder: $2 extra"
+      ],
+      "items": [
+        {
+          "id": "plain-dosa",
+          "name": "Plain Dosa",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        },
+        {
+          "id": "masala-dosa",
+          "name": "Masala Dosa",
+          "description": "",
+          "price": 16,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        },
+        {
+          "id": "cheese-plain-dosa",
+          "name": "Cheese Plain Dosa",
+          "description": "",
+          "price": 16,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg & GF)"
+        },
+        {
+          "id": "cheese-masala-dosa",
+          "name": "Cheese Masala Dosa",
+          "description": "",
+          "price": 20,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg & GF)"
+        },
+        {
+          "id": "ghee-roasted-plain-dosa",
+          "name": "Ghee Roasted Plain Dosa",
+          "description": "",
+          "price": 14,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg & GF)"
+        },
+        {
+          "id": "ghee-roasted-masala-dosa",
+          "name": "Ghee Roasted Masala Dosa",
+          "description": "",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg & GF)"
+        },
+        {
+          "id": "jalsa-garden-dosa",
+          "name": "Jalsa Garden dosa",
+          "description": "Organic baby kale, spinach, carrot and other fresh vegetables",
+          "price": 18,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        },
+        {
+          "id": "idly",
+          "name": "Idly",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        },
+        {
+          "id": "uttapam",
+          "name": "Uttapam",
+          "description": "",
+          "price": 14,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        },
+        {
+          "id": "vada",
+          "name": "Vada",
+          "description": "",
+          "price": 12,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        },
+        {
+          "id": "sambhar-vada",
+          "name": "Sambhar Vada",
+          "description": "",
+          "price": 14,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false,
+          "printedTag": "(V & GF)"
+        }
+      ]
+    },
+    {
+      "id": "tandoor-grill",
+      "name": "From the Tandoor / Grill",
+      "notes": [
+        "Rice included",
+        "All items gluten-free"
+      ],
+      "items": [
+        {
+          "id": "tandoori-chicken-leg",
+          "name": "Tandoori Chicken Leg",
+          "description": "",
+          "price": 22,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-tikka",
+          "name": "Tandoori Chicken Tikka",
+          "description": "",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-rosemary-chicken-tikka",
+          "name": "Tandoori Rosemary Chicken Tikka",
+          "description": "",
+          "price": 17,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-ghost-chicken",
+          "name": "Tandoori Ghost Chicken",
+          "description": "",
+          "price": 17,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-kofta-kabab",
+          "name": "Tandoori Chicken Kofta Kabab",
+          "description": "",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-lamb-chops",
+          "name": "Tandoori Lamb Chops",
+          "description": "",
+          "price": 24,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-lamb-tikka",
+          "name": "Tandoori Lamb Tikka",
+          "description": "",
+          "price": 22,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-salmon-fish-tikka",
+          "name": "Tandoori Salmon Fish Tikka",
+          "description": "",
+          "price": 24,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-tikka-and-chicken-kofta-combo",
+          "name": "Tandoori Chicken Tikka & Chicken Kofta Combo",
+          "description": "",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-tikka-lamb-tikka",
+          "name": "Tandoori Chicken Tikka, Lamb Tikka",
+          "description": "",
+          "price": 29,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-tikka-lamb-tikka-and-1-pc-lamb-chop-combo",
+          "name": "Tandoori Chicken Tikka, Lamb Tikka & 1 pc Lamb Chop Combo",
+          "description": "",
+          "price": 32,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-tikka-chicken-kofta-and-1-pc-lamb-chop-combo",
+          "name": "Tandoori Chicken Tikka, Chicken Kofta & 1 pc Lamb Chop Combo",
+          "description": "",
+          "price": 27,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "tandoori-chicken-tikka-2-pc-lamb-chops-combo",
+          "name": "Tandoori Chicken Tikka, 2 pc Lamb Chops Combo",
+          "description": "",
+          "price": 28,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "vegan-curry",
+      "name": "Vegan Curry",
+      "notes": [
+        "Rice included",
+        "All items gluten-free except Pav Bhaji"
+      ],
+      "items": [
+        {
+          "id": "plantain-kofta-curry",
+          "name": "Plantain Kofta Curry",
+          "description": "Seasoned plantain balls dipped in savory sauce",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "eggplant-saalan",
+          "name": "Eggplant Saalan",
+          "description": "Baked Eggplant mashed and cooked in a smokey sauce",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "gobi-ka-keema",
+          "name": "Gobi Ka Keema",
+          "description": "Minced Cauliflower cooked in a smokey sauce",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "okra-onion",
+          "name": "Okra Onion",
+          "description": "Okra cooked in tangy and smokey sauce",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "panch-ratan-sabzi",
+          "name": "Panch Ratan Sabzi",
+          "description": "Mix of five vegetables",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "mix-daal",
+          "name": "Mix Daal",
+          "description": "Combination of five whole lentils",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "yellow-daal",
+          "name": "Yellow Daal",
+          "description": "Toor Daal lentils",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "chana-masala",
+          "name": "Chana Masala",
+          "description": "Chickpeas cooked in house special spices",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "zeera-alu",
+          "name": "Zeera Alu",
+          "description": "Potato with cumin seeds",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "pav-bhaji",
+          "name": "Pav Bhaji",
+          "description": "Mix of vegetables served with bun bread - Contains gluten",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true
+        },
+        {
+          "id": "saag-aloo",
+          "name": "Saag Aloo",
+          "description": "Spinach with Potato",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "alu-matar",
+          "name": "Alu Matar",
+          "description": "Peas and Potatoes cooked in onion and tomato base sauce",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "vegetarian-curry",
+      "name": "Vegetarian Curry",
+      "notes": [
+        "Rice included",
+        "All items gluten-free except Pav Bhaji"
+      ],
+      "items": [
+        {
+          "id": "navratan-korma",
+          "name": "Navratan Korma",
+          "description": "Mix vegetables with nuts in buttery korma sauce",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "daal-makhni",
+          "name": "Daal Makhni",
+          "description": "Urad Daal in buttery sauce",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "nadru-malai-kofta",
+          "name": "Nadru Malai Kofta",
+          "description": "Lotus root, nut-mix kofta balls dipped in creamy sauce",
+          "price": 20,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "paneer-nizami",
+          "name": "Paneer Nizami",
+          "description": "Homemade cottage cheese filled with nut based nizami filling dipped in aromatic creamy sauce",
+          "price": 22,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "matar-paneer",
+          "name": "Matar Paneer",
+          "description": "Peas with homemade cottage Cheese",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "paneer-tikka-masala",
+          "name": "Paneer Tikka Masala",
+          "description": "Peas with homemade cottage Cheese",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "saag-paneer",
+          "name": "Saag Paneer",
+          "description": "Spinach with homemade cottage Cheese",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "paneer-makhani",
+          "name": "Paneer Makhani",
+          "description": "Homemade cottage cheese cubes cooked in buttery sauce",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "paneer-jalfrezi",
+          "name": "Paneer Jalfrezi",
+          "description": "Homemade cottage cheese cooked in mix of julienne cut vegetables in jalfarezi sauce",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "amul-butter-pav-bhaji",
+          "name": "Amul Butter Pav Bhaji",
+          "description": "Mix of mashed vegetables in bhaji seasoned with Amul butter served with bun bread Contains gluten",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": true
+        }
+      ]
+    },
+    {
+      "id": "chicken-curry",
+      "name": "Chicken Curry",
+      "notes": [
+        "Rice included",
+        "All items gluten-free"
+      ],
+      "items": [
+        {
+          "id": "chicken-tikka-masala",
+          "name": "Chicken Tikka Masala",
+          "description": "Boneless chicken pieces cooked in succulent sauce",
+          "price": 19,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "butter-chicken",
+          "name": "Butter Chicken",
+          "description": "Boneless chicken cooked with heavy cream and honey in buttery sauce",
+          "price": 19,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "chicken-roast",
+          "name": "Chicken Roast",
+          "description": "Chicken legs cooked in a special homemade Mughlai sauce",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "chicken-jalfrezi",
+          "name": "Chicken Jalfrezi",
+          "description": "Boneless chicken cooked in tangy sauce with julienne cut onion and pepper and vegetable broth.",
+          "price": 19,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "chicken-vindaloo",
+          "name": "Chicken Vindaloo",
+          "description": "Boneless pieces of chicken cooked in a spicy vindaloo sauce",
+          "price": 19,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "chicken-curry",
+          "name": "Chicken Curry",
+          "description": "Chicken on bones cooked in Curry masala",
+          "price": 19,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "chicken-korma",
+          "name": "Chicken Korma",
+          "description": "Chicken pieces on bones cooked in korma sauce",
+          "price": 19,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "lamb-curry",
+      "name": "Lamb Curry",
+      "notes": [
+        "Rice included",
+        "All items gluten-free"
+      ],
+      "items": [
+        {
+          "id": "lamb-tikka-masala",
+          "name": "Lamb Tikka Masala",
+          "description": "Boneless pieces of lamb cooked in masala sauce",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "lamb-vindaloo",
+          "name": "Lamb Vindaloo",
+          "description": "Boneless pieces of lamb cooked in a spicy vindaloo sauce",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "lamb-jalfrezi",
+          "name": "Lamb Jalfrezi",
+          "description": "Boneless pieces of lamb cooked with vegetables",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "lamb-korma",
+          "name": "Lamb Korma",
+          "description": "Lamb pieces on bones cooked in Korma sauce",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "goat-curry",
+      "name": "Goat Curry",
+      "notes": [
+        "Rice included"
+      ],
+      "items": [
+        {
+          "id": "nalla-nehari",
+          "name": "Nalla Nehari",
+          "description": "Goat shank seasoned with our traditional nehari masala. Contains gluten",
+          "price": 25,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": true
+        },
+        {
+          "id": "goat-korma",
+          "name": "Goat Korma",
+          "description": "Goat pieces on bones cooked in korma sauce",
+          "price": 22,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "seafood-curry",
+      "name": "Seafood Curry",
+      "notes": [
+        "Rice included",
+        "All items gluten-free"
+      ],
+      "items": [
+        {
+          "id": "jhingri-malaikari",
+          "name": "Jhingri Malaikari",
+          "description": "Tiger shrimp cooked in coconut milk",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "fish-tikka-masala",
+          "name": "Fish Tikka Masala",
+          "description": "Salmon fish in Curry Sauce.",
+          "price": 26,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "shrimp-jalfrezi",
+          "name": "Shrimp Jalfrezi",
+          "description": "Shrimp cooked in tangy sauce with julienne cut onion and pepper and vegetable broth.",
+          "price": 21,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "biryani",
+      "name": "Biryani",
+      "notes": [
+        "All items gluten-free"
+      ],
+      "items": [
+        {
+          "id": "jalsa-chicken-dum-biryani",
+          "name": "Jalsa Chicken Dum Biryani",
+          "description": "Chicken on bones cooked with basmati rice dumpukth style",
+          "price": 18,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "hyderabadi-goat-biryani",
+          "name": "Hyderabadi Goat Biryani",
+          "description": "Goat on bones cooked with basmati rice",
+          "price": 22,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "vegan-vegetable-biryani",
+          "name": "Vegan Vegetable Biryani",
+          "description": "Vegetables (peas, carrots, potato, zucchini and cauliflower) cooked in basmati rice- dumpukth style",
+          "price": 16,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "vegan-vegetable-and-jackfruit-biryani",
+          "name": "Vegan Vegetable & Jackfruit Biryani",
+          "description": "Vegetables (peas, carrots, potato, zucchini, cauliflower and jackfruit) cooked in basmati rice- dumpukth style",
+          "price": 17,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": true
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "sides",
+      "name": "Sides",
+      "items": [
+        {
+          "id": "naan",
+          "name": "Naan",
+          "description": "",
+          "price": 3,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "garlic-naan",
+          "name": "Garlic Naan",
+          "description": "",
+          "price": 4,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "rosemary-garlic-naan",
+          "name": "Rosemary Garlic Naan",
+          "description": "",
+          "price": 5,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "amritsari-kulcha-naan",
+          "name": "Amritsari Kulcha Naan",
+          "description": "Naan stuffed with seasoned potatoes",
+          "price": 6,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "onion-kulcha-naan",
+          "name": "Onion Kulcha Naan",
+          "description": "",
+          "price": 6,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "cheese-naan",
+          "name": "Cheese Naan",
+          "description": "",
+          "price": 7,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "chilli-cheese-garlic-naan",
+          "name": "Chilli Cheese Garlic Naan",
+          "description": "",
+          "price": 7,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(Veg)"
+        },
+        {
+          "id": "tandoori-roti",
+          "name": "Tandoori Roti",
+          "description": "",
+          "price": 3,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "plain-paratha",
+          "name": "Plain Paratha",
+          "description": "",
+          "price": 5,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "alu-paratha",
+          "name": "Alu Paratha",
+          "description": "Paratha stuffed with seasoned potatoes",
+          "price": 7,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "gobi-paratha",
+          "name": "Gobi Paratha",
+          "description": "Paratha stuffed with cauliflower",
+          "price": 7,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false,
+          "printedTag": "(V)"
+        },
+        {
+          "id": "vegan-steamed-white-rice",
+          "name": "Vegan Steamed White Rice",
+          "description": "",
+          "price": 3,
+          "dietary": {
+            "vegan": true,
+            "vegetarian": true,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "shahi-yellow-rice",
+          "name": "Shahi Yellow Rice",
+          "description": "Seasoned and cooked in chicken broth",
+          "price": 3,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "drinks",
+      "name": "Drinks",
+      "items": [
+        {
+          "id": "hot-tea-masala-chai",
+          "name": "Hot Tea - Masala Chai",
+          "description": "",
+          "price": 5,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "mango-lassi",
+          "name": "Mango Lassi",
+          "description": "",
+          "price": 6,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "lemonade",
+          "name": "Lemonade",
+          "description": "",
+          "price": 5,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "soda-can",
+          "name": "Soda Can",
+          "description": "Coke, Diet Coke, Sprite, Gingerale, Fanta, Seltzer Water",
+          "price": 3,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "indian-soda-can",
+          "name": "Indian Soda Can",
+          "description": "Thumsup, Limca, Maaza-Mango/Guava",
+          "price": 4,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "soda-shikanji",
+          "name": "Soda Shikanji",
+          "description": "",
+          "price": 7,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    },
+    {
+      "id": "desserts",
+      "name": "Desserts",
+      "items": [
+        {
+          "id": "kheer",
+          "name": "Kheer",
+          "description": "",
+          "price": 8,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "ras-malai",
+          "name": "Ras Malai",
+          "description": "",
+          "price": 8,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        },
+        {
+          "id": "gulab-jamun",
+          "name": "Gulab Jamun",
+          "description": "",
+          "price": 8,
+          "dietary": {
+            "vegan": false,
+            "vegetarian": false,
+            "glutenFree": false
+          },
+          "containsGluten": false
+        }
+      ]
+    }
+  ]
+}
