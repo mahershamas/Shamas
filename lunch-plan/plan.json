@@ -9,7 +9,7 @@
   },
   {
    "rule": "Half plain rice OR one roti",
-   "why": "Never both. Rice already comes with your plate."
+   "why": "Never both. Your plate comes with rice: ask for half."
   },
   {
    "rule": "Say: less oil, no butter",
@@ -34,7 +34,7 @@
    "theme": "chicken",
    "main": {
     "item": "Tandoori Chicken Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Spinach Soup",
@@ -73,7 +73,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Light tadka, less salt, half rice",
@@ -96,7 +96,7 @@
    "theme": "seafood",
    "main": {
     "item": "Shrimp Jalfrezi",
-    "portion": "eat pieces, leave gravy"
+    "portion": "eat the shrimp, not the gravy"
    },
    "side": {
     "item": "Veggie Soup",
@@ -104,7 +104,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Less oil, less salt, half rice",
@@ -120,14 +120,14 @@
     25,
     38
    ],
-   "why": "Shrimp is low-fat. The oil is in the sauce."
+   "why": "Shrimp is low-fat. The oil is in the gravy."
   },
   {
    "day": 4,
    "theme": "chicken",
    "main": {
     "item": "Tandoori Ghost Chicken",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Veggie Soup",
@@ -166,7 +166,7 @@
    },
    "carb": {
     "item": "none",
-    "portion": "the idly is your carb"
+    "portion": "No rice, no roti today"
    },
    "drink": "Masala chai, no sugar",
    "ask_kitchen": "One spoon chutney, less salt",
@@ -189,7 +189,7 @@
    "theme": "fish",
    "main": {
     "item": "Tandoori Salmon Fish Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Spinach Soup",
@@ -228,7 +228,7 @@
    },
    "carb": {
     "item": "none",
-    "portion": "the wrap is your carb"
+    "portion": "No rice, no roti today"
    },
    "drink": "Water",
    "ask_kitchen": "Roti wrap, no mayo, less salt",
@@ -244,14 +244,14 @@
     36,
     56
    ],
-   "why": "Your choice day. No roti wrap? Choose chicken tikka."
+   "why": "Your choice: this, or any 🟢 dish from page 9."
   },
   {
    "day": 8,
    "theme": "vegetarian",
    "main": {
     "item": "Mix Daal",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Lentil Soup",
@@ -259,7 +259,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Light tadka, less salt, half rice",
@@ -282,7 +282,7 @@
    "theme": "chicken",
    "main": {
     "item": "Tandoori Rosemary Chicken Tikka",
-    "portion": "eat ½, take ½ home"
+    "portion": "eat half, take half home"
    },
    "side": {
     "item": "Lentil Soup",
@@ -290,7 +290,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "No butter, less salt, half rice",
@@ -306,14 +306,14 @@
     36,
     56
    ],
-   "why": "Chicken and lentil soup: strong, full, low fat."
+   "why": "Big soup today, so eat half the chicken."
   },
   {
    "day": 10,
    "theme": "seafood",
    "main": {
     "item": "Shrimp Jalfrezi",
-    "portion": "eat pieces, leave gravy"
+    "portion": "eat the shrimp, not the gravy"
    },
    "side": {
     "item": "Veggie Soup",
@@ -344,7 +344,7 @@
    "theme": "vegetarian",
    "main": {
     "item": "Chana Masala",
-    "portion": "eat ½, take rest home"
+    "portion": "eat half, take the rest home"
    },
    "side": {
     "item": "Lentil Soup",
@@ -352,7 +352,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Less oil, less salt, half rice",
@@ -375,7 +375,7 @@
    "theme": "chicken",
    "main": {
     "item": "Chicken Jalfrezi",
-    "portion": "eat pieces, leave gravy"
+    "portion": "eat the chicken, not the gravy"
    },
    "side": {
     "item": "Veggie Soup",
@@ -383,7 +383,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Less oil, less salt, half rice",
@@ -399,14 +399,14 @@
     34,
     46
    ],
-   "why": "No cream. Ask less oil. Leave the gravy."
+   "why": "No cream. Ask less oil. Don't eat the gravy."
   },
   {
    "day": 13,
    "theme": "fish",
    "main": {
     "item": "Tandoori Salmon Fish Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Veggie Soup",
@@ -445,7 +445,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "No butter, less salt, half rice",
@@ -461,7 +461,7 @@
     38,
     56
    ],
-   "why": "Your choice day. Juicy grilled chicken, no butter."
+   "why": "Your choice: this, or any 🟢 dish from page 9."
   },
   {
    "day": 15,
@@ -476,7 +476,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Light tadka, less salt, half rice",
@@ -499,7 +499,7 @@
    "theme": "chicken",
    "main": {
     "item": "Tandoori Rosemary Chicken Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Spinach Soup",
@@ -530,7 +530,7 @@
    "theme": "seafood",
    "main": {
     "item": "Shrimp Jalfrezi",
-    "portion": "eat pieces, leave gravy"
+    "portion": "eat the shrimp, not the gravy"
    },
    "side": {
     "item": "Veggie Soup",
@@ -538,7 +538,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Less oil, less salt, half rice",
@@ -554,14 +554,14 @@
     25,
     38
    ],
-   "why": "Shrimp: high protein. Leave the gravy for less fat."
+   "why": "Shrimp: high protein. Skip the gravy for less fat."
   },
   {
    "day": 18,
    "theme": "vegetarian",
    "main": {
     "item": "Mix Daal",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Lentil Soup",
@@ -569,7 +569,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Light tadka, less salt, half rice",
@@ -592,7 +592,7 @@
    "theme": "chicken",
    "main": {
     "item": "Tandoori Chicken Tikka",
-    "portion": "eat ½, take ½ home"
+    "portion": "eat half, take half home"
    },
    "side": {
     "item": "Lentil Soup",
@@ -600,7 +600,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "No butter, less salt, half rice",
@@ -616,14 +616,14 @@
     36,
     56
    ],
-   "why": "Your power lunch: lots of protein, little fat."
+   "why": "Big soup today, so eat half the chicken."
   },
   {
    "day": 20,
    "theme": "fish",
    "main": {
     "item": "Tandoori Salmon Fish Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Spinach Soup",
@@ -662,7 +662,7 @@
    },
    "carb": {
     "item": "none",
-    "portion": "the dosa is your carb"
+    "portion": "No rice, no roti today"
    },
    "drink": "Water",
    "ask_kitchen": "Little oil, less salt, no chutney",
@@ -678,14 +678,14 @@
     21,
     33
    ],
-   "why": "Your choice day. Dosa, plus chicken soup for protein."
+   "why": "Your choice: this, or any 🟢 dish from page 9."
   },
   {
    "day": 22,
    "theme": "chicken",
    "main": {
     "item": "Chicken Jalfrezi",
-    "portion": "eat pieces, leave gravy"
+    "portion": "eat the chicken, not the gravy"
    },
    "side": {
     "item": "Veggie Soup",
@@ -693,7 +693,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Less oil, less salt, half rice",
@@ -709,7 +709,7 @@
     34,
     46
    ],
-   "why": "Peppers and onions add vitamins. Leave the gravy."
+   "why": "Peppers and onions add vitamins. Skip the gravy."
   },
   {
    "day": 23,
@@ -724,7 +724,7 @@
    },
    "carb": {
     "item": "none",
-    "portion": "the idly is your carb"
+    "portion": "No rice, no roti today"
    },
    "drink": "Masala chai, no sugar",
    "ask_kitchen": "One spoon chutney, less salt",
@@ -747,7 +747,7 @@
    "theme": "seafood",
    "main": {
     "item": "Shrimp Jalfrezi",
-    "portion": "eat pieces, leave gravy"
+    "portion": "eat the shrimp, not the gravy"
    },
    "side": {
     "item": "Veggie Soup",
@@ -778,7 +778,7 @@
    "theme": "chicken",
    "main": {
     "item": "Tandoori Chicken Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Spinach Soup",
@@ -809,7 +809,7 @@
    "theme": "vegetarian",
    "main": {
     "item": "Mix Daal",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Lentil Soup",
@@ -817,7 +817,7 @@
    },
    "carb": {
     "item": "Vegan Steamed White Rice",
-    "portion": "half the rice on your plate"
+    "portion": "half portion (ask the kitchen)"
    },
    "drink": "Water",
    "ask_kitchen": "Light tadka, less salt, half rice",
@@ -840,7 +840,7 @@
    "theme": "fish",
    "main": {
     "item": "Tandoori Salmon Fish Tikka",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Veggie Soup",
@@ -879,7 +879,7 @@
    },
    "carb": {
     "item": "none",
-    "portion": "the wrap is your carb"
+    "portion": "No rice, no roti today"
    },
    "drink": "Water",
    "ask_kitchen": "Roti wrap, no mayo, less salt",
@@ -895,14 +895,14 @@
     21,
     36
    ],
-   "why": "Your choice day. No roti wrap? Pick a green dish."
+   "why": "Your choice: this, or any 🟢 dish from page 9."
   },
   {
    "day": 29,
    "theme": "chicken",
    "main": {
     "item": "Tandoori Ghost Chicken",
-    "portion": "eat ¾, take rest home"
+    "portion": "eat 3/4, take the rest home"
    },
    "side": {
     "item": "Veggie Soup",
@@ -941,7 +941,7 @@
    },
    "carb": {
     "item": "none",
-    "portion": "the idly is your carb"
+    "portion": "No rice, no roti today"
    },
    "drink": "Water",
    "ask_kitchen": "One spoon chutney, less salt",
@@ -1000,7 +1000,7 @@
    },
    {
     "item": "Tandoori Salmon Fish Tikka",
-    "why": "Good fish fat; once a week"
+    "why": "Good fish fat; grilled"
    },
    {
     "item": "Mix Daal",
@@ -1029,6 +1029,10 @@
    {
     "item": "Vegan Steamed White Rice",
     "why": "Plain rice; eat half"
+   },
+   {
+    "item": "Hot Tea - Masala Chai",
+    "why": "Only with no sugar"
    }
   ],
   "yellow": [
@@ -1137,12 +1141,8 @@
     "why": "No cream, but very oily"
    },
    {
-    "item": "Hot Tea - Masala Chai",
-    "why": "Only with no sugar"
-   },
-   {
     "item": "Soda Can",
-    "why": "Seltzer water only"
+    "why": "Only plain sparkling water (seltzer)"
    }
   ],
   "red": [
@@ -1497,15 +1497,16 @@
  "daily_basics": [
   "Water, then soup, then plate. Eat slowly.",
   "Walk every day. Start with 10 minutes.",
-  "Muscle exercise 2 days a week",
+  "Muscle exercise 2 days a week (push-ups, squats)",
   "No snacking on fried food at work",
   "Eat breakfast and dinner too. Same rules."
  ],
  "safety_notes": [
   "Not zero fat: your body needs a little. Too much food makes body fat.",
-  "Diabetes, kidney, heart, blood pressure, pregnant, breastfeeding, under 18, or on medicine? Ask your doctor first.",
+  "Diabetes, kidney or heart problems, high blood pressure, pregnant, breastfeeding, under 18, or on medicine? Ask your doctor first.",
   "Lose slowly: at most 1 kg (2 lb) a week. Eat 3 meals; never starve.",
-  "Allergy? Tell the kitchen. Dizzy, chest pain, or always worried about food? See a doctor."
+  "Chest pain or very dizzy? Stop and get help now.",
+  "Allergy? Tell the kitchen. Always worried about food? Talk to a doctor. Help is normal."
  ],
  "assumptions": [
   "Nutrition numbers are estimates, not lab tests. Jalsa publishes no nutrition data, so they come from the research ranges (USDA FoodData Central, IFCT 2017 / INDB, CoFID and lab-tested UK and Irish takeaway data). Real dishes can vary 2-3 times in oil, ghee and cream.",
@@ -1542,6 +1543,7 @@
   "Not applied (safety audit, Ghost Chicken request 'Ask what is in it. Skin off...'): too long for 6 words, and the person works in this kitchen; Day 4 says 'Too hot? Choose chicken tikka.' 'Skin off' was also dropped on the Chicken Leg day, since tandoori chicken is skinned before marinating (menu-fit audit).",
   "Not applied (safety audit, Desi Chinese dishes added to red): they are not in menu.json and may come from an old sheet seen through the paper, and the traffic light must hold exactly the 123 menu items. A renderer line could say: 'Not on this list? Fried, creamy, buttery or sweet = rare treat.'",
   "Not applied here (safety audit, renderer changes): dropping 'g fat' from the day cards, rounding kcal to 50, and the tracker note about plateaus belong in render.cjs, not in the plan data. Suggested tracker text: 'Slow is good. Weight goes down, then stops for a while. This is normal. Keep going!'",
-  "Not applied (safety audit, 'Water or seltzer with lemon' on Days 7 and 24; nutrition audit, 'Plain roti wrap, no mayo'): the drink is simply 'Water' (seltzer is fine too: Soda Can is yellow as 'Seltzer water only'), and the roll request uses 'less salt' instead of 'plain', because the menu marks Tandoori Roti vegan (no butter)."
+  "Not applied (safety audit, 'Water or seltzer with lemon' on Days 7 and 24; nutrition audit, 'Plain roti wrap, no mayo'): the drink is simply 'Water' (seltzer is fine too: Soda Can is yellow as 'Seltzer water only'), and the roll request uses 'less salt' instead of 'plain', because the menu marks Tandoori Roti vegan (no butter).",
+  "PDF readability review (reader + phone/print lenses) applied: clearer portion wording (fractions in words, 'eat the chicken, not the gravy', rice 'half portion (ask the kitchen)'), explained 'Your choice' days, Masala Chai (no sugar) moved to green, Soda Can limited to plain sparkling water, split urgent vs gentle safety notes. No nutrition choices changed."
  ]
 }

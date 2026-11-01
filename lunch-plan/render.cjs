@@ -23,15 +23,18 @@ const mid = (r) => (Array.isArray(r) && r.length === 2 ? Math.round((r[0] + r[1]
 const round5 = (n) => Math.round(n / 5) * 5;
 
 const THEMES = {
-  chicken:      { label: "Chicken",     icon: "🍗", color: "#C9761A", tint: "#FFF1DE" },
-  fish:         { label: "Fish",        icon: "🐟", color: "#2569A6", tint: "#E5F0FA" },
-  seafood:      { label: "Shrimp",      icon: "🦐", color: "#C4553A", tint: "#FCE9E3" },
-  vegetarian:   { label: "Vegetarian",  icon: "🥦", color: "#2E8B57", tint: "#E3F4EA" },
-  lamb:         { label: "Lamb",        icon: "🍖", color: "#8A5236", tint: "#F5E9E2" },
-  goat:         { label: "Goat",        icon: "🍖", color: "#8A5236", tint: "#F5E9E2" },
-  "free-choice":{ label: "Your choice", icon: "⭐", color: "#6B4FD8", tint: "#EFEBFF" },
+  // Food-type colours. Deliberately NOT red/amber, so they never look like the green/yellow/red lists.
+  chicken:      { label: "Chicken",     icon: "🍗", color: "#8A5236", tint: "#F3E8E0" },
+  fish:         { label: "Fish",        icon: "🐟", color: "#1F5F96", tint: "#E3EEF8" },
+  seafood:      { label: "Shrimp",      icon: "🦐", color: "#0F6E6E", tint: "#DFF2F1" },
+  vegetarian:   { label: "Vegetarian",  icon: "🥦", color: "#23744A", tint: "#E3F4EA" },
+  lamb:         { label: "Lamb",        icon: "🍖", color: "#6E4A3A", tint: "#F1E7E2" },
+  goat:         { label: "Goat",        icon: "🍖", color: "#6E4A3A", tint: "#F1E7E2" },
+  "free-choice":{ label: "Your choice", icon: "★", color: "#5B3FC4", tint: "#EDE8FF", text: true },
 };
 const theme = (t) => THEMES[t] || THEMES.vegetarian;
+// Text icons (★) take the theme colour so they still print dark in black-and-white.
+const themeIcon = (th) => th.text ? `<span class="txt-ic" style="color:${th.color}">${th.icon}</span>` : th.icon;
 
 function sideIcon(item) {
   if (/soup/i.test(item)) return "🥣";
@@ -58,7 +61,7 @@ function partHtml(p) {
   const portion = (p.portion || "").trim();
   if (!portion) return esc(p.item);
   if (/^(1|one) (piece|pc)$/i.test(portion)) return `1 ${esc(p.item)}`;
-  if (/rice/i.test(portion) && /rice/i.test(p.item)) return esc(portion.charAt(0).toUpperCase() + portion.slice(1));
+  if (/rice/i.test(p.item)) return `Rice <span class="portion">· ${esc(portion)}</span>`;
   return `${esc(p.item)} <span class="portion">· ${esc(portion)}</span>`;
 }
 
@@ -95,10 +98,11 @@ page("cover", `
     <div class="cover__how">
       <p class="formula">${esc(plan.plate_formula)}</p>
       <ol class="steps">
-        <li><b>1</b><span>Find today's <strong>Day</strong> number.</span></li>
-        <li><b>2</b><span>Eat that lunch.</span></li>
-        <li><b>3</b><span>Tick the box ✓</span></li>
-        <li><b>↻</b><span>After Day 30, start again at Day 1.</span></li>
+        <li><b>1</b><span>Find the first day with no tick <small>(page 3)</small>.</span></li>
+        <li><b>2</b><span>Read that day's card <small>(pages 4–8)</small> and eat that lunch.</span></li>
+        <li><b>3</b><span>Tick its box on page 3 ✓</span></li>
+        <li><b>↻</b><span>After Day 30, start again at Day 1. <small>Print page 3 again.</small></span></li>
+        <li class="steps__alt"><b>?</b><span>Dish not ready? Eat any 🟢 dish from page 9. Same Ask.</span></li>
       </ol>
     </div>
   </div>
@@ -129,13 +133,14 @@ page("rules", `
 const legendThemes = [...new Set(plan.days.map((d) => d.theme))];
 page("glance", `
   <header class="phead"><p class="eyebrow">Month at a glance</p><h2>30 lunches</h2>
-    <ul class="legend">${legendThemes.map((t) => `<li style="--c:${theme(t).color};--t:${theme(t).tint}"><span>${theme(t).icon}</span>${esc(theme(t).label)}</li>`).join("")}</ul>
+    <ul class="legend">${legendThemes.map((t) => `<li style="--c:${theme(t).color};--t:${theme(t).tint}"><span>${themeIcon(theme(t))}</span>${esc(theme(t).label)}</li>`).join("")}</ul>
+    <p class="legend__note">Colours show the food type. ★ Your choice = this dish, or any 🟢 dish from page 9.</p>
   </header>
   <ol class="grid30">
     ${plan.days.map((d) => {
       const th = theme(d.theme);
       return `<li class="tile" style="--c:${th.color};--t:${th.tint}">
-        <div class="tile__top"><span class="tile__n">${d.day}</span><span class="tile__ic">${th.icon}</span></div>
+        <div class="tile__top"><span class="tile__n">${d.day}</span><span class="tile__ic">${themeIcon(th)}</span></div>
         <p class="tile__main">${esc(d.main.item)}</p>
         <span class="box" aria-hidden="true"></span>
       </li>`;
@@ -155,15 +160,17 @@ for (let i = 0; i < plan.days.length; i += 6) {
         const th = theme(d.theme);
         const kcal = mid(d.est_kcal), pro = mid(d.est_protein_g);
         const side = partHtml(d.side) ? `<li><span class="ic">${sideIcon(d.side.item)}</span><span>${partHtml(d.side)}</span></li>` : "";
-        const carb = partHtml(d.carb) ? `<li><span class="ic">${carbIcon(d.carb.item)}</span><span>${partHtml(d.carb)}</span></li>` : "";
+        const carb = partHtml(d.carb)
+          ? `<li><span class="ic">${carbIcon(d.carb.item)}</span><span>${partHtml(d.carb)}</span></li>`
+          : (d.carb && d.carb.portion ? `<li><span class="ic">🚫</span><span>${esc(d.carb.portion)}</span></li>` : "");
         return `<li class="card" style="--c:${th.color};--t:${th.tint}">
-          <div class="card__head"><span class="card__day">Day <b>${d.day}</b></span><span class="card__theme">${th.icon} ${esc(th.label)}</span></div>
+          <div class="card__head"><span class="card__day">Day <b>${d.day}</b></span><span class="card__theme">${themeIcon(th)} ${esc(th.label)}</span></div>
           <p class="card__main">${esc(d.main.item)}</p>
           ${d.main.portion && !/^(full|1 plate|one plate)/i.test(d.main.portion) ? `<p class="card__portion">${esc(d.main.portion)}</p>` : ""}
           <ul class="card__rows">${side}${carb}<li><span class="ic">${drinkIcon(d.drink)}</span><span>${esc(d.drink)}</span></li></ul>
           ${d.why ? `<p class="card__why">${esc(d.why)}</p>` : ""}
           <p class="card__ask">👨‍🍳 Ask: “${esc(d.ask_kitchen)}”</p>
-          <div class="card__foot"><span class="stats">about ${Math.round(kcal / 50) * 50} kcal · ${pro} g protein</span><span class="done">Done <span class="box" aria-hidden="true"></span></span></div>
+          <div class="card__foot"><span class="stats">about ${Math.round(kcal / 50) * 50} calories · ${pro} g protein</span></div>
         </li>`;
       }).join("")}
     </ol>
@@ -194,15 +201,23 @@ const listCol = (cls, title, sub, list) => `
 page("guide", `
   <header class="phead"><p class="eyebrow">The whole menu · 1 of 2</p><h2>What to choose</h2></header>
   <div class="tls">
-    ${listCol("green", "🟢 Every day", "Your everyday lunch food", tl.green)}
-    ${listCol("yellow", "🟡 Sometimes", "About once a week, with the kitchen ask", tl.yellow)}
+    ${listCol("green", "🟢 Eat often", "Good lunch food", tl.green)}
+    ${listCol("yellow", "🟡 Sometimes", "About once a week. Say the Ask words.", tl.yellow)}
   </div>
 `);
 page("guide2", `
-  <header class="phead"><p class="eyebrow">The whole menu · 2 of 2</p><h2>Rare treats</h2>
+  <header class="phead"><p class="eyebrow">The whole menu · 2 of 2</p><h2>🔴 Rare treats</h2>
     <p class="phead__sub">Fried, creamy, buttery, sweet, lamb or goat. About once a month: share it or eat half.</p></header>
   <div class="tl tl--red tl--cols">
-    ${grouped(tl.red).map((g) => `<div class="tl__grp"><p class="tl__sec">${esc(g.section)}</p><p class="tl__inline">${g.items.map((x) => esc(x.item)).join(" · ")}</p></div>`).join("")}
+    ${grouped(tl.red).map((g) => {
+      // Lamb combos have commas and contain "Tandoori Chicken Tikka"; show them as one entry.
+      const isLambCombo = (n) => /lamb/i.test(n) && /,|combo/i.test(n);
+      const names = g.items.map((x) => x.item);
+      const combos = names.filter(isLambCombo);
+      const shown = names.filter((n) => !isLambCombo(n));
+      if (combos.length) shown.push(`All combos with lamb (${combos.length})`);
+      return `<div class="tl__grp"><p class="tl__sec">${esc(g.section)}</p><p class="tl__inline">${shown.map((n) => `<span class="nw">${esc(n)}</span>`).join(" · ")}</p></div>`;
+    }).join("")}
   </div>
   <p class="guide__note">Not on these lists? <strong>Fried, creamy, buttery or sweet = rare treat.</strong></p>
 `);
@@ -211,7 +226,7 @@ page("guide2", `
 page("swaps", `
   <header class="phead"><p class="eyebrow">Easy changes</p><h2>Smart swaps</h2></header>
   <ul class="swaps">
-    ${plan.swaps.map((s) => `<li><span class="swaps__from">${esc(s.instead_of)}</span><span class="swaps__arrow">→</span><span class="swaps__to">${esc(s.choose)}</span></li>`).join("")}
+    ${plan.swaps.map((s) => `<li><span class="swaps__from">✗ ${esc(s.instead_of)}</span><span class="swaps__arrow">→</span><span class="swaps__to">✓ ${esc(s.choose)}</span></li>`).join("")}
   </ul>
   <div class="two">
     <div class="basics">
@@ -232,7 +247,7 @@ page("swaps", `
 page("tracker", `
   <header class="phead"><p class="eyebrow">For the long run</p><h2>My progress</h2><p class="phead__sub">Weigh yourself once a month, same day, in the morning.</p></header>
   <table class="track">
-    <thead><tr><th>Month</th><th>Date</th><th>Weight</th><th>Waist</th><th>How I feel</th></tr></thead>
+    <thead><tr><th>Month</th><th>Date</th><th>Weight (kg)</th><th>Waist (cm, at belly button)</th><th>How I feel</th></tr></thead>
     <tbody>${Array.from({ length: 12 }, (_, i) => `<tr><td>${i + 1}</td><td></td><td></td><td></td><td></td></tr>`).join("")}</tbody>
   </table>
   <p class="track__note">Slow is good: at most 1 kg (2 lb) a week. Sometimes weight stops going down for a while. This is normal. Keep going! 💪</p>
