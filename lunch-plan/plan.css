@@ -115,7 +115,7 @@ ol, ul { list-style: none; }
 .rule {
   display: flex; gap: 14px; align-items: flex-start;
   background: #fff; border: 1px solid var(--line); border-radius: 16px;
-  padding: 18px 18px 18px 16px; min-height: 1.35in;
+  padding: 20px 18px 20px 16px; min-height: 1.75in;
 }
 .rule__n {
   flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
@@ -123,13 +123,13 @@ ol, ul { list-style: none; }
   background: var(--green); color: #fff;
   font-family: var(--display); font-weight: 800; font-size: 20pt;
 }
-.rule__t { font-weight: 700; font-size: 16pt; line-height: 1.2; }
-.rule__w { margin-top: 6px; font-size: 11pt; color: var(--muted); line-height: 1.35; }
+.rule__t { font-weight: 700; font-size: 17pt; line-height: 1.2; }
+.rule__w { margin-top: 8px; font-size: 12pt; color: var(--muted); line-height: 1.35; }
 
 .asks { margin-top: 22px; background: var(--wheat); border-radius: 16px; padding: 18px 20px; }
 .asks h3 { font-size: 14pt; margin-bottom: 10px; }
 .asks ul { display: flex; flex-wrap: wrap; gap: 8px; }
-.asks li { background: #fff; border-radius: 999px; padding: 6px 14px; font-size: 11pt; font-weight: 500; }
+.asks li { background: #fff; border-radius: 999px; padding: 7px 14px; font-size: 12pt; font-weight: 500; }
 
 /* ---------- Month at a glance ---------- */
 .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
@@ -142,13 +142,13 @@ ol, ul { list-style: none; }
 .tile {
   position: relative;
   background: var(--t); border-radius: 12px; padding: 9px 10px 26px;
-  min-height: 1.18in;
+  min-height: 1.3in;
   border-top: 5px solid var(--c);
 }
 .tile__top { display: flex; justify-content: space-between; align-items: center; }
 .tile__n { font-family: var(--display); font-weight: 800; font-size: 18pt; color: var(--c); line-height: 1; }
 .tile__ic { font-size: 15pt; }
-.tile__main { margin-top: 6px; font-size: 9.5pt; font-weight: 600; line-height: 1.25; }
+.tile__main { margin-top: 6px; font-size: 10.5pt; font-weight: 600; line-height: 1.25; }
 .tile .box { position: absolute; right: 9px; bottom: 8px; }
 
 .box {
@@ -161,7 +161,8 @@ ol, ul { list-style: none; }
 .prog span { width: 26px; height: 8px; border-radius: 4px; background: var(--line); }
 .prog span.on { background: var(--green-2); }
 
-.cards { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 14px; height: 8.75in; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 12px; height: 8.85in; }
+.pg-days .phead { margin-bottom: 14px; }
 .card {
   display: flex; flex-direction: column;
   background: #fff; border: 1px solid var(--line); border-radius: 18px;
@@ -169,34 +170,35 @@ ol, ul { list-style: none; }
 }
 .card__head {
   display: flex; justify-content: space-between; align-items: center;
-  background: var(--t); padding: 9px 14px;
+  background: var(--t); padding: 6px 14px;
   border-bottom: 3px solid var(--c);
 }
 .card__day { font-size: 12pt; color: var(--c); font-weight: 600; }
 .card__day b { font-family: var(--display); font-weight: 800; font-size: 22pt; margin-left: 2px; }
 .card__theme { font-size: 11pt; font-weight: 700; color: var(--c); }
 .card__main {
-  padding: 12px 16px 6px;
-  font-family: var(--display); font-weight: 800; font-size: 18pt; line-height: 1.12;
+  padding: 9px 14px 0;
+  font-family: var(--display); font-weight: 800; font-size: 15pt; line-height: 1.1;
 }
-.card__rows { padding: 4px 16px 0; display: grid; gap: 6px; font-size: 12.5pt; }
+.card__portion { padding: 2px 14px 0; font-size: 10pt; font-weight: 600; color: var(--c); }
+.card__rows { padding: 5px 14px 0; display: grid; gap: 2px; font-size: 11.5pt; }
 .card__rows li { display: flex; gap: 8px; align-items: baseline; }
 .card__rows .ic { width: 22px; flex: 0 0 auto; text-align: center; }
 .portion { color: var(--muted); font-weight: 400; font-family: var(--body); font-size: 0.85em; }
 .card__ask {
-  margin: auto 16px 0; padding: 8px 12px;
+  margin: auto 14px 0; padding: 6px 10px;
   background: var(--wheat); border-radius: 10px;
-  font-size: 11pt; font-weight: 600; line-height: 1.3;
+  font-size: 10pt; font-weight: 600; line-height: 1.3;
 }
 .card__foot {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 16px 11px;
+  padding: 5px 14px 7px;
 }
 .stats { font-size: 9.5pt; color: var(--muted); }
 .card .box { --c: var(--green-2); }
 
 /* ---------- Menu guide ---------- */
-.tls { display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 12px; }
+.tls { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 14px; align-items: start; }
 .tl { border-radius: 16px; padding: 14px 14px 10px; }
 .tl h3 { font-size: 13pt; }
 .tl__sub { font-size: 8.5pt; color: var(--muted); margin: 2px 0 8px; }
@@ -206,10 +208,18 @@ ol, ul { list-style: none; }
 .tl--yellow h3 { color: var(--yellow); }
 .tl--red { background: var(--red-tint); }
 .tl--red h3 { color: var(--red); }
-.tl__grp { margin-bottom: 7px; break-inside: avoid; }
+.tl__grp { margin-bottom: 5px; break-inside: avoid; }
 .tl__sec { font-size: 7.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
-.tl li { font-size: 9pt; line-height: 1.32; font-weight: 500; }
-.tl__inline { font-size: 8.5pt; line-height: 1.35; }
+.tl li { font-size: 9.5pt; line-height: 1.28; padding: 1px 0; }
+.tl__name { font-weight: 600; }
+.tl__why { display: block; font-size: 8.5pt; color: var(--muted); }
+.tl--yellow .tl__why { display: inline; margin-left: 6px; }
+.tl--yellow .tl__why::before { content: "— "; }
+.tl__inline { font-size: 10.5pt; line-height: 1.45; }
+.tl--cols { column-count: 2; column-gap: 24px; padding: 18px 18px 10px; }
+.tl h3 { font-size: 15pt; }
+.tl__sub { font-size: 9.5pt; }
+.tl__sec { font-size: 7.5pt; margin-top: 2px; }
 
 /* ---------- Swaps ---------- */
 .swaps { display: grid; gap: 8px; }
@@ -243,3 +253,7 @@ ol, ul { list-style: none; }
   font-size: 8.5pt; line-height: 1.45; color: var(--muted);
   border-top: 1px solid var(--line); padding-top: 10px;
 }
+
+.card__why { margin: 4px 14px 5px; font-size: 9pt; font-style: italic; color: var(--muted); line-height: 1.3; }
+.done { display: inline-flex; align-items: center; gap: 6px; font-size: 9pt; font-weight: 600; color: var(--green-2); }
+.guide__note { margin-top: 10px; text-align: center; font-size: 10.5pt; color: var(--ink); }

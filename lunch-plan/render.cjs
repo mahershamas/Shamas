@@ -39,11 +39,10 @@ function sideIcon(item) {
   if (/^none$/i.test(item)) return "—";
   return "🥗";
 }
-function carbIcon(item, portion) {
-  const s = `${item} ${portion}`;
-  if (/rice/i.test(s)) return "🍚";
-  if (/dosa|idly|uttapam/i.test(s)) return "🫓";
-  if (/^none$/i.test(item)) return "—";
+// Decide by the item itself; portions like "instead of rice" must not change the icon.
+function carbIcon(item) {
+  if (/roti|naan|paratha|kulcha/i.test(item)) return "🫓";
+  if (/rice/i.test(item)) return "🍚";
   return "🫓";
 }
 function drinkIcon(d) {
@@ -88,7 +87,7 @@ page("cover", `
         <path d="M110 110 L206 110 A96 96 0 0 1 110 206 Z" fill="#F3E3C3"/>
         <line x1="110" y1="14" x2="110" y2="206" stroke="#fff" stroke-width="4"/>
         <line x1="110" y1="110" x2="206" y2="110" stroke="#fff" stroke-width="4"/>
-        <text x="58" y="104" class="pl-ic">🥣</text><text x="58" y="132" class="pl-t">Vegetables</text><text x="58" y="148" class="pl-s">soup · sabzi</text>
+        <text x="58" y="104" class="pl-ic">🥣</text><text x="58" y="132" class="pl-t">Soup</text><text x="58" y="148" class="pl-s">lentil · veggie</text>
         <text x="152" y="62" class="pl-ic">🍗</text><text x="152" y="88" class="pl-t">Protein</text>
         <text x="152" y="148" class="pl-ic">🫓</text><text x="152" y="172" class="pl-t">1 roti</text><text x="152" y="187" class="pl-s">or ½ rice</text>
       </svg>
@@ -105,7 +104,7 @@ page("cover", `
   </div>
   <div class="cover__note">
     <span class="cover__note-ic">💚</span>
-    <p><strong>Low fat, not zero fat.</strong> Your body needs a little healthy fat. This plan cuts the <em>extra</em> fat: butter, cream, ghee and fried food.</p>
+    <p><strong>Why not zero fat?</strong> Your body needs a little healthy fat to stay strong. This plan cuts the <em>extra</em> fat: butter, cream, ghee and fried food.</p>
   </div>
 `);
 
@@ -154,15 +153,17 @@ for (let i = 0; i < plan.days.length; i += 6) {
     <ol class="cards">
       ${chunk.map((d) => {
         const th = theme(d.theme);
-        const kcal = mid(d.est_kcal), fat = mid(d.est_fat_g), pro = mid(d.est_protein_g);
+        const kcal = mid(d.est_kcal), pro = mid(d.est_protein_g);
         const side = partHtml(d.side) ? `<li><span class="ic">${sideIcon(d.side.item)}</span><span>${partHtml(d.side)}</span></li>` : "";
-        const carb = partHtml(d.carb) ? `<li><span class="ic">${carbIcon(d.carb.item, d.carb.portion)}</span><span>${partHtml(d.carb)}</span></li>` : "";
+        const carb = partHtml(d.carb) ? `<li><span class="ic">${carbIcon(d.carb.item)}</span><span>${partHtml(d.carb)}</span></li>` : "";
         return `<li class="card" style="--c:${th.color};--t:${th.tint}">
           <div class="card__head"><span class="card__day">Day <b>${d.day}</b></span><span class="card__theme">${th.icon} ${esc(th.label)}</span></div>
-          <p class="card__main">${esc(d.main.item)}${d.main.portion && !/full|1 plate|one plate/i.test(d.main.portion) ? `<span class="portion"> · ${esc(d.main.portion)}</span>` : ""}</p>
+          <p class="card__main">${esc(d.main.item)}</p>
+          ${d.main.portion && !/^(full|1 plate|one plate)/i.test(d.main.portion) ? `<p class="card__portion">${esc(d.main.portion)}</p>` : ""}
           <ul class="card__rows">${side}${carb}<li><span class="ic">${drinkIcon(d.drink)}</span><span>${esc(d.drink)}</span></li></ul>
-          <p class="card__ask">👨‍🍳 ${esc(d.ask_kitchen)}</p>
-          <div class="card__foot"><span class="stats">≈ ${round5(kcal)} kcal · ${fat} g fat · ${pro} g protein</span><span class="box" aria-hidden="true"></span></div>
+          ${d.why ? `<p class="card__why">${esc(d.why)}</p>` : ""}
+          <p class="card__ask">👨‍🍳 Ask: “${esc(d.ask_kitchen)}”</p>
+          <div class="card__foot"><span class="stats">about ${Math.round(kcal / 50) * 50} kcal · ${pro} g protein</span><span class="done">Done <span class="box" aria-hidden="true"></span></span></div>
         </li>`;
       }).join("")}
     </ol>
@@ -184,20 +185,26 @@ function grouped(list) {
   return order.filter((k) => bySec.has(k)).map((k) => ({ section: k, items: bySec.get(k) }));
 }
 const tl = plan.traffic_light;
-const col = (cls, title, sub, list, withWhy) => `
+const listCol = (cls, title, sub, list) => `
   <div class="tl tl--${cls}">
     <h3>${title}</h3><p class="tl__sub">${sub}</p>
-    ${grouped(list).map((g) => `<div class="tl__grp"><p class="tl__sec">${esc(g.section)}</p>${withWhy
-      ? `<ul>${g.items.map((x) => `<li>${esc(x.item)}</li>`).join("")}</ul>`
-      : `<p class="tl__inline">${g.items.map((x) => esc(x.item)).join(" · ")}</p>`}</div>`).join("")}
+    ${grouped(list).map((g) => `<div class="tl__grp"><p class="tl__sec">${esc(g.section)}</p><ul>${g.items.map((x) =>
+      `<li><span class="tl__name">${esc(x.item)}</span>${x.why ? `<span class="tl__why">${esc(x.why)}</span>` : ""}</li>`).join("")}</ul></div>`).join("")}
   </div>`;
 page("guide", `
-  <header class="phead"><p class="eyebrow">The whole menu</p><h2>What to choose</h2></header>
+  <header class="phead"><p class="eyebrow">The whole menu · 1 of 2</p><h2>What to choose</h2></header>
   <div class="tls">
-    ${col("green", "✅ Eat often", "Your everyday food", tl.green, true)}
-    ${col("yellow", "🟡 Sometimes", "Once a week, ask for less oil", tl.yellow, true)}
-    ${col("red", "⛔ Not now", "Fried, creamy, buttery or sweet", tl.red, false)}
+    ${listCol("green", "🟢 Every day", "Your everyday lunch food", tl.green)}
+    ${listCol("yellow", "🟡 Sometimes", "About once a week, with the kitchen ask", tl.yellow)}
   </div>
+`);
+page("guide2", `
+  <header class="phead"><p class="eyebrow">The whole menu · 2 of 2</p><h2>Rare treats</h2>
+    <p class="phead__sub">Fried, creamy, buttery, sweet, lamb or goat. About once a month: share it or eat half.</p></header>
+  <div class="tl tl--red tl--cols">
+    ${grouped(tl.red).map((g) => `<div class="tl__grp"><p class="tl__sec">${esc(g.section)}</p><p class="tl__inline">${g.items.map((x) => esc(x.item)).join(" · ")}</p></div>`).join("")}
+  </div>
+  <p class="guide__note">Not on these lists? <strong>Fried, creamy, buttery or sweet = rare treat.</strong></p>
 `);
 
 // 10. Swaps, every-day habits, important notes
@@ -228,7 +235,7 @@ page("tracker", `
     <thead><tr><th>Month</th><th>Date</th><th>Weight</th><th>Waist</th><th>How I feel</th></tr></thead>
     <tbody>${Array.from({ length: 12 }, (_, i) => `<tr><td>${i + 1}</td><td></td><td></td><td></td><td></td></tr>`).join("")}</tbody>
   </table>
-  <p class="track__note">Slow is good: about ½–1 kg (1–2 lb) a week. Keep going! 💪</p>
+  <p class="track__note">Slow is good: at most 1 kg (2 lb) a week. Sometimes weight stops going down for a while. This is normal. Keep going! 💪</p>
 `);
 
 /* ---------- document ---------- */
@@ -250,9 +257,10 @@ fs.writeFileSync(outHtml, html);
   await pg.goto("file://" + path.resolve(outHtml), { waitUntil: "networkidle" });
   await pg.evaluate(() => document.fonts.ready);
   // Fail loudly if any page's content overflows its sheet.
-  const overflow = await pg.evaluate(() => [...document.querySelectorAll(".page")]
-    .map((p, i) => ({ i: i + 1, over: p.scrollHeight - p.clientHeight }))
-    .filter((x) => x.over > 1));
+  const overflow = await pg.evaluate(() => [
+    ...[...document.querySelectorAll(".page")].map((p, i) => ({ page: i + 1, over: p.scrollHeight - p.clientHeight })),
+    ...[...document.querySelectorAll(".card")].map((c) => ({ card: c.querySelector(".card__day").textContent.trim(), over: c.scrollHeight - c.clientHeight })),
+  ].filter((x) => x.over > 1));
   if (overflow.length) console.warn("OVERFLOW:", JSON.stringify(overflow));
   await pg.pdf({ path: outPdf, format: "Letter", printBackground: true, preferCSSPageSize: true });
   await browser.close();

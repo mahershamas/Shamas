@@ -10,6 +10,10 @@ it works on any static host (GitHub Pages, Netlify, S3, …).
 - **Section navigation** with a sticky bar that tracks the section you're reading
 - Light and dark mode, print-friendly, keyboard and screen-reader accessible
 
+Also in this repo: **[`lunch-plan/`](lunch-plan/)**, a researched and audited 30-day low-fat lunch plan
+made only from dishes on this menu, as a printable PDF
+([`lunch-plan/30-day-lunch-plan.pdf`](lunch-plan/30-day-lunch-plan.pdf)).
+
 ## Run locally
 
 The page loads `data/menu.json` with `fetch`, so it must be served over HTTP

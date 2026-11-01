@@ -1,0 +1,1547 @@
+{
+ "title": "My 30-Day Healthy Lunch Plan",
+ "subtitle": "Low fat, not zero fat. High protein. Missed a day? Do the next one.",
+ "plate_formula": "Protein + soup + 1 roti OR half rice",
+ "golden_rules": [
+  {
+   "rule": "Tandoori roti, not naan",
+   "why": "Ask: whole wheat, no butter. Naan: a rare treat."
+  },
+  {
+   "rule": "Half plain rice OR one roti",
+   "why": "Never both. Rice already comes with your plate."
+  },
+  {
+   "rule": "Say: less oil, no butter",
+   "why": "Butter and cream hide fat. A little oil is OK."
+  },
+  {
+   "rule": "Grilled or steamed, not deep-fried",
+   "why": "Deep-fried food soaks up oil like a sponge."
+  },
+  {
+   "rule": "Say: less salt, no pickle",
+   "why": "Too much salt hurts your heart and blood pressure."
+  },
+  {
+   "rule": "Water, or chai with no sugar",
+   "why": "Sweet chai, lassi and soda are full of sugar."
+  }
+ ],
+ "days": [
+  {
+   "day": 1,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Chicken Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Spinach Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    750
+   ],
+   "est_fat_g": [
+    9,
+    26
+   ],
+   "est_protein_g": [
+    44,
+    69
+   ],
+   "why": "Day 1: roti, not naan. Grilled chicken, little fat."
+  },
+  {
+   "day": 2,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Yellow Daal",
+    "portion": "1 bowl"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Light tadka, less salt, half rice",
+   "est_kcal": [
+    510,
+    770
+   ],
+   "est_fat_g": [
+    10,
+    23
+   ],
+   "est_protein_g": [
+    23,
+    39
+   ],
+   "why": "Dal and lentil soup: protein, fibre, low fat."
+  },
+  {
+   "day": 3,
+   "theme": "seafood",
+   "main": {
+    "item": "Shrimp Jalfrezi",
+    "portion": "eat pieces, leave gravy"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, half rice",
+   "est_kcal": [
+    390,
+    580
+   ],
+   "est_fat_g": [
+    13,
+    24
+   ],
+   "est_protein_g": [
+    25,
+    38
+   ],
+   "why": "Shrimp is low-fat. The oil is in the sauce."
+  },
+  {
+   "day": 4,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Ghost Chicken",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    760
+   ],
+   "est_fat_g": [
+    8,
+    25
+   ],
+   "est_protein_g": [
+    43,
+    68
+   ],
+   "why": "Grilled, not curry. Too hot? Choose chicken tikka."
+  },
+  {
+   "day": 5,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Idly",
+    "portion": "3 idly + sambar"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "none",
+    "portion": "the idly is your carb"
+   },
+   "drink": "Masala chai, no sugar",
+   "ask_kitchen": "One spoon chutney, less salt",
+   "est_kcal": [
+    420,
+    800
+   ],
+   "est_fat_g": [
+    6,
+    25
+   ],
+   "est_protein_g": [
+    21,
+    39
+   ],
+   "why": "Steamed, not fried. Low fat. Little chutney."
+  },
+  {
+   "day": 6,
+   "theme": "fish",
+   "main": {
+    "item": "Tandoori Salmon Fish Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Spinach Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    830
+   ],
+   "est_fat_g": [
+    12,
+    37
+   ],
+   "est_protein_g": [
+    38,
+    59
+   ],
+   "why": "Salmon fat is the healthy kind. Once a week."
+  },
+  {
+   "day": 7,
+   "theme": "free-choice",
+   "main": {
+    "item": "Tandoori Chicken Kathi Roll",
+    "portion": "1 roll"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "none",
+    "portion": "the wrap is your carb"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Roti wrap, no mayo, less salt",
+   "est_kcal": [
+    490,
+    770
+   ],
+   "est_fat_g": [
+    9,
+    24
+   ],
+   "est_protein_g": [
+    36,
+    56
+   ],
+   "why": "Your choice day. No roti wrap? Choose chicken tikka."
+  },
+  {
+   "day": 8,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Mix Daal",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Light tadka, less salt, half rice",
+   "est_kcal": [
+    500,
+    730
+   ],
+   "est_fat_g": [
+    11,
+    22
+   ],
+   "est_protein_g": [
+    21,
+    34
+   ],
+   "why": "Five lentils keep you full for hours."
+  },
+  {
+   "day": 9,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Rosemary Chicken Tikka",
+    "portion": "eat ½, take ½ home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "1 bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, half rice",
+   "est_kcal": [
+    420,
+    700
+   ],
+   "est_fat_g": [
+    6,
+    20
+   ],
+   "est_protein_g": [
+    36,
+    56
+   ],
+   "why": "Chicken and lentil soup: strong, full, low fat."
+  },
+  {
+   "day": 10,
+   "theme": "seafood",
+   "main": {
+    "item": "Shrimp Jalfrezi",
+    "portion": "eat pieces, leave gravy"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, no rice",
+   "est_kcal": [
+    450,
+    690
+   ],
+   "est_fat_g": [
+    14,
+    27
+   ],
+   "est_protein_g": [
+    29,
+    45
+   ],
+   "why": "Shrimp gives protein. Roti gives fibre. Light and strong."
+  },
+  {
+   "day": 11,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Chana Masala",
+    "portion": "eat ½, take rest home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "1 bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, half rice",
+   "est_kcal": [
+    500,
+    780
+   ],
+   "est_fat_g": [
+    10,
+    24
+   ],
+   "est_protein_g": [
+    21,
+    35
+   ],
+   "why": "Chickpeas and lentils: fibre and protein. Full for hours."
+  },
+  {
+   "day": 12,
+   "theme": "chicken",
+   "main": {
+    "item": "Chicken Jalfrezi",
+    "portion": "eat pieces, leave gravy"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, half rice",
+   "est_kcal": [
+    460,
+    680
+   ],
+   "est_fat_g": [
+    16,
+    27
+   ],
+   "est_protein_g": [
+    34,
+    46
+   ],
+   "why": "No cream. Ask less oil. Leave the gravy."
+  },
+  {
+   "day": 13,
+   "theme": "fish",
+   "main": {
+    "item": "Tandoori Salmon Fish Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    820
+   ],
+   "est_fat_g": [
+    11,
+    35
+   ],
+   "est_protein_g": [
+    37,
+    57
+   ],
+   "why": "Fish oil is good for your heart."
+  },
+  {
+   "day": 14,
+   "theme": "free-choice",
+   "main": {
+    "item": "Tandoori Chicken Leg",
+    "portion": "eat 1 leg, take rest home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "1 bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, half rice",
+   "est_kcal": [
+    460,
+    770
+   ],
+   "est_fat_g": [
+    10,
+    26
+   ],
+   "est_protein_g": [
+    38,
+    56
+   ],
+   "why": "Your choice day. Juicy grilled chicken, no butter."
+  },
+  {
+   "day": 15,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Yellow Daal",
+    "portion": "1 bowl"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Light tadka, less salt, half rice",
+   "est_kcal": [
+    510,
+    770
+   ],
+   "est_fat_g": [
+    10,
+    23
+   ],
+   "est_protein_g": [
+    23,
+    39
+   ],
+   "why": "Simple dal and rice. Easy on the stomach."
+  },
+  {
+   "day": 16,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Rosemary Chicken Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Spinach Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    750
+   ],
+   "est_fat_g": [
+    9,
+    26
+   ],
+   "est_protein_g": [
+    44,
+    69
+   ],
+   "why": "Fresh rosemary flavour. No butter needed."
+  },
+  {
+   "day": 17,
+   "theme": "seafood",
+   "main": {
+    "item": "Shrimp Jalfrezi",
+    "portion": "eat pieces, leave gravy"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, half rice",
+   "est_kcal": [
+    390,
+    580
+   ],
+   "est_fat_g": [
+    13,
+    24
+   ],
+   "est_protein_g": [
+    25,
+    38
+   ],
+   "why": "Shrimp: high protein. Leave the gravy for less fat."
+  },
+  {
+   "day": 18,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Mix Daal",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Light tadka, less salt, half rice",
+   "est_kcal": [
+    500,
+    730
+   ],
+   "est_fat_g": [
+    11,
+    22
+   ],
+   "est_protein_g": [
+    21,
+    34
+   ],
+   "why": "Lentils give steady energy for your whole shift."
+  },
+  {
+   "day": 19,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Chicken Tikka",
+    "portion": "eat ½, take ½ home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "1 bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, half rice",
+   "est_kcal": [
+    420,
+    700
+   ],
+   "est_fat_g": [
+    6,
+    20
+   ],
+   "est_protein_g": [
+    36,
+    56
+   ],
+   "why": "Your power lunch: lots of protein, little fat."
+  },
+  {
+   "day": 20,
+   "theme": "fish",
+   "main": {
+    "item": "Tandoori Salmon Fish Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Spinach Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    830
+   ],
+   "est_fat_g": [
+    12,
+    37
+   ],
+   "est_protein_g": [
+    38,
+    59
+   ],
+   "why": "Fish or shrimp twice a week: good for life."
+  },
+  {
+   "day": 21,
+   "theme": "free-choice",
+   "main": {
+    "item": "Plain Dosa",
+    "portion": "1 dosa + sambar"
+   },
+   "side": {
+    "item": "Chicken Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "none",
+    "portion": "the dosa is your carb"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Little oil, less salt, no chutney",
+   "est_kcal": [
+    500,
+    760
+   ],
+   "est_fat_g": [
+    10,
+    25
+   ],
+   "est_protein_g": [
+    21,
+    33
+   ],
+   "why": "Your choice day. Dosa, plus chicken soup for protein."
+  },
+  {
+   "day": 22,
+   "theme": "chicken",
+   "main": {
+    "item": "Chicken Jalfrezi",
+    "portion": "eat pieces, leave gravy"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, half rice",
+   "est_kcal": [
+    460,
+    680
+   ],
+   "est_fat_g": [
+    16,
+    27
+   ],
+   "est_protein_g": [
+    34,
+    46
+   ],
+   "why": "Peppers and onions add vitamins. Leave the gravy."
+  },
+  {
+   "day": 23,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Idly",
+    "portion": "3 idly + sambar"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "none",
+    "portion": "the idly is your carb"
+   },
+   "drink": "Masala chai, no sugar",
+   "ask_kitchen": "One spoon chutney, less salt",
+   "est_kcal": [
+    420,
+    800
+   ],
+   "est_fat_g": [
+    6,
+    25
+   ],
+   "est_protein_g": [
+    21,
+    39
+   ],
+   "why": "Soft steamed idly. Light but filling."
+  },
+  {
+   "day": 24,
+   "theme": "seafood",
+   "main": {
+    "item": "Shrimp Jalfrezi",
+    "portion": "eat pieces, leave gravy"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Less oil, less salt, no rice",
+   "est_kcal": [
+    450,
+    690
+   ],
+   "est_fat_g": [
+    14,
+    27
+   ],
+   "est_protein_g": [
+    29,
+    45
+   ],
+   "why": "Shrimp keeps you strong. Less oil keeps you light."
+  },
+  {
+   "day": 25,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Chicken Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Spinach Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    750
+   ],
+   "est_fat_g": [
+    9,
+    26
+   ],
+   "est_protein_g": [
+    44,
+    69
+   ],
+   "why": "Grilled chicken: lots of protein, little fat."
+  },
+  {
+   "day": 26,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Mix Daal",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Vegan Steamed White Rice",
+    "portion": "half the rice on your plate"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Light tadka, less salt, half rice",
+   "est_kcal": [
+    500,
+    730
+   ],
+   "est_fat_g": [
+    11,
+    22
+   ],
+   "est_protein_g": [
+    21,
+    34
+   ],
+   "why": "Plant protein and fibre. Light tadka, low fat."
+  },
+  {
+   "day": 27,
+   "theme": "fish",
+   "main": {
+    "item": "Tandoori Salmon Fish Tikka",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    820
+   ],
+   "est_fat_g": [
+    11,
+    35
+   ],
+   "est_protein_g": [
+    37,
+    57
+   ],
+   "why": "Healthy fish fat. Your heart says thank you."
+  },
+  {
+   "day": 28,
+   "theme": "free-choice",
+   "main": {
+    "item": "Chana Kathi Roll",
+    "portion": "1 roll"
+   },
+   "side": {
+    "item": "Chicken Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "none",
+    "portion": "the wrap is your carb"
+   },
+   "drink": "Water",
+   "ask_kitchen": "Roti wrap, no mayo, less salt",
+   "est_kcal": [
+    490,
+    760
+   ],
+   "est_fat_g": [
+    14,
+    25
+   ],
+   "est_protein_g": [
+    21,
+    36
+   ],
+   "why": "Your choice day. No roti wrap? Pick a green dish."
+  },
+  {
+   "day": 29,
+   "theme": "chicken",
+   "main": {
+    "item": "Tandoori Ghost Chicken",
+    "portion": "eat ¾, take rest home"
+   },
+   "side": {
+    "item": "Veggie Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "Tandoori Roti",
+    "portion": "1 piece, instead of rice"
+   },
+   "drink": "Water",
+   "ask_kitchen": "No butter, less salt, no rice",
+   "est_kcal": [
+    430,
+    760
+   ],
+   "est_fat_g": [
+    8,
+    25
+   ],
+   "est_protein_g": [
+    43,
+    68
+   ],
+   "why": "Spicy grilled chicken. Big flavour, little fat."
+  },
+  {
+   "day": 30,
+   "theme": "vegetarian",
+   "main": {
+    "item": "Idly",
+    "portion": "3 idly + sambar"
+   },
+   "side": {
+    "item": "Lentil Soup",
+    "portion": "small bowl"
+   },
+   "carb": {
+    "item": "none",
+    "portion": "the idly is your carb"
+   },
+   "drink": "Water",
+   "ask_kitchen": "One spoon chutney, less salt",
+   "est_kcal": [
+    380,
+    730
+   ],
+   "est_fat_g": [
+    5,
+    22
+   ],
+   "est_protein_g": [
+    19,
+    35
+   ],
+   "why": "Well done! Tomorrow, start again at Day 1."
+  }
+ ],
+ "traffic_light": {
+  "green": [
+   {
+    "item": "Spinach Soup",
+    "why": "Leafy, light. Ask: no coconut milk"
+   },
+   {
+    "item": "Lentil Soup",
+    "why": "Protein and fibre, very filling"
+   },
+   {
+    "item": "Veggie Soup",
+    "why": "Low calorie, fills you up"
+   },
+   {
+    "item": "Chicken Veggie Soup",
+    "why": "Chicken in a light broth"
+   },
+   {
+    "item": "Idly",
+    "why": "Steamed, not fried; less chutney"
+   },
+   {
+    "item": "Plain Dosa",
+    "why": "Little oil, less coconut chutney"
+   },
+   {
+    "item": "Tandoori Chicken Tikka",
+    "why": "Grilled chicken; ask no butter"
+   },
+   {
+    "item": "Tandoori Rosemary Chicken Tikka",
+    "why": "Grilled chicken; ask no butter"
+   },
+   {
+    "item": "Tandoori Ghost Chicken",
+    "why": "Grilled, very spicy; no butter"
+   },
+   {
+    "item": "Tandoori Salmon Fish Tikka",
+    "why": "Good fish fat; once a week"
+   },
+   {
+    "item": "Mix Daal",
+    "why": "Lentils: protein and fibre"
+   },
+   {
+    "item": "Yellow Daal",
+    "why": "Lowest-fat curry; light tadka"
+   },
+   {
+    "item": "Chana Masala",
+    "why": "Fibre and protein; less oil"
+   },
+   {
+    "item": "Chicken Jalfrezi",
+    "why": "No cream, oily: ask less oil"
+   },
+   {
+    "item": "Shrimp Jalfrezi",
+    "why": "Low-fat shrimp, oily: ask less oil"
+   },
+   {
+    "item": "Tandoori Roti",
+    "why": "Best naan swap; ask whole wheat"
+   },
+   {
+    "item": "Vegan Steamed White Rice",
+    "why": "Plain rice; eat half"
+   }
+  ],
+  "yellow": [
+   {
+    "item": "Chicken Thai Soup",
+    "why": "Ask: clear, no coconut milk"
+   },
+   {
+    "item": "Shrimp Thai Soup",
+    "why": "Ask: clear, no coconut milk"
+   },
+   {
+    "item": "Tandoori Kumbh",
+    "why": "Grilled; ask no butter or cream"
+   },
+   {
+    "item": "Jackfruit Shami Kebab (2 pcs)",
+    "why": "Pan-fried; small starter only"
+   },
+   {
+    "item": "Papadum",
+    "why": "Salty; roasted only, just one"
+   },
+   {
+    "item": "Chicken Dumplings (Steamed/Fried)",
+    "why": "Steamed only, never fried"
+   },
+   {
+    "item": "Chana Kathi Roll",
+    "why": "Ask roti wrap, no mayo"
+   },
+   {
+    "item": "Egg Kathi Roll",
+    "why": "Ask roti wrap, less oil"
+   },
+   {
+    "item": "Tandoori Chicken Kathi Roll",
+    "why": "Ask roti wrap, no mayo"
+   },
+   {
+    "item": "Bhelpuri",
+    "why": "Snack only; less sev"
+   },
+   {
+    "item": "Masala Dosa",
+    "why": "Potato filling adds oil"
+   },
+   {
+    "item": "Jalsa Garden dosa",
+    "why": "Big plate; ask little oil"
+   },
+   {
+    "item": "Uttapam",
+    "why": "Thick, soaks up oil"
+   },
+   {
+    "item": "Tandoori Chicken Leg",
+    "why": "No butter; eat one leg"
+   },
+   {
+    "item": "Tandoori Chicken Kofta Kabab",
+    "why": "Minced chicken is fattier"
+   },
+   {
+    "item": "Tandoori Chicken Tikka & Chicken Kofta Combo",
+    "why": "Kofta half adds fat"
+   },
+   {
+    "item": "Eggplant Saalan",
+    "why": "Low protein; ask less oil"
+   },
+   {
+    "item": "Gobi Ka Keema",
+    "why": "Low protein; ask less oil"
+   },
+   {
+    "item": "Okra Onion",
+    "why": "Good fibre; ask less oil"
+   },
+   {
+    "item": "Panch Ratan Sabzi",
+    "why": "Vegetables; ask less oil"
+   },
+   {
+    "item": "Zeera Alu",
+    "why": "Potato; small bowl, less oil"
+   },
+   {
+    "item": "Pav Bhaji",
+    "why": "White bun; eat one"
+   },
+   {
+    "item": "Saag Aloo",
+    "why": "Spinach good; potato and oil"
+   },
+   {
+    "item": "Alu Matar",
+    "why": "Mostly potato; less oil"
+   },
+   {
+    "item": "Chicken Curry",
+    "why": "On the bone; ask less oil"
+   },
+   {
+    "item": "Chicken Vindaloo",
+    "why": "No cream, but very oily"
+   },
+   {
+    "item": "Hot Tea - Masala Chai",
+    "why": "Only with no sugar"
+   },
+   {
+    "item": "Soda Can",
+    "why": "Seltzer water only"
+   }
+  ],
+  "red": [
+   {
+    "item": "Tandoori Lamb Tikka",
+    "why": "Fatty red meat"
+   },
+   {
+    "item": "Tandoori Chicken Tikka, Lamb Tikka",
+    "why": "Huge plate, fatty lamb"
+   },
+   {
+    "item": "Lamb Jalfrezi",
+    "why": "Lamb is fatty meat"
+   },
+   {
+    "item": "Jalsa Chicken Dum Biryani",
+    "why": "Ghee rice, very big plate"
+   },
+   {
+    "item": "Hyderabadi Goat Biryani",
+    "why": "Ghee rice, very big plate"
+   },
+   {
+    "item": "Naan",
+    "why": "White flour and butter"
+   },
+   {
+    "item": "Shahi Yellow Rice",
+    "why": "Oily rice; choose plain"
+   },
+   {
+    "item": "Lamb Shami Kabab (2 pcs)",
+    "why": "Fatty lamb, pan-fried"
+   },
+   {
+    "item": "Fried Shrimp",
+    "why": "Deep fried in batter"
+   },
+   {
+    "item": "Lollipop Chicken",
+    "why": "Deep fried, fatty wings"
+   },
+   {
+    "item": "Paneer Pakoda",
+    "why": "Cheese and deep fried"
+   },
+   {
+    "item": "Mirchi Pakoda",
+    "why": "Cheese and deep fried"
+   },
+   {
+    "item": "Kale Pakoda",
+    "why": "Deep fried fritters"
+   },
+   {
+    "item": "Vada Pav",
+    "why": "Fried potato, white bun"
+   },
+   {
+    "item": "Vegetable Samosa (3 pcs)",
+    "why": "Deep fried pastry"
+   },
+   {
+    "item": "Lamb Samosa",
+    "why": "Fried pastry, fatty lamb"
+   },
+   {
+    "item": "French Fries",
+    "why": "Deep fried"
+   },
+   {
+    "item": "Hot Wings",
+    "why": "Fatty skin, fried, butter sauce"
+   },
+   {
+    "item": "Paneer Kathi Roll",
+    "why": "Paneer and oily paratha"
+   },
+   {
+    "item": "Tandoori Lamb Kathi Roll",
+    "why": "Fatty lamb, oily paratha"
+   },
+   {
+    "item": "Palak Chaat",
+    "why": "Spinach is deep fried"
+   },
+   {
+    "item": "Eggplant Chaat",
+    "why": "Fried eggplant on potato"
+   },
+   {
+    "item": "Aalu Tikki Chaat",
+    "why": "Fried patties, oily chole"
+   },
+   {
+    "item": "Samosa Chaat",
+    "why": "Fried samosa, heavy plate"
+   },
+   {
+    "item": "Papri Chaat",
+    "why": "Fried crackers base"
+   },
+   {
+    "item": "Dahi Puri",
+    "why": "Fried shells, sweet yogurt"
+   },
+   {
+    "item": "Pani Puri",
+    "why": "Fried shells, low protein"
+   },
+   {
+    "item": "Dahi Bhalla",
+    "why": "Fried vada, sweet chutney"
+   },
+   {
+    "item": "Cheese Plain Dosa",
+    "why": "Cheese adds heavy fat"
+   },
+   {
+    "item": "Cheese Masala Dosa",
+    "why": "Cheese plus oily potato"
+   },
+   {
+    "item": "Ghee Roasted Plain Dosa",
+    "why": "Cooked in ghee"
+   },
+   {
+    "item": "Ghee Roasted Masala Dosa",
+    "why": "Ghee and oily potato"
+   },
+   {
+    "item": "Vada",
+    "why": "Deep fried"
+   },
+   {
+    "item": "Sambhar Vada",
+    "why": "Deep fried vada"
+   },
+   {
+    "item": "Tandoori Lamb Chops",
+    "why": "Very fatty meat"
+   },
+   {
+    "item": "Tandoori Chicken Tikka, Lamb Tikka & 1 pc Lamb Chop Combo",
+    "why": "Too much fatty meat"
+   },
+   {
+    "item": "Tandoori Chicken Tikka, Chicken Kofta & 1 pc Lamb Chop Combo",
+    "why": "Too much fatty meat"
+   },
+   {
+    "item": "Tandoori Chicken Tikka, 2 pc Lamb Chops Combo",
+    "why": "Fatty lamb chops"
+   },
+   {
+    "item": "Plantain Kofta Curry",
+    "why": "Fried kofta balls"
+   },
+   {
+    "item": "Navratan Korma",
+    "why": "Butter, cream and nuts"
+   },
+   {
+    "item": "Daal Makhni",
+    "why": "Butter and cream"
+   },
+   {
+    "item": "Nadru Malai Kofta",
+    "why": "Fried kofta, cream sauce"
+   },
+   {
+    "item": "Paneer Nizami",
+    "why": "Paneer, nuts and cream"
+   },
+   {
+    "item": "Matar Paneer",
+    "why": "Paneer is full-fat cheese"
+   },
+   {
+    "item": "Paneer Tikka Masala",
+    "why": "Paneer plus creamy sauce"
+   },
+   {
+    "item": "Saag Paneer",
+    "why": "Paneer, often cream"
+   },
+   {
+    "item": "Paneer Makhani",
+    "why": "Paneer, butter, cream"
+   },
+   {
+    "item": "Paneer Jalfrezi",
+    "why": "Paneer is full-fat cheese"
+   },
+   {
+    "item": "Amul Butter Pav Bhaji",
+    "why": "Lots of butter"
+   },
+   {
+    "item": "Chicken Tikka Masala",
+    "why": "Creamy, buttery sauce"
+   },
+   {
+    "item": "Butter Chicken",
+    "why": "Heavy cream and butter"
+   },
+   {
+    "item": "Chicken Roast",
+    "why": "Rich Mughlai sauce, leg meat"
+   },
+   {
+    "item": "Chicken Korma",
+    "why": "Cream, nuts and ghee"
+   },
+   {
+    "item": "Lamb Tikka Masala",
+    "why": "Fatty lamb, creamy sauce"
+   },
+   {
+    "item": "Lamb Vindaloo",
+    "why": "Fatty lamb, very oily"
+   },
+   {
+    "item": "Lamb Korma",
+    "why": "Fatty lamb, creamy sauce"
+   },
+   {
+    "item": "Nalla Nehari",
+    "why": "Ghee layer, fatty goat shank"
+   },
+   {
+    "item": "Goat Korma",
+    "why": "Cream, nuts and ghee"
+   },
+   {
+    "item": "Chingri Malaikari",
+    "why": "Coconut milk is heavy fat"
+   },
+   {
+    "item": "Fish Tikka Masala",
+    "why": "Creamy sauce"
+   },
+   {
+    "item": "Vegan Vegetable Biryani",
+    "why": "Oily rice, low protein"
+   },
+   {
+    "item": "Vegan Vegetable & Jackfruit Biryani",
+    "why": "Oily rice, low protein"
+   },
+   {
+    "item": "Garlic Naan",
+    "why": "White flour, extra butter"
+   },
+   {
+    "item": "Rosemary Garlic Naan",
+    "why": "White flour, extra butter"
+   },
+   {
+    "item": "Amritsari Kulcha Naan",
+    "why": "Stuffed, buttery bread"
+   },
+   {
+    "item": "Onion Kulcha Naan",
+    "why": "Stuffed, buttery bread"
+   },
+   {
+    "item": "Cheese Naan",
+    "why": "Cheese and butter"
+   },
+   {
+    "item": "Chilli Cheese Garlic Naan",
+    "why": "Cheese and butter"
+   },
+   {
+    "item": "Plain Paratha",
+    "why": "Layered with oil"
+   },
+   {
+    "item": "Alu Paratha",
+    "why": "Oily, stuffed with potato"
+   },
+   {
+    "item": "Gobi Paratha",
+    "why": "Oily, stuffed bread"
+   },
+   {
+    "item": "Mango Lassi",
+    "why": "Sugar, like a meal"
+   },
+   {
+    "item": "Lemonade",
+    "why": "Sugar water"
+   },
+   {
+    "item": "Indian Soda Can",
+    "why": "Sugary drinks"
+   },
+   {
+    "item": "Soda Shikanji",
+    "why": "Salty, often sweet"
+   },
+   {
+    "item": "Kheer",
+    "why": "Sugar and milk fat"
+   },
+   {
+    "item": "Ras Malai",
+    "why": "Sugar and milk fat"
+   },
+   {
+    "item": "Gulab Jamun",
+    "why": "Fried, soaked in syrup"
+   }
+  ]
+ },
+ "swaps": [
+  {
+   "instead_of": "Naan",
+   "choose": "Tandoori Roti"
+  },
+  {
+   "instead_of": "Shahi Yellow Rice",
+   "choose": "Vegan Steamed White Rice"
+  },
+  {
+   "instead_of": "Butter Chicken",
+   "choose": "Chicken Jalfrezi"
+  },
+  {
+   "instead_of": "Chicken Tikka Masala",
+   "choose": "Tandoori Chicken Tikka"
+  },
+  {
+   "instead_of": "Fish Tikka Masala",
+   "choose": "Tandoori Salmon Fish Tikka"
+  },
+  {
+   "instead_of": "Daal Makhni",
+   "choose": "Yellow Daal"
+  },
+  {
+   "instead_of": "Paneer Makhani",
+   "choose": "Chana Masala"
+  },
+  {
+   "instead_of": "Vada",
+   "choose": "Idly"
+  }
+ ],
+ "daily_basics": [
+  "Water, then soup, then plate. Eat slowly.",
+  "Walk every day. Start with 10 minutes.",
+  "Muscle exercise 2 days a week",
+  "No snacking on fried food at work",
+  "Eat breakfast and dinner too. Same rules."
+ ],
+ "safety_notes": [
+  "Not zero fat: your body needs a little. Too much food makes body fat.",
+  "Diabetes, kidney, heart, blood pressure, pregnant, breastfeeding, under 18, or on medicine? Ask your doctor first.",
+  "Lose slowly: at most 1 kg (2 lb) a week. Eat 3 meals; never starve.",
+  "Allergy? Tell the kitchen. Dizzy, chest pain, or always worried about food? See a doctor."
+ ],
+ "assumptions": [
+  "Nutrition numbers are estimates, not lab tests. Jalsa publishes no nutrition data, so they come from the research ranges (USDA FoodData Central, IFCT 2017 / INDB, CoFID and lab-tested UK and Irish takeaway data). Real dishes can vary 2-3 times in oil, ghee and cream.",
+  "Method: each est_* range is the sum of its parts (main + side + carb + drink), each scaled by the share eaten, rounded outward (kcal to 10, grams to 1). A request that only cuts fat lowers the upper bound only, scaled to the share eaten: no butter on a tandoor plate -5 g fat / -45 kcal; less oil or light tadka on a curry or dal -10 g fat / -90 kcal; little dosa oil -5 g fat. A request that takes a part off the plate lowers both ends: no rice (roti days), roti wrap instead of paratha (-8 g fat, -70 kcal; no mayo -5 g fat on the upper end only), one spoon of coconut chutney (about -3.5 to -11 g fat), no chutney on Day 21 (-6 to -15 g fat).",
+  "Targets check (middle of each range): every day is inside 450-650 kcal (Days 3 and 17 lowest at about 490, Days 2 and 15 highest at about 645), 6 g saturated fat or less, 25 g protein or more (lowest about 27 g on Days 21 and 30) and 8 g fibre or more (lowest about 8 g on Days 3, 12, 17, 22). Fat is 22 g or less on every non-salmon day (highest about 21.6 g on the Chicken Jalfrezi days); salmon days are about 23-24 g, mostly unsaturated fish fat. Plan-wide middles: about 596 kcal, 18 g fat, 3.9 g saturated fat, 40 g protein and 13 g fibre.",
+  "The high end of 28 of 30 days is above 650 kcal (all but Days 3 and 17), and salmon days with spinach soup can reach about 9 g saturated fat. Lunches will be bigger if the kitchen uses more oil or bigger portions; that is why every day has a kitchen request. Saturated fat and fibre were estimated per day for checking only and are not printed.",
+  "Portions: soup bowl 300-350 ml; 'small bowl' = about 2/3 of a bowl (about 1 cup). Tandoor plates hold 170-250 g cooked protein: 'eat ¾' = about 130-190 g, 'eat ½' = about 85-125 g. Curry entree about 375 g: 'eat pieces, leave gravy' is counted as ¾ of the entree (conservative, since most oil is in the gravy); Mix Daal ¾ bowl, Chana Masala ½ bowl, Yellow Daal a full bowl with light tadka. Leftovers go home for dinner and are not counted in lunch.",
+  "Days 9 and 19 eat only half the tandoor chicken because they have a full bowl of Lentil Soup plus half rice; this keeps the fibre at about 10 g and the middle under 650 kcal, with about 46 g protein.",
+  "The rice that comes with tandoor and curry plates is assumed to be plain white rice (160-250 g), so 'half the rice on your plate' = about 80-125 g. The data uses the menu name 'Vegan Steamed White Rice' only because it is the plain rice on the menu; the printed portion text tells the reader not to order an extra rice side. If the kitchen serves yellow rice, ask for plain (yellow rice adds about 5-12 g fat).",
+  "One carb only: on roti days the plate's rice is skipped ('no rice'), not added to. Tandoori Roti is marked vegan (V) on the menu, so it should come with no butter or ghee; ask whether it is 100% whole wheat (atta). On idly, dosa and kathi-roll days the idly, dosa or wrap is the carb, so carb = 'none'.",
+  "Idly and dosa plates come with about 1 cup of sambar and 40-60 g of coconut chutney; 'one spoon' = about 15 g. Coconut chutney is the main saturated-fat source on these plates. '3 idly' is the top of the 2-3 idly plate in the research.",
+  "Kathi rolls (Days 7 and 28) assume the kitchen can wrap them in a tandoori roti instead of a paratha, with no mayo. If not, eat Tandoori Chicken Tikka with 1 roti (Day 7) or any green dish (Day 28), as the day's 'why' says. If the stiff roti cracks, eat the filling with the roti.",
+  "The menu does not describe Tandoori Ghost Chicken; it is assumed to be boneless ghost-pepper chicken tikka (if it is too hot, choose Tandoori Chicken Tikka). Tandoori Chicken Leg is assumed to be 2 skinless leg quarters; the plan eats one and takes the rest home.",
+  "Drinks: water by default. Masala chai with no sugar and a little milk = about 40-70 kcal and 1-3 g fat; it is on the idly Days 5 and 23 only. If the kitchen's chai is already sweet, drink water. Soda Shikanji was removed from the plan (salty, often pre-sweetened).",
+  "Spinach Soup is on Days 1, 6, 16, 20 and 25, about once a week, so leafy-green intake stays even (relevant for people on warfarin). Its recipe is unknown; a coconut-milk finish would raise saturated fat, hence 'ask: no coconut milk'.",
+  "Lamb and goat are left out of the 30 days: even with kitchen changes, the estimated lamb and goat lunches go over the fat and saturated-fat targets. The menu has no pork. The plan assumes the person eats chicken, fish and shrimp; 17 of the 30 days are vegetarian, fish or shrimp.",
+  "Free-choice days (7, 14, 21, 28) show a suggested dish. Any green dish, or a yellow dish ordered with its kitchen request, can replace it. These are planned flexible days, not cheat days.",
+  "Age, sex, weight, height, activity, health and religion are unknown, so this is general adult guidance, not medical advice. Without a doctor, women should not eat less than about 1,200 kcal a day and men about 1,500 (AHA/ACC/TOS); the printed note says 'Eat 3 meals; never starve' because the reader does not count calories. People with kidney disease should not follow the high-protein tandoor days without advice. Over 65, gallstones before, or an eating disorder now or in the past: get advice first. A yearly check of blood sugar, blood pressure and cholesterol is a good idea (South Asian adults have higher risk at lower weights).",
+  "Allergy swaps (not printed for space): shellfish allergy, eat Chicken Jalfrezi on shrimp days; fish allergy, eat Tandoori Chicken Tikka on salmon days; wheat or gluten, take half rice instead of roti and skip the kathi rolls; milk, note that tandoori marinades use yogurt and chai has milk; nuts, ask what is in the chana and jalfrezi sauces.",
+  "Sodium was not estimated per dish. As a rough guide, a restaurant soup plus a curry or salted tandoor marinade plus roti or sambar is likely about 1,200-2,500 mg sodium (3-6 g salt) per lunch, against the WHO limit of under 2,000 mg a day. So every kitchen request says 'less salt', golden rule 5 says no pickle, and soups are small bowls except Days 9, 11, 14 and 19 (a full Lentil Soup for fibre or protein).",
+  "Traffic light: green = fits the lunch targets with the kitchen request; yellow = only sometimes, or only with a change; red = rare treat, about once a month: share it or eat half (fried, creamy, buttery, ghee, paneer, coconut milk, lamb or goat, biryani, naan or paratha, sugary or salty drinks, desserts). None of the 30 lunches uses a red item.",
+  "Not applied (nutrition audit, Day 16 to Tandoori Ghost Chicken): the menu-fit swaps were used instead (Rosemary Tikka moved to Day 16; Chicken Jalfrezi to Days 12 and 22), and Day 29 became Tandoori Ghost Chicken. This gives the same result the audit wanted (jalfrezi days cut from 7 to 6) and no jalfrezi day sits next to another.",
+  "Not applied (nutrition audit, Yellow Daal + Lentil Soup on Day 30): Day 30 is Idly (menu-fit fix), so the same dal lunch is not eaten on Day 30 and again on Day 2 when the month repeats.",
+  "Not applied (nutrition audit, 'Ask less salt. No pickle, no papad.' as a daily basic): salt became golden rule 5 and is in all 30 kitchen requests, so the 5 daily basics are kept for meal order, walking, muscle work, snacking and 3 meals.",
+  "Not applied (nutrition audit, 'Small chana' side on Days 9/19; safety audit, 'Small cup of chana'): the chana side was removed, as the menu-fit audit asked, because Chana Masala is a full entree with its own rice.",
+  "Not applied (menu-fit audit, Spinach or Veggie Soup on Days 9/19 and Veggie Soup on Days 7/14): with Spinach or Veggie Soup these days fall to about 5-8 g fibre, under the 8 g target, so they keep Lentil Soup; Days 9 and 19 eat half the chicken to stay under 650 kcal.",
+  "Not applied (menu-fit audit, Spinach Soup on Days 3 and 17): Veggie Soup is used, because spinach soup (possibly coconut-milk finished) pushed these shrimp days to the fat and saturated-fat limits.",
+  "Not applied (menu-fit audit, 'Never eat under 1,200 calories a day' printed): one number does not fit both sexes and the reader does not count calories, so the note says 'Eat 3 meals; never starve' and the 1,200 / 1,500 kcal floors are kept in these assumptions.",
+  "Not applied (menu-fit audit, 'Extra sambar' on idly days): protein already meets 25 g with a small Lentil Soup, and extra sambar adds salt and up to about 120 kcal.",
+  "Not applied (safety audit, a 7th golden rule for salt): the limit is 6 rules, so salt replaced 'Soup first, then eat slowly' as rule 5, and that habit moved to daily basics ('Water, then soup, then plate. Eat slowly.').",
+  "Not applied (safety audit, small soup bowls on every day): Days 9, 11, 14 and 19 keep a full bowl of Lentil Soup, needed for fibre (Days 9, 14, 19) or protein (Day 11).",
+  "Not applied (safety audit, full allergy swaps and the full list of doctor groups in the printed notes): the 4-note, 16-word limit leaves room only for 'Allergy? Tell the kitchen' and the main groups; the swaps, over 65, gallstones and the yearly checks are listed in these assumptions. 'High blood pressure? Always ask less salt' is covered by golden rule 5 and the doctor note instead of its own note.",
+  "Not applied (safety audit, 'extra salad' in tandoor-day requests and Panch Ratan Sabzi as a Day 26 side): the 6-word request has no room after the fat, salt and carb asks, salad is not a menu item, and the sabzi is a full entree with its own rice (two entrees). Tandoor days still reach about 10 g fibre from roti and soup. The plate formula stays 'Protein + soup + ...' because every lunch has a soup.",
+  "Not applied (safety audit, Ghost Chicken request 'Ask what is in it. Skin off...'): too long for 6 words, and the person works in this kitchen; Day 4 says 'Too hot? Choose chicken tikka.' 'Skin off' was also dropped on the Chicken Leg day, since tandoori chicken is skinned before marinating (menu-fit audit).",
+  "Not applied (safety audit, Desi Chinese dishes added to red): they are not in menu.json and may come from an old sheet seen through the paper, and the traffic light must hold exactly the 123 menu items. A renderer line could say: 'Not on this list? Fried, creamy, buttery or sweet = rare treat.'",
+  "Not applied here (safety audit, renderer changes): dropping 'g fat' from the day cards, rounding kcal to 50, and the tracker note about plateaus belong in render.cjs, not in the plan data. Suggested tracker text: 'Slow is good. Weight goes down, then stops for a while. This is normal. Keep going!'",
+  "Not applied (safety audit, 'Water or seltzer with lemon' on Days 7 and 24; nutrition audit, 'Plain roti wrap, no mayo'): the drink is simply 'Water' (seltzer is fine too: Soda Can is yellow as 'Seltzer water only'), and the roll request uses 'less salt' instead of 'plain', because the menu marks Tandoori Roti vegan (no butter)."
+ ]
+}
