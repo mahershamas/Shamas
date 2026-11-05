@@ -23,10 +23,12 @@ def piano_note(midi, dur, vel=0.7, release=0.6, sustain=True, felt=0.35):
     dur     : how long the key is held (s)
     release : damper release time after key-up (s) (long when the pedal is down)
     """
-    f0 = midi_to_hz(midi)
+    # Railsback stretch tuning (cents), needed once inharmonicity is realistic
+    stretch = float(np.clip(np.sign(midi - 69) * 0.014 * (midi - 69) ** 2, -35, 35))
+    f0 = midi_to_hz(midi) * 2 ** (stretch / 1200.0)
     vel = float(np.clip(vel, 0.05, 1.0))
-    # natural decay length depends on register (bass rings longer)
-    tau_slow = float(np.interp(midi, [21, 48, 60, 72, 84, 108], [9.0, 6.5, 4.5, 3.0, 1.8, 0.9]))
+    # natural decay length depends on register (bass rings longer, treble short)
+    tau_slow = float(np.interp(midi, [21, 48, 60, 72, 84, 108], [9.0, 6.5, 4.5, 2.6, 1.2, 0.5]))
     tau_fast = tau_slow * 0.12
     ring = min(dur + release, dur + tau_slow * 2.2)
     n = int(SR * (ring + 0.05))
@@ -36,14 +38,14 @@ def piano_note(midi, dur, vel=0.7, release=0.6, sustain=True, felt=0.35):
     nyq = SR * 0.45
     kmax = int(min(24, nyq // f0))
     k = np.arange(1, kmax + 1, dtype=float)
-    B = float(np.interp(midi, [21, 40, 60, 80, 108], [0.0006, 0.00025, 0.00015, 0.0003, 0.0009]))
+    B = float(np.interp(midi, [21, 40, 60, 72, 84, 96, 108], [1.2e-4, 2.0e-4, 4.0e-4, 1.1e-3, 3.1e-3, 9.0e-3, 2.3e-2]))
     fk = k * f0 * np.sqrt(1.0 + B * k ** 2)
     # spectral slope: harder hits are brighter; a felt layer darkens everything
     slope = 1.55 - 0.75 * vel + 0.55 * felt
     amp = 1.0 / k ** slope
     # hammer strike position (~1/7 to 1/8 of string) creates a comb in the spectrum
-    strike = float(np.interp(midi, [21, 60, 108], [0.11, 0.125, 0.14]))
-    amp *= np.abs(np.sin(np.pi * k * strike)) ** 0.8 + 0.05
+    strike = float(np.interp(midi, [21, 60, 108], [0.133, 0.119, 0.091]))
+    amp *= np.maximum(np.abs(np.sin(np.pi * k * strike)), 0.18) ** 0.8
     # high partials die faster
     tau_k_slow = tau_slow / (1.0 + 0.16 * (k - 1)) ** 1.1
     tau_k_fast = tau_fast / (1.0 + 0.25 * (k - 1))
@@ -72,7 +74,7 @@ def piano_note(midi, dur, vel=0.7, release=0.6, sustain=True, felt=0.35):
         rel = np.exp(-(t[i_up:] - t[i_up]) / max(release * 0.33, 0.02))
         gate[i_up:] = rel
     # attack
-    atk = 1 - np.exp(-t / 0.0025)
+    atk = 1 - np.exp(-t / float(np.interp(midi, [21, 60, 108], [0.010, 0.006, 0.004])))
     out *= gate * atk
 
     # hammer noise (short, filtered, velocity dependent)
@@ -89,7 +91,7 @@ def piano_note(midi, dur, vel=0.7, release=0.6, sustain=True, felt=0.35):
         out[:nt_] += signal.lfilter(bb, aa, th) * 0.25 * felt * vel
 
     # loudness: velocity curve
-    out *= 0.22 * (0.15 + 0.85 * vel ** 1.6)
+    out *= 0.26 * (0.08 + 0.92 * vel ** 2.2)
     # gentle register balance
     out *= float(np.interp(midi, [21, 48, 72, 96, 108], [0.8, 1.0, 1.0, 0.85, 0.7]))
     return out
@@ -107,12 +109,12 @@ def _bl_saw(f, t, brightness=1.0, kmax=40, phi=None):
     return (np.sin(ph) * amp[None, :]).sum(axis=1).astype(np.float64) / amp.sum()
 
 
-def pad_note(midi, dur, vel=0.5, attack=1.2, release=1.8, brightness=1.0, vib=0.004, vib_rate=4.8):
+def pad_note(midi, dur, vel=0.5, attack=1.2, release=1.8, brightness=1.0, vib=0.007, vib_rate=5.2):
     f0 = midi_to_hz(midi)
     n = int(SR * (dur + release + 0.1))
     t = np.arange(n) / SR
     out = np.zeros(n)
-    for d in (-0.006, -0.002, 0.0025, 0.0055):
+    for d in (-0.0040, -0.0014, 0.0014, 0.0040):
         # independent vibrato per voice, applied by integrating instantaneous frequency
         vr = vib_rate * (1 + d * 10)
         ph0 = _rng.uniform(0, 2 * np.pi)
@@ -132,7 +134,7 @@ def pad_note(midi, dur, vel=0.5, attack=1.2, release=1.8, brightness=1.0, vib=0.
         env[i_up:] *= np.exp(-(t[i_up:] - t[i_up]) / (release * 0.4))
     env *= 1 - 0.06 * np.sin(2 * np.pi * 0.21 * t)  # slow bow swell
     out *= env * 0.16 * (0.3 + 0.7 * vel)
-    return out
+    return _endfade(out)
 
 
 def cello_note(midi, dur, vel=0.6, attack=0.35, release=0.6):
@@ -149,7 +151,7 @@ def bass_note(midi, dur, vel=0.6, release=0.8):
     i_up = int(dur * SR)
     if i_up < n:
         env[i_up:] *= np.exp(-(t[i_up:] - t[i_up]) / (release * 0.4))
-    return out * env * 0.2 * vel
+    return _endfade(out * env * 0.2 * vel)
 
 
 def bell_note(midi, dur, vel=0.5):
@@ -166,6 +168,13 @@ def bell_note(midi, dur, vel=0.5):
         out += a * np.sin(2 * np.pi * f * t + _rng.uniform(0, 6.28)) * np.exp(-t / tau)
     out *= (1 - np.exp(-t / 0.002)) * 0.12 * vel
     return out
+
+
+def _endfade(x, ms=25):
+    n = int(SR * ms / 1000)
+    if len(x) > n:
+        x[-n:] *= np.linspace(1, 0, n)
+    return x
 
 
 # ---------------------------------------------------------------- mixing
@@ -204,6 +213,9 @@ def render_score(score, length=None, pedal_release=1.6):
         else:
             raise ValueError(inst)
         i0 = int(nt['t'] * SR)
+        if i0 >= n or len(mono) == 0:
+            print('render_score: note outside the buffer, skipped:', nt, 'len', len(mono), 'n', n)
+            continue
         seg = _pan(mono, pan)
         i1 = min(n, i0 + len(seg))
         buses[inst][i0:i1] += seg[: i1 - i0]
@@ -226,7 +238,7 @@ def master(buses, gains=None, reverb_wet=0.28, room=0.82):
     board = Pedalboard([
         Reverb(room_size=room, damping=0.55, wet_level=reverb_wet, dry_level=1.0 - reverb_wet * 0.6, width=1.0),
         HighShelfFilter(cutoff_frequency_hz=7000, gain_db=-2.0),
-        Compressor(threshold_db=-16, ratio=2.2, attack_ms=25, release_ms=250),
+        Compressor(threshold_db=-9, ratio=1.7, attack_ms=30, release_ms=300),
         Gain(gain_db=2.0),
         Limiter(threshold_db=-1.0, release_ms=120),
     ])
