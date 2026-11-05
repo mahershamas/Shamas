@@ -152,7 +152,7 @@ def build():
 
     # bar plan: (chord, lh pattern, base velocity) -- 40 composed bars + final chord at bar 40
     plan = []
-    plan += [(I, 'sparse2', 0.36), (I, 'sparse2', 0.38), (IVmaj7_1, 'slow', 0.40), (Vsus, 'slow', 0.42)]            # 0-3 intro
+    plan += [(I, 'sparse2', 0.44), (I, 'sparse2', 0.46), (IVmaj7_1, 'slow', 0.47), (Vsus, 'slow', 0.48)]            # 0-3 intro
     plan += [(I, 'wave', 0.44), (V_C, 'wave', 0.44), (vi, 'wave', 0.46), (IV, 'wave', 0.46),                         # 4-11 A (piano alone)
              (I_3, 'wave', 0.46), (IV, 'wave', 0.48), (Vsus, 'wave', 0.48), (I, 'wave', 0.44)]
     plan += [(I, 'wave', 0.48), (iii, 'wave', 0.49), (vi, 'wave', 0.50), (ii7, 'wave', 0.50),                        # 12-19 A'
@@ -162,7 +162,7 @@ def build():
     plan += [(Vsus, 'rise', 0.62), (V7sus, 'full', 0.70)]                                                           # 26-27 build (dominant pedal)
     plan += [(I, 'full', 0.80), (V_C, 'full', 0.80), (vi, 'full', 0.82), (IVadd9, 'full', 0.84),                     # 28-35 climax
              (I_3, 'full', 0.84), (IVadd9, 'full', 0.86), (Vsus, 'full', 0.80), (I, 'wave', 0.70)]
-    plan += [(vi7, 'wave', 0.56), (IVmaj7, 'wave', 0.52), (I_3, 'slow', 0.48), (IVm6, 'slow', 0.44)]               # 36-39 release / coda
+    plan += [(vi7, 'wave', 0.56), (IVmaj7, 'wave', 0.53), (I_3, 'slow', 0.54), (IVm6, 'slow', 0.50)]               # 36-39 release / coda
     assert len(plan) == 40, len(plan)
 
     for b, (ch, pat, vel) in enumerate(plan):
@@ -174,7 +174,7 @@ def build():
         elif 28 <= b < 36:
             P.strings_bar(ch, b, 0.66 if b < 35 else 0.5, low=True, high=True, cello=True, bass=(b < 35), attack=1.0)
         elif b in (38, 39):     # one sigh under the signature
-            P.strings_bar(ch, b, 0.24, low=True, high=False, attack=2.4)
+            P.strings_bar(ch, b, 0.26, low=True, high=False, attack=1.5)
 
     A4, B4, C5, D5, E5, F5, G5, A5, B5, C6, D6, E6 = [N(x) for x in ('Ab4', 'Bb4', 'C5', 'Db5', 'Eb5', 'F5', 'Gb5', 'Ab5', 'Bb5', 'C6', 'Db6', 'Eb6')]
     A_nat5 = N('A5')      # B-double-flat: the ache note over G-flat minor
