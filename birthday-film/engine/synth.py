@@ -137,6 +137,18 @@ def pad_note(midi, dur, vel=0.5, attack=1.2, release=1.8, brightness=1.0, vib=0.
     return _endfade(out)
 
 
+def voice_note(midi, dur, vel=0.5, attack=1.8, release=2.5):
+    """A soft wordless choir ('oo'): a dark pad through two vowel formants."""
+    x = pad_note(midi, dur, vel, attack=attack, release=release, brightness=1.3, vib=0.005, vib_rate=4.6)
+    out = np.zeros_like(x)
+    for fc, q, g in ((330.0, 5.0, 1.0), (780.0, 7.0, 0.55), (2500.0, 9.0, 0.12)):
+        b, a = signal.iirpeak(fc / (SR / 2), q)
+        out += g * signal.lfilter(b, a, x)
+    b, a = signal.butter(2, 3200 / (SR / 2))
+    out = signal.lfilter(b, a, out)
+    return _endfade(out * 2.2)
+
+
 def cello_note(midi, dur, vel=0.6, attack=0.35, release=0.6):
     return pad_note(midi, dur, vel, attack=attack, release=release, brightness=1.6, vib=0.006, vib_rate=5.2) * 1.35
 
@@ -190,14 +202,14 @@ def render_score(score, length=None, pedal_release=1.6):
     if length:
         end = max(end, length)
     n = int(SR * end)
-    buses = {name: np.zeros((n, 2)) for name in ('piano', 'pad', 'cello', 'bass', 'bell')}
+    buses = {name: np.zeros((n, 2)) for name in ('piano', 'pad', 'cello', 'bass', 'bell', 'voice')}
     for nt in score:
         inst = nt.get('inst', 'piano')
         vel = nt.get('vel', 0.7)
         if inst == 'piano':
             pan = nt.get('pan', np.interp(nt['midi'], [36, 60, 84], [-0.55, 0.0, 0.55]))
             rel = nt.get('release', pedal_release)
-            mono = piano_note(nt['midi'], nt['dur'], vel, release=rel)
+            mono = piano_note(nt['midi'], nt['dur'], vel, release=rel, felt=nt.get('felt', 0.35))
         elif inst == 'pad':
             pan = nt.get('pan', np.interp(nt['midi'], [36, 60, 84], [-0.7, 0.0, 0.7]))
             mono = pad_note(nt['midi'], nt['dur'], vel, attack=nt.get('attack', 1.2), release=nt.get('release', 1.8))
@@ -210,6 +222,9 @@ def render_score(score, length=None, pedal_release=1.6):
         elif inst == 'bell':
             pan = nt.get('pan', np.interp(nt['midi'], [60, 96], [-0.4, 0.4]))
             mono = bell_note(nt['midi'], nt['dur'], vel)
+        elif inst == 'voice':
+            pan = nt.get('pan', np.interp(nt['midi'], [48, 72, 84], [-0.8, 0.0, 0.8]))
+            mono = voice_note(nt['midi'], nt['dur'], vel, attack=nt.get('attack', 1.8), release=nt.get('release', 2.5))
         else:
             raise ValueError(inst)
         i0 = max(0, int(nt['t'] * SR))
@@ -222,9 +237,9 @@ def render_score(score, length=None, pedal_release=1.6):
     return buses
 
 
-def master(buses, gains=None, reverb_wet=0.28, room=0.82):
+def master(buses, gains=None, reverb_wet=0.32, room=0.88):
     from pedalboard import Pedalboard, Reverb, Compressor, HighShelfFilter, LowShelfFilter, Limiter, Chorus, Gain
-    g = {'piano': 1.0, 'pad': 1.0, 'cello': 1.0, 'bass': 1.0, 'bell': 1.0}
+    g = {'piano': 1.0, 'pad': 1.0, 'cello': 1.0, 'bass': 1.0, 'bell': 1.0, 'voice': 1.0}
     if gains:
         g.update(gains)
     n = max(len(b) for b in buses.values())
@@ -232,7 +247,7 @@ def master(buses, gains=None, reverb_wet=0.28, room=0.82):
     pad_board = Pedalboard([Chorus(rate_hz=0.35, depth=0.18, mix=0.35), LowShelfFilter(cutoff_frequency_hz=160, gain_db=-3)])
     for name, b in buses.items():
         x = (b * g[name]).astype(np.float32)
-        if name == 'pad':
+        if name in ('pad', 'voice'):
             x = pad_board(x.T, SR).T
         mix[: len(x)] += x
     board = Pedalboard([
