@@ -1,0 +1,27 @@
+html, body { margin: 0; background: #000; overflow: hidden; }
+#film { position: relative; overflow: hidden; background: #0b0507; font-kerning: normal; -webkit-font-smoothing: antialiased; }
+#film > div, #film > canvas { position: absolute; inset: 0; }
+.bg { z-index: 0; }
+.photos { z-index: 1; }
+.fxc { z-index: 2; pointer-events: none; }
+.text { z-index: 3; }
+.vignette { z-index: 4; pointer-events: none; background: radial-gradient(ellipse 78% 70% at 50% 50%, rgba(0,0,0,0) 45%, rgba(0,0,0,0.42) 85%, rgba(0,0,0,0.75) 100%); }
+.fade { z-index: 5; background: #000; pointer-events: none; }
+/* text */
+.text .line { position: absolute; transform: translate(-50%, -50%); color: #f4e6d3; text-align: center; white-space: nowrap; line-height: 1.32; }
+.text .line .u { display: inline-block; }
+.text .line.serif { font-family: 'Cormorant Garamond', 'Playfair Display', serif; font-weight: 400; }
+.text .line.italic { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 400; }
+.text .line.script { font-family: 'Great Vibes', cursive; font-weight: 400; line-height: 1.1; }
+.text .line.display { font-family: 'Playfair Display', serif; font-weight: 400; }
+.text .line.caps { font-family: 'Montserrat', sans-serif; font-weight: 300; text-transform: uppercase; letter-spacing: 0.32em; }
+.text .line.small { font-family: 'Cormorant Garamond', serif; font-weight: 500; opacity: .85; }
+.text .line.wrap { white-space: normal; }
+/* photo */
+.photos .shot { position: absolute; --shadow: 0.6; }
+.photos .shot.framed { box-shadow: 0 30px 90px rgba(0,0,0,var(--shadow)), 0 0 0 1px rgba(255,235,210,0.12); border-radius: 6px; overflow: hidden; }
+.photos .shot-inner { position: absolute; inset: 0; overflow: hidden; transform-origin: 50% 50%; }
+.photos .shot-inner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.photos .grade { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(255,170,110,0.28) 0%, rgba(80,20,40,0.22) 60%, rgba(10,5,10,0.4) 100%); mix-blend-mode: soft-light; }
+.photos .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,5,8,0) 55%, rgba(10,5,8,0.85) 100%); }
+.photos .sweep { position: absolute; top: -20%; bottom: -20%; left: -10%; width: 40%; background: linear-gradient(90deg, rgba(255,240,220,0) 0%, rgba(255,240,220,0.9) 50%, rgba(255,240,220,0) 100%); mix-blend-mode: soft-light; display: none; }
