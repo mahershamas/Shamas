@@ -97,11 +97,11 @@ class Piece:
             if i in (3, 9): lead += 0.008      # the tenth, a touch late
             v = vel * con[i] * (1.03 - 0.06 * ((i % 3) == 2))
             self.piano(n, bar, i, 3.2 if n == r and i == 0 else 1.6, v, release=pedal_release, lead=lead, felt=felt)
-        if pattern == 'full':
+        if pattern == 'full' and r - 12 >= m('F1'):
             self.piano(r - 12, bar, 0, 12, vel * 0.9, release=pedal_release, felt=felt)
 
     # --- melody: list of (midi or None, len_quavers)
-    def melody(self, notes, bar, vel, release=2.0, double_8vb=False, bell=False, bell_vel=0.3, lead_ms=22, felt=None, cello=False, cello_vel=0.5, cello_oct=12):
+    def melody(self, notes, bar, vel, release=2.0, double_8vb=False, bell=False, bell_vel=0.3, lead_ms=22, felt=None, cello=False, cello_vel=0.5, cello_oct=12, double_8va=False):
         q = 0.0
         n_total = sum(l for _, l in notes)
         for i, (n, l) in enumerate(notes):
@@ -112,6 +112,8 @@ class Piece:
                 self.piano(n, bar + int(q // 12), q % 12, l * 1.02, v, release=release, lead=lead, felt=felt)
                 if double_8vb:
                     self.piano(n - 12, bar + int(q // 12), q % 12, l * 1.02, v * 0.78, release=release, lead=lead + 0.008, felt=felt)
+                if double_8va:
+                    self.piano(n + 12, bar + int(q // 12), q % 12, l * 1.02, v * 0.6, release=release, lead=lead + 0.006, felt=felt)
                 if cello:
                     self.cello(n - cello_oct, bar + int(q // 12), q % 12, l * 1.05, cello_vel, attack=0.22, release=0.35)
                 if bell:
@@ -175,19 +177,18 @@ def build():
 
     felt_for = lambda b: 0.6 if b < 4 or b >= 37 else (0.45 if b < 20 else (0.3 if b < 28 else 0.15))
     for b, (ch, pat, vel) in enumerate(plan):
-        P.lh_bar(ch, b, vel, pattern=pat, pedal_release=2.6 if pat in ('slow', 'sparse2') else 2.2, skip=(10, 11) if b == 27 else (), felt=felt_for(b))
+        P.lh_bar(ch, b, vel, pattern=pat, pedal_release=2.6 if pat in ('slow', 'sparse2') else 2.2, skip=(10, 11) if b == 27 else ((9,) if b == 21 else ()), felt=felt_for(b))
         if 12 <= b < 20:
             P.strings_bar(ch, b, 0.22 + 0.025 * (b - 12), low=True, high=(b >= 16), attack=2.2 if b == 12 else 1.8)
         elif 20 <= b < 26:
-            P.strings_bar(ch, b, 0.36 + 0.02 * (b - 20), low=True, high=True, attack=1.6)
+            P.strings_bar(ch, b, 0.36 + 0.02 * (b - 20), low=True, high=False, attack=1.6)
         elif 26 <= b < 28:
             P.strings_bar(ch, b, 0.52 + 0.08 * (b - 26), low=True, high=True, cello=True, bass=True, attack=1.2, lenq=10.6 if b == 27 else 12.5, release=0.5 if b == 27 else 2.2)
         elif 28 <= b < 36:
             P.strings_bar(ch, b, 0.66, low=True, high=True, bass=True, attack=1.0)
-            for tn in (ch.third(), ch.fifth()):          # the wordless choir
-                while tn < m('Db4'): tn += 12
-                while tn > m('Ab4'): tn -= 12
-                P.score.append({'inst': 'voice', 'midi': tn, 't': b * BAR, 'dur': 12.5 * Q, 'vel': 0.5, 'attack': 1.6 if b > 28 else 2.4, 'release': 2.5})
+            for tn in (ch.third(), ch.fifth(), ch.root):  # the wordless choir, a halo above the pads
+                tn = m('Gb4') + ((tn - m('Gb4')) % 12)
+                P.score.append({'inst': 'voice', 'midi': tn, 't': b * BAR, 'dur': 12.5 * Q, 'vel': 0.5 if b < 32 else 0.6, 'attack': 1.6 if b > 28 else 2.4, 'release': 2.5})
         elif b == 36:
             P.strings_bar(ch, b, 0.5, low=True, high=True, bass=True, attack=1.0)
         elif b in (38, 39):
@@ -202,7 +203,7 @@ def build():
 
     # the love theme: a rising sixth that settles by step, and a sigh at the end of every phrase
     theme = [
-        (A4, 3), (F5, 3), (E5, 3), (D5, 3),   # Db:      Ab F Eb Db
+        (A4, 3), (F5, 5), (E5, 1), (D5, 3),   # Db:      Ab F(held) Eb Db
         (E5, 6), (D5, 3), (C5, 3),            # Ab/C:    Eb Db C
         (D5, 3), (F5, 3), (A5, 6),            # Bbm7:    Db F Ab
         (G5, 3), (F5, 6), (E5, 3),            # Gbmaj7:  Gb F(maj7) Eb
@@ -214,22 +215,22 @@ def build():
     P.melody(theme, 4, 0.58, felt=0.45)
     theme2 = [
         (D5, 3), (B5, 3), (A5, 3), (G5, 3),   # Db:      Db Bb Ab Gb
-        (F5, 6), (A5, 3), (C6, 3),            # Fm:      F Ab C
-        (B5, 3), (A5, 3), (F5, 6),            # Bbm7:    Bb Ab F
-        (G5, 3), (B5, 3), (F5, 6),            # Gbmaj7:  Gb Bb F
-        (A5, 6), (F5, 3), (E5, 3),            # Db/Ab:   Ab F Eb
-        (G5, 6), (F5, 3), (E5, 3),            # Gb:      Gb F Eb
-        (E5, 6), (F5, 3), (E5, 3),            # Ab7sus:  Eb F Eb
+        (A5, 6), (F5, 3), (C6, 3),            # Fm:      Ab F C
+        (D6, 3), (B5, 3), (F5, 6),            # Bbm7:    Db Bb F
+        (B5, 3), (G5, 3), (F5, 6),            # Gbmaj7:  Bb Gb F
+        (F5, 6), (A5, 3), (B5, 3),            # Db/Ab:   F Ab Bb
+        (D6, 6), (B5, 3), (A5, 3),            # Gb:      Db Bb Ab
+        (B5, 6), (G5, 3), (F5, 3),            # Ab7sus:  Bb Gb F
         (E5, 2), (D5, 10),                    # Db:      the sigh
     ]
     P.melody(theme2, 12, 0.62, felt=0.45)
     turn = [
         (F5, 9), (E5, 3),                     # Bbm
-        (D5, 6), (A_nat5, 3), (A5, 3),        # Gbm6: the ache, Bbb -> Ab
+        (E5, 3), (D5, 3), (A_nat5, 3), (A5, 3), # Gbm6: Eb Db, then the ache Bbb -> Ab
         (F5, 6), (E5, 3), (D5, 3),            # Db/F
         (D5, 4), (E5, 4), (r, 4),             # Absus4: Db prepared, lifting to Eb
-        (A4, 3), (F5, 3), (E5, 3), (D5, 3),   # Db: the theme's head
-        (F5, 6), (A5, 6),                     # Bbm7, rising into the build
+        (A4, 3), (F5, 5), (E5, 1), (D5, 3),   # Db: the theme's head
+        (D5, 3), (F5, 3), (A5, 6),            # Bbm7, rising into the build
     ]
     P.melody(turn, 20, 0.58, felt=0.3, cello=True, cello_vel=0.42)
     build_ = [
@@ -238,15 +239,15 @@ def build():
     ]
     P.melody(build_, 26, 0.70, felt=0.2)
     # climax: the theme an octave up, doubled below, cello an octave below the tune
-    P.melody(tr(theme[:11], 12), 28, 0.86, double_8vb=True, release=2.2, felt=0.15, cello=True, cello_vel=0.6, cello_oct=24)
+    P.melody(tr(theme[:13], 12), 28, 0.86, double_8vb=True, release=2.2, felt=0.15, cello=True, cello_vel=0.6, cello_oct=24)
     # the lift: the theme's head again, a minor third higher, in E major
-    lift = tr(theme[:11], 15)
-    P.melody(lift, 32, 0.88, double_8vb=True, release=2.2, felt=0.15, cello=True, cello_vel=0.62, cello_oct=24)
+    lift = tr(theme[:13], 3)
+    P.melody(lift, 32, 0.86, double_8va=True, release=2.2, felt=0.15, cello=True, cello_vel=0.62, cello_oct=12)
     # home: a descent over Ab7sus (bar 36), then the question, answered softly (37-39)
     home = [(E6, 3), (D6, 3), (C6, 2), (B5, 2), (A5, 2)]
     P.melody(home, 36, 0.72, felt=0.3)
     coda = [
-        (A4, 3), (F5, 3), (E5, 3), (D5, 3),   # Db: the head, p
+        (A4, 3), (F5, 5), (E5, 1), (D5, 3),   # Db: the head, p
         (F5, 6), (E5, 3), (D5, 3),            # Gbmaj7
         (D5, 8), (r, 4),                      # Gbm6
     ]
