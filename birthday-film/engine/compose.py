@@ -55,13 +55,13 @@ class Piece:
         self.score.append({'inst': 'pad', 'midi': midi, 't': self.T(bar, q), 'dur': lenq * Q, 'vel': vel, 'attack': attack, 'release': release})
 
     def cello(self, midi, bar, q, lenq, vel, attack=0.5):
-        self.score.append({'inst': 'cello', 'midi': midi, 't': humanize_t(self.T(bar, q), 0.02), 'dur': lenq * Q, 'vel': vel, 'attack': attack})
+        self.score.append({'inst': 'cello', 'midi': midi, 't': max(0.0, humanize_t(self.T(bar, q), 0.02)), 'dur': lenq * Q, 'vel': vel, 'attack': attack})
 
     def bass(self, midi, bar, q, lenq, vel):
         self.score.append({'inst': 'bass', 'midi': midi, 't': self.T(bar, q), 'dur': lenq * Q, 'vel': vel})
 
     def bell(self, midi, bar, q, lenq, vel):
-        self.score.append({'inst': 'bell', 'midi': midi, 't': humanize_t(self.T(bar, q), 0.008), 'dur': lenq * Q, 'vel': vel})
+        self.score.append({'inst': 'bell', 'midi': midi, 't': max(0.0, humanize_t(self.T(bar, q), 0.008)), 'dur': lenq * Q, 'vel': vel})
 
     # --- left hand: flowing 12/8 broken chord over one bar
     def lh_bar(self, ch, bar, vel, pattern='wave', pedal_release=2.4, contour=None, skip=()):

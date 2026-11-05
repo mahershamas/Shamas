@@ -212,7 +212,7 @@ def render_score(score, length=None, pedal_release=1.6):
             mono = bell_note(nt['midi'], nt['dur'], vel)
         else:
             raise ValueError(inst)
-        i0 = int(nt['t'] * SR)
+        i0 = max(0, int(nt['t'] * SR))
         if i0 >= n or len(mono) == 0:
             print('render_score: note outside the buffer, skipped:', nt, 'len', len(mono), 'n', n)
             continue
