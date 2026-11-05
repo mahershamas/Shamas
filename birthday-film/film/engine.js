@@ -206,10 +206,11 @@
       s.grade.style.opacity = (k.grade == null ? 0.3 : k.grade).toFixed(3);
       s.cool.style.opacity = (k.cool == null ? 0.6 : k.cool).toFixed(3);
       s.scrim.style.opacity = (k.scrim == null ? 0 : k.scrim).toFixed(3);
-      if (k.sweep != null && k.sweep > 0 && k.sweep < 1) {
+      const sw = k.sweep == null ? null : k.sweep - Math.floor(k.sweep);   // integer steps restart the sweep
+      if (sw != null && sw > 0.002 && sw < 0.998) {
         s.sweep.style.display = 'block';
-        s.sweep.style.transform = `translateX(${((k.sweep * 2 - 1) * 130).toFixed(1)}%) skewX(-18deg)`;
-        s.sweep.style.opacity = (Math.sin(k.sweep * Math.PI) * 0.55).toFixed(3);
+        s.sweep.style.transform = `translateX(${((sw * 2 - 1) * 130).toFixed(1)}%) skewX(-18deg)`;
+        s.sweep.style.opacity = (Math.sin(sw * Math.PI) * 0.55).toFixed(3);
       } else s.sweep.style.display = 'none';
       const feather = k.feather == null ? 0 : k.feather;
       if (sh.frame || feather <= 0.001) { s.wrap.style.webkitMaskImage = s.wrap.style.maskImage = 'none'; }
