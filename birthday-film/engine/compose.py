@@ -54,8 +54,8 @@ class Piece:
     def pad(self, midi, bar, q, lenq, vel, attack=1.6, release=2.2):
         self.score.append({'inst': 'pad', 'midi': midi, 't': self.T(bar, q), 'dur': lenq * Q, 'vel': vel, 'attack': attack, 'release': release})
 
-    def cello(self, midi, bar, q, lenq, vel, attack=0.5):
-        self.score.append({'inst': 'cello', 'midi': midi, 't': max(0.0, humanize_t(self.T(bar, q), 0.02)), 'dur': lenq * Q, 'vel': vel, 'attack': attack})
+    def cello(self, midi, bar, q, lenq, vel, attack=0.5, release=0.6):
+        self.score.append({'inst': 'cello', 'midi': midi, 't': max(0.0, humanize_t(self.T(bar, q), 0.02)), 'dur': lenq * Q, 'vel': vel, 'attack': attack, 'release': release})
 
     def bass(self, midi, bar, q, lenq, vel):
         self.score.append({'inst': 'bass', 'midi': midi, 't': self.T(bar, q), 'dur': lenq * Q, 'vel': vel})
@@ -67,7 +67,7 @@ class Piece:
     def lh_bar(self, ch, bar, vel, pattern='wave', pedal_release=2.4, contour=None, skip=()):
         r = ch.bass
         while r > m('Ab2'): r -= 12
-        while r < m('Db2'): r += 12
+        while r < m('C2'): r += 12
         upper = sorted({((tn - r) % 12) + r for tn in ch.tones if ((tn - r) % 12) != 0})
         a = upper[0]; b = upper[1] if len(upper) > 1 else upper[0] + 12
         c = upper[2] if len(upper) > 2 else r + 12
@@ -115,27 +115,28 @@ class Piece:
                     self.bell(n + 12, bar + int(q // 12), q % 12, l, bell_vel)
             q += l
 
-    def strings_bar(self, ch, bar, vel, low=True, high=True, cello=False, bass=False, attack=1.6, high_vel=0.8, lenq=12.5):
+    def strings_bar(self, ch, bar, vel, low=True, high=True, cello=False, bass=False, attack=1.6, high_vel=0.8, lenq=12.5, release=2.2):
         tones = [ch.root, ch.third(), ch.fifth()]
         if low:
-            for tn in tones:
-                while tn > m('Ab3'): tn -= 12
-                while tn < m('Ab2'): tn += 12
-                self.pad(tn, bar, 0, lenq, vel, attack=attack)
+            r0 = ch.root
+            while r0 > m('Ab3'): r0 -= 12
+            while r0 < m('Ab2'): r0 += 12
+            for tn in (r0, r0 + (ch.third() - ch.root) % 12, r0 + (ch.fifth() - ch.root) % 12):
+                self.pad(tn, bar, 0, lenq, vel, attack=attack, release=release)
         if high:
             for tn in tones[1:]:
                 while tn < m('Db4'): tn += 12
                 while tn > m('Ab4'): tn -= 12
-                self.pad(tn, bar, 0, lenq, vel * high_vel, attack=attack * 1.1)
+                self.pad(tn, bar, 0, lenq, vel * high_vel, attack=attack * 1.1, release=release)
         if cello:
             r = ch.bass
             while r > m('Eb3'): r -= 12
             while r < m('Db2'): r += 12
-            self.cello(r, bar, 0, lenq, vel * 1.05)
+            self.cello(r, bar, 0, lenq, vel * 1.05, release=release * 0.3)
         if bass:
             r = ch.bass
             while r > m('Db2'): r -= 12
-            self.bass(r, bar, 0, 12, vel)
+            self.bass(r, bar, 0, min(12, lenq), vel)
 
 
 def N(s): return m(s)
@@ -153,23 +154,23 @@ def build():
     plan = []
     plan += [(I, 'sparse2', 0.36), (I, 'sparse2', 0.38), (IVmaj7_1, 'slow', 0.40), (Vsus, 'slow', 0.42)]            # 0-3 intro
     plan += [(I, 'wave', 0.44), (V_C, 'wave', 0.44), (vi, 'wave', 0.46), (IV, 'wave', 0.46),                         # 4-11 A (piano alone)
-             (I_3, 'wave', 0.46), (IV, 'wave', 0.48), (Vsus, 'wave', 0.48), (Iadd9, 'wave', 0.44)]
+             (I_3, 'wave', 0.46), (IV, 'wave', 0.48), (Vsus, 'wave', 0.48), (I, 'wave', 0.44)]
     plan += [(I, 'wave', 0.48), (iii, 'wave', 0.49), (vi, 'wave', 0.50), (ii7, 'wave', 0.50),                        # 12-19 A'
-             (IVmaj7, 'rise', 0.53), (I_5, 'wave', 0.53), (IV, 'wave', 0.51), (Iadd9, 'wave', 0.47)]
+             (IVmaj7, 'rise', 0.53), (I_5, 'wave', 0.53), (IV, 'wave', 0.51), (I, 'wave', 0.47)]
     plan += [(IV, 'wave', 0.54), (IVm6, 'wave', 0.50), (I_3, 'wave', 0.52), (Vsus, 'slow', 0.50),                    # 20-25 turn (strings enter)
-             (Iadd9, 'wave', 0.54), (vi7, 'wave', 0.56)]
+             (I, 'wave', 0.54), (vi7, 'wave', 0.56)]
     plan += [(Vsus, 'rise', 0.62), (V7sus, 'full', 0.70)]                                                           # 26-27 build (dominant pedal)
     plan += [(I, 'full', 0.80), (V_C, 'full', 0.80), (vi, 'full', 0.82), (IVadd9, 'full', 0.84),                     # 28-35 climax
-             (I_3, 'full', 0.84), (IVadd9, 'full', 0.86), (Vsus, 'full', 0.80), (Iadd9, 'wave', 0.70)]
+             (I_3, 'full', 0.84), (IVadd9, 'full', 0.86), (Vsus, 'full', 0.80), (I, 'wave', 0.70)]
     plan += [(vi7, 'wave', 0.56), (IVmaj7, 'wave', 0.52), (I_3, 'slow', 0.48), (IVm6, 'slow', 0.44)]               # 36-39 release / coda
     assert len(plan) == 40, len(plan)
 
     for b, (ch, pat, vel) in enumerate(plan):
-        P.lh_bar(ch, b, vel, pattern=pat, pedal_release=2.6 if pat in ('slow', 'sparse2') else 2.2, skip=(11,) if b == 27 else ())
+        P.lh_bar(ch, b, vel, pattern=pat, pedal_release=2.6 if pat in ('slow', 'sparse2') else 2.2, skip=(10, 11) if b == 27 else ())
         if 20 <= b < 26:        # strings' first entrance is the turn
             P.strings_bar(ch, b, 0.30 + 0.03 * (b - 20), low=True, high=(b >= 22), cello=(b >= 24), attack=2.2 if b == 20 else 1.6)
         elif 26 <= b < 28:
-            P.strings_bar(ch, b, 0.50 + 0.08 * (b - 26), low=True, high=True, cello=True, bass=True, attack=1.2, lenq=11.2 if b == 27 else 12.5)
+            P.strings_bar(ch, b, 0.50 + 0.08 * (b - 26), low=True, high=True, cello=True, bass=True, attack=1.2, lenq=10.6 if b == 27 else 12.5, release=0.5 if b == 27 else 2.2)
         elif 28 <= b < 36:
             P.strings_bar(ch, b, 0.66 if b < 35 else 0.5, low=True, high=True, cello=True, bass=(b < 35), attack=1.0)
         elif b in (38, 39):     # one sigh under the signature
@@ -184,7 +185,7 @@ def build():
 
     themeA = [
         (A4, 3), (D5, 3), (E5, 6),            # Db
-        (F5, 3), (E5, 3), (D5, 6),            # Ab/C
+        (F5, 3), (E5, 9),                     # Ab/C (Eb held: no Db against the C in the bass)
         (D5, 3), (F5, 3), (A5, 4), (G5, 2),   # Bbm
         (F5, 6), (D5, 4), (B4, 2),            # Gb
         (A4, 3), (D5, 3), (E5, 6),            # Db/F
@@ -205,10 +206,10 @@ def build():
     ]
     P.melody(themeA2, 12, 0.58)
     turn = [
-        (F5, 6), (D5, 6),                     # Gb
+        (F5, 4), (E5, 2), (D5, 6),            # Gb
         (A_nat5, 6), (G5, 3), (E5, 3),        # Gbm6: the ache
         (F5, 6), (E5, 3), (D5, 3),            # Db/F
-        (E5, 8), (r, 4),                      # Absus4: suspension
+        (D5, 4), (E5, 4), (r, 4),             # Absus4: Db prepared in bar 22, suspended, lifting to Eb
         (A4, 3), (D5, 3), (E5, 6),            # Dbadd9: the question, with strings
         (F5, 6), (A5, 6),                     # Bbm7, rising into the build
     ]
@@ -232,9 +233,12 @@ def build():
         P.piano(n_, 40, 0, 40, v_, release=7.0, lead=0.015 * i)
     P.pad(N('Db3'), 40, 0, 34, 0.26, attack=2.5, release=5.0); P.pad(N('Ab3'), 40, 0, 34, 0.20, attack=2.8, release=5.0); P.pad(N('F4'), 40, 0, 34, 0.16, attack=3.0, release=5.0)
     # bar 41: the bell finally answers the question, 2 -> 1, under the last card
-    P.bell(E5, 41, 0, 3, 0.26); P.bell(D5, 41, 3, 9, 0.30)
+    P.bell(E5 + 12, 41, 0, 3, 0.24); P.bell(D5 + 12, 41, 3, 9, 0.28)
     P.piano(E5, 41, 0, 3, 0.30, release=5.0); P.piano(D5, 41, 3, 20, 0.34, release=7.0)
     return P.score
+
+
+PEDAL_LIFT = {27: 11}      # bar: quaver at which the pedal lifts early
 
 
 def apply_pedal(score, lift=0.45, overlap=0.07):
@@ -242,7 +246,13 @@ def apply_pedal(score, lift=0.45, overlap=0.07):
     for n in score:
         if n['inst'] != 'piano' or n.get('release', 0) >= 3.0:
             continue
-        boundary = (math.floor(n['t'] / BAR + 0.02) + 1) * BAR
+        bar = math.floor(n['t'] / BAR + 0.02)
+        boundary = (bar + 1) * BAR
+        if bar in PEDAL_LIFT:                      # early lift (the Luftpause before the climax)
+            boundary = bar * BAR + PEDAL_LIFT[bar] * Q
+            n['dur'] = min(n['dur'], max(0.12, boundary - n['t']))
+            n['release'] = 0.25
+            continue
         n['dur'] = max(n['dur'], boundary - n['t'] + overlap)
         n['release'] = lift
     return score
