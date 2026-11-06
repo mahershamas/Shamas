@@ -7,7 +7,15 @@
  Usage:
    node render.js --html ../film/index.html --out ../private/out/film.mp4 --audio ../private/out/music.wav
         [--fps 30] [--workers 3] [--start 0] [--end 10] [--crf 19] [--preset slow] [--grain 0.16] [--variant portrait]
+        [--tune film] [--maxrate 12M] [--bufsize 24M] [--abitrate 256k] [--master [path]] [--encode v2]
    node render.js --html ... --stills 0,10.5,42 --outdir ../private/out/stills [--variant portrait]
+
+ --encode v2 sets the version-2 delivery settings (SPEC 4.4): --workers 2 --crf 14 --preset slow --tune grain
+   --maxrate 24M --bufsize 48M --abitrate 320k --grain 0.14 (any option given explicitly still wins).
+ --master additionally writes a 10-bit HEVC master (x265, CRF 16, yuv420p10le, BT.709 tags) from the same lossless
+   frames, to the given path or to <out>_master_hevc.mp4.
+ Chromium is launched with --allow-file-access-from-files so that ES-module pages (film/v2) load from file://.
+ window.seek(t) may return a Promise (version 2): page.evaluate awaits it before the capture.
 */
 const { chromium } = require('playwright');
 const { spawn, fork } = require('child_process');
@@ -23,15 +31,21 @@ function parseArgs() {
   return a;
 }
 const args = parseArgs();
+const ENCODE_V2 = { workers: '2', crf: '14', preset: 'slow', tune: 'grain', maxrate: '24M', bufsize: '48M', abitrate: '320k', grain: '0.14' };
+if (args.encode === 'v2') for (const k in ENCODE_V2) if (args[k] == null) args[k] = ENCODE_V2[k];
 const fps = parseFloat(args.fps || '30');
 const workers = parseInt(args.workers || String(Math.max(1, Math.min(3, os.cpus().length - 1))), 10);
 const crf = args.crf || '19';
 const preset = args.preset || 'slow';
+const tune = args.tune || 'film';
+const maxrate = args.maxrate || '12M';
+const bufsize = args.bufsize || '24M';
+const abitrate = args.abitrate || '256k';
 const grain = args.grain == null ? 0.16 : parseFloat(args.grain);
 const variantQ = args.variant ? `&variant=${args.variant}` : '';
 
 async function openFilm(html, width, height) {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: ['--allow-file-access-from-files'] });
   const page = await browser.newPage({ viewport: { width: width || 1920, height: height || 1080 }, deviceScaleFactor: 1 });
   page.on('pageerror', e => console.error('page error:', e.message));
   page.on('console', m => { if (m.type() === 'error') console.error('console:', m.text()); });
@@ -101,24 +115,39 @@ async function main() {
   console.log(`frames done in ${((Date.now() - t0) / 1000).toFixed(0)}s; final encode`);
   const list = path.join(tmp, 'list.txt'); fs.writeFileSync(list, segs.map(s => `file '${s}'`).join('\n'));
   const dur = tEnd - tStart;
-  const ffArgs = ['-y', '-hide_banner', '-loglevel', 'warning', '-stats', '-f', 'concat', '-safe', '0', '-i', list];
-  if (args.audio) ffArgs.push('-ss', String(tStart), '-i', path.resolve(args.audio));
   const gw = Math.round(width * 2 / 3), gh = Math.round(height * 2 / 3);
-  let fc = `[0:v]scale=in_range=pc:out_range=tv:out_color_matrix=bt709:flags=accurate_rnd+full_chroma_int,format=yuv444p[v]`;
-  if (grain > 0) {
-    ffArgs.push('-f', 'lavfi', '-i', `color=c=0x808080:s=${gw}x${gh}:r=${fps}`);
-    const gi = args.audio ? 2 : 1;
-    fc += `;[${gi}:v]format=yuv444p,lutyuv=y=128:u=128:v=128,noise=c0s=40:c0f=t,scale=${width}:${height}:flags=bilinear[g];[v][g]blend=all_mode=overlay:all_opacity=${grain},format=yuv420p[out]`;
-  } else fc += `;[v]format=yuv420p[out]`;
-  ffArgs.push('-filter_complex', fc, '-map', '[out]');
-  if (args.audio) ffArgs.push('-map', '1:a');
-  ffArgs.push('-c:v', 'libx264', '-preset', preset, '-crf', crf, '-profile:v', 'high', '-level', '4.1', '-tune', 'film',
-    '-maxrate', '12M', '-bufsize', '24M', '-x264-params', 'keyint=60:min-keyint=30:aq-mode=3:aq-strength=1.1:psy-rd=1.0,0.15',
-    '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv', '-r', String(fps), '-movflags', '+faststart');
-  if (args.audio) ffArgs.push('-c:a', 'aac', '-b:a', '256k', '-ar', '48000', '-ac', '2');
-  ffArgs.push('-t', String(dur), out);
-  await new Promise((res, rej) => { const p = spawn('ffmpeg', ffArgs, { stdio: 'inherit' }); p.on('close', c => c === 0 ? res() : rej(new Error('final ffmpeg exit ' + c))); });
-  fs.rmSync(tmp, { recursive: true, force: true });
+  function encode(outPath, hevc) {
+    const ffArgs = ['-y', '-hide_banner', '-loglevel', 'warning', '-stats', '-f', 'concat', '-safe', '0', '-i', list];
+    if (args.audio) ffArgs.push('-ss', String(tStart), '-i', path.resolve(args.audio));
+    const pix = hevc ? 'yuv420p10le' : 'yuv420p';
+    let fc = `[0:v]scale=in_range=pc:out_range=tv:out_color_matrix=bt709:flags=accurate_rnd+full_chroma_int,format=yuv444p[v]`;
+    if (grain > 0) {
+      ffArgs.push('-f', 'lavfi', '-i', `color=c=0x808080:s=${gw}x${gh}:r=${fps}`);
+      const gi = args.audio ? 2 : 1;
+      fc += `;[${gi}:v]format=yuv444p,lutyuv=y=128:u=128:v=128,noise=c0s=40:c0f=t,scale=${width}:${height}:flags=bilinear[g];[v][g]blend=all_mode=overlay:all_opacity=${grain},format=${pix}[out]`;
+    } else fc += `;[v]format=${pix}[out]`;
+    ffArgs.push('-filter_complex', fc, '-map', '[out]');
+    if (args.audio) ffArgs.push('-map', '1:a');
+    if (hevc) {
+      ffArgs.push('-c:v', 'libx265', '-preset', preset, '-crf', '16', '-profile:v', 'main10', '-tag:v', 'hvc1',
+        '-x265-params', 'keyint=60:min-keyint=30:aq-mode=3:colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited:log-level=error');
+    } else {
+      ffArgs.push('-c:v', 'libx264', '-preset', preset, '-crf', crf, '-profile:v', 'high', '-level', '4.1', '-tune', tune,
+        '-maxrate', maxrate, '-bufsize', bufsize, '-x264-params', 'keyint=60:min-keyint=30:aq-mode=3:aq-strength=1.1:psy-rd=1.0,0.15');
+    }
+    ffArgs.push('-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv', '-r', String(fps), '-movflags', '+faststart');
+    if (args.audio) ffArgs.push('-c:a', 'aac', '-b:a', abitrate, '-ar', '48000', '-ac', '2');
+    ffArgs.push('-t', String(dur), outPath);
+    return new Promise((res, rej) => { const p = spawn('ffmpeg', ffArgs, { stdio: 'inherit' }); p.on('close', c => c === 0 ? res() : rej(new Error('final ffmpeg exit ' + c))); });
+  }
+  await encode(out, false);
   console.log('wrote', out);
+  if (args.master) {
+    const mpath = args.master === 'true' ? out.replace(/\.[a-z0-9]+$/i, '') + '_master_hevc.mp4' : path.resolve(args.master);
+    console.log('writing 10-bit HEVC master');
+    await encode(mpath, true);
+    console.log('wrote', mpath);
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
 }
 main().catch(e => { console.error(e); process.exit(1); });
