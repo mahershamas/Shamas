@@ -9,41 +9,41 @@
       {
         "flag": "🇵🇰",
         "name": "Lahore / Karachi",
-        "days": "Day 1"
+        "days": "Day 1 evening"
       },
       {
         "flag": "🇱🇰",
         "name": "Sri Lanka",
-        "days": "5 nights · Kandy, Colombo",
+        "days": "Days 1–5 · Negombo, Kandy, Colombo",
         "leg": "4 h"
       },
       {
         "flag": "🇹🇭",
         "name": "Thailand",
-        "days": "4 nights · Bangkok",
-        "leg": "3.5 h"
+        "days": "Days 6–10 · Bangkok, Ayutthaya",
+        "leg": "night flight"
       },
       {
         "flag": "🇲🇾",
         "name": "Malaysia",
-        "days": "3 nights · Kuala Lumpur",
+        "days": "Days 10–13 · Kuala Lumpur",
         "leg": "2 h"
       },
       {
         "flag": "🇵🇰",
         "name": "Home",
-        "days": "Day 13",
+        "days": "Day 13 evening",
         "leg": "via Colombo"
       }
     ],
     "stats": [
       {
-        "v": "≈ 4.6–4.9 lakh",
-        "l": "expected total (Karachi / Lahore start)"
+        "v": "≈ 4.73 lakh",
+        "l": "expected total from Karachi (Lahore: see the rule below)"
       },
       {
         "v": "13 days",
-        "l": "12 nights, 3–4 nights per stop"
+        "l": "12 nights, 4 flights, no overnight buses"
       },
       {
         "v": "PKR 22,000",
@@ -59,19 +59,19 @@
         "type": "callout",
         "title": "Why this route",
         "items": [
-          "**Cheapest visas:** Sri Lanka's tourist ETA is free for Pakistanis (since 25 May 2026). Thailand and Malaysia are both online applications. No interviews.",
-          "**One airline ticket** takes you out and home (Pakistan → Colombo → Bangkok … Kuala Lumpur → Colombo → Pakistan). That satisfies FIA's same-airline return-ticket rule.",
-          "**Halal food is easy** in all three countries, and there are mosques everywhere. You can pray Jumu'ah at Masjid Negara in Kuala Lumpur.",
-          "**No rushing:** never more than one flight every 4–5 days, no 1-night stops, no overnight buses."
+          "**Cheapest visas:** Sri Lanka's ETA is free for Pakistanis; Thailand and Malaysia are online (the Thai fee is paid in cash at the embassy).",
+          "**One airline ticket** out and home, which satisfies FIA's same-airline return-ticket rule.",
+          "**Halal food is easy** in all three countries, with mosques everywhere.",
+          "**No rushing:** 2–4 nights in each place, 4 flights in 13 days, no overnight buses."
         ]
       },
       {
         "type": "callout",
         "title": "The one rule that keeps you inside 5 lakh",
-        "text": "Everything except the air ticket costs about **PKR 2.85 lakh**. So price the SriLankan ticket first (section 8). If it is **PKR 1.8 lakh or less**, do this 3-country plan. If it is more, do the **2-country plan** (Sri Lanka + Malaysia, 13 nights, ≈ PKR 4.4–4.5 lakh). A 4th country does not fit in 5 lakh."
+        "text": "Everything except the SriLankan ticket costs ≈ **PKR 2.93 lakh** (AirAsia included). **Price that ticket first** (section 8). **PKR 1.8 lakh or less** → this 3-country plan. **More** → the 2-country plan (Sri Lanka + Malaysia, 13 nights, ≈ PKR 4.5–4.6 lakh). Lahore fares are usually higher, so from Lahore expect the 2-country plan. A 4th country does not fit."
       }
     ],
-    "foot": "Researched and fact-checked on 6 November 2026 against government visa portals, embassy pages, airline fare pages and 2026 news. Prices are estimates at **PKR 280 = USD 1**. Visa rules change, so re-check each official link the week you apply."
+    "foot": "Researched and fact-checked on 6 November 2026 against government visa portals, embassy pages, airline fare pages, flight schedules and 2026 news. Prices are estimates at **PKR 280 = USD 1**. Visa rules and flight times change, so re-check each official link the week you apply."
   },
   "toc": [
     {
@@ -108,7 +108,7 @@
     },
     {
       "n": "9",
-      "t": "Before you fly: polio, money, insurance, SIM"
+      "t": "Before you fly: polio, money, gold rules, insurance, SIM"
     },
     {
       "n": "10",
@@ -116,11 +116,11 @@
     },
     {
       "n": "11",
-      "t": "Day-by-day itinerary"
+      "t": "Day-by-day itinerary + your trip card"
     },
     {
       "n": "12",
-      "t": "If something goes wrong: Plan B and Plan C"
+      "t": "If something goes wrong: costs, Plan B and Plan C"
     },
     {
       "n": "13",
@@ -135,20 +135,82 @@
       "t": "Sources"
     }
   ],
+  "tocBlocks": [
+    {
+      "type": "callout",
+      "tone": "gold",
+      "title": "How to use this plan",
+      "items": [
+        "**1.** Read sections 1 and 2, then get a SriLankan Airlines price for your dates. The rule in section 2 tells you whether to do 3 countries or 2.",
+        "**2.** Follow the timeline in section 3 **in order**. Each step points to the section with the details.",
+        "**3.** Tick the checklists as you go. Print sections 4, 10 and 11 and keep them in your hand luggage."
+      ]
+    },
+    {
+      "type": "p",
+      "cls": "small",
+      "text": "**Short words used here:** ETA = Sri Lanka's online visa · e-Visa / eVISA = Thailand's / Malaysia's online visa · TDAC / MDAC = free online arrival cards for Thailand / Malaysia · FIA = Pakistan airport immigration · ATL = FBR's Active Taxpayer List (being a 'filer') · NIMS = NADRA's vaccination record, which gives the polio certificate · SAARC = South Asian countries incl. Pakistan (cheaper tickets in Sri Lanka) · DMK = Bangkok's Don Mueang airport · KLIA = Kuala Lumpur airport (Terminal 1; KLIA2 = Terminal 2) · OTP = the one-time code your bank sends by SMS."
+    },
+    {
+      "type": "h3",
+      "text": "Official websites you will use (bookmark these; avoid look-alike sites)"
+    },
+    {
+      "type": "table",
+      "widths": [
+        "38%",
+        "62%"
+      ],
+      "rows": [
+        [
+          "Sri Lanka ETA (free)",
+          "https://www.eta.gov.lk"
+        ],
+        [
+          "Thailand e-Visa",
+          "https://www.thaievisa.go.th"
+        ],
+        [
+          "Thailand arrival card (TDAC, free)",
+          "https://tdac.immigration.go.th"
+        ],
+        [
+          "Malaysia eVISA",
+          "https://malaysiavisa.imi.gov.my"
+        ],
+        [
+          "Malaysia arrival card (MDAC, free)",
+          "https://imigresen-online.imi.gov.my/mdac/main"
+        ],
+        [
+          "Polio certificate (NIMS)",
+          "https://nims.nadra.gov.pk"
+        ],
+        [
+          "FBR Active Taxpayer List check",
+          "https://iris.fbr.gov.pk (Verifications)"
+        ],
+        [
+          "SriLankan Airlines (Pakistan site, PKR)",
+          "https://www.srilankan.com/en-pk · call centre +94 11 777 1979"
+        ]
+      ]
+    }
+  ],
   "blocks": [
     {
       "type": "h2",
       "num": "1",
       "text": "The plan on one page",
-      "sub": "Three countries, 13 days, one booking with SriLankan Airlines plus one short AirAsia flight."
+      "sub": "Three countries, 13 days, one booking with SriLankan Airlines plus one short AirAsia flight. Flight times below are the 2026 SriLankan schedule; check yours."
     },
     {
       "type": "table",
       "widths": [
-        "16%",
         "15%",
-        "41%",
-        "28%"
+        "21%",
+        "40%",
+        "24%"
       ],
       "head": [
         "Where",
@@ -158,20 +220,20 @@
       ],
       "rows": [
         [
-          "🇱🇰 **Sri Lanka**",
-          "5 (Kandy 3, Colombo 2)",
+          "🇱🇰 **Sri Lanka**<br>Days 1–5",
+          "4: Negombo 1, Kandy 2, Colombo 1. Then a night flight (≈ 01:05)",
           "Temple of the Tooth, Kandy Lake, Peradeniya gardens, a car day-trip to **Sigiriya Lion Rock** and **Dambulla cave temple**, Colombo's Red Mosque, Pettah market and Galle Face Green.",
           "**Free ETA** online at eta.gov.lk"
         ],
         [
-          "🇹🇭 **Thailand**",
-          "4 (Bangkok)",
-          "Grand Palace, Wat Pho, Wat Arun by river ferry, a day-trip to the ruins of **Ayutthaya**, Chinatown's gold street, halal food on Sukhumvit Soi 3.",
+          "🇹🇭 **Thailand**<br>Days 6–10",
+          "4 in Bangkok (+1 paid so the room is ready when you land at ≈ 06:15)",
+          "Grand Palace, Wat Pho, Wat Arun by river ferry, a day-trip to the ruins of **Ayutthaya**, Chinatown's gold street, halal food.",
           "**e-Visa**, PKR 13,000, about 14 working days"
         ],
         [
-          "🇲🇾 **Malaysia**",
-          "3 (Kuala Lumpur)",
+          "🇲🇾 **Malaysia**<br>Days 10–13",
+          "3 in Kuala Lumpur",
           "Petronas Towers, Masjid Negara and the **Islamic Arts Museum**, Batu Caves, Putrajaya's mosques, shopping before the flight home.",
           "**eVISA**, about RM126 (≈ PKR 9,000), 2–7 working days"
         ]
@@ -194,11 +256,11 @@
             "rows": [
               [
                 "**Late March – early April 2027** (recommended)",
-                "After Eid ul-Fitr (≈ 10 Mar) and before the 13–15 April New Year holidays in Sri Lanka and Thailand. Dry in Sri Lanka, hot in Bangkok and KL. Hotels are cheaper than in January. Gives you time to prepare calmly. **Example dates in this plan: Tue 23 Mar → Sun 4 Apr 2027.**"
+                "After Eid ul-Fitr (≈ 10 Mar) and before the 13–15 April New Year holidays in Sri Lanka and Thailand. Dry in Sri Lanka, hot in Bangkok and KL. Hotels are cheaper than in January, and you have time to prepare calmly. **Example dates in this plan: Tue 23 Mar → Sun 4 Apr 2027.**"
               ],
               [
                 "**Mid-January 2027**",
-                "Best weather, but peak hotel prices, and only possible if you pay the Thai visa fee by about **20 November 2026**."
+                "Best weather, but peak hotel prices, Thaipusam crowds in KL (Fri 22 Jan) and pre-Chinese-New-Year prices. Only possible if you pay the Thai visa fee by about **20 November 2026**."
               ],
               [
                 "Avoid",
@@ -215,9 +277,9 @@
           {
             "type": "list",
             "items": [
-              "A **private room with AC and its own bathroom** in a guesthouse or 2-star hotel (USD 20–28 a night). No dormitories.",
+              "A **private room with AC and its own bathroom** in a guesthouse or 2-star hotel (USD 20–30 a night). No dormitories.",
               "Mostly **local halal restaurants** (USD 9–13 a day).",
-              "Trains, buses, Grab and PickMe, plus **one private car day** in Sri Lanka.",
+              "Buses, Grab and PickMe, plus **two private car trips** in Sri Lanka (Negombo → Kandy, and the Sigiriya/Dambulla day).",
               "Entry tickets for every sight in the itinerary.",
               "Not included: shopping, gifts and gold."
             ]
@@ -226,7 +288,7 @@
             "type": "callout",
             "tone": "gold",
             "title": "Departing from Islamabad?",
-            "text": "SriLankan Airlines doesn't fly from Islamabad. Take the motorway bus to Lahore (≈ 4–5 h, ≈ PKR 3,000) and fly from there."
+            "text": "SriLankan Airlines doesn't fly from Islamabad. Take the motorway bus to Lahore (≈ 4–5 h, ≈ PKR 3,000) and use the Lahore column."
           }
         ]
       ]
@@ -235,7 +297,7 @@
       "type": "h2",
       "num": "2",
       "text": "Budget: where the 5 lakh goes",
-      "sub": "One traveller, 12 nights, at PKR 280 = USD 1. These are expected prices. The notes column gives each estimate's basis.",
+      "sub": "One traveller, 13 days / 12 hotel nights, at PKR 280 = USD 1. The notes column gives each estimate's basis.",
       "newPage": true
     },
     {
@@ -273,7 +335,7 @@
             "t": "2,05,000",
             "cls": "num"
           },
-          "Ranges: Karachi 1.65–2.15 lakh, Lahore 1.90–2.40 lakh. **Get a live quote first.**"
+          "January 2027 snapshots: Karachi 1.65–2.15 lakh, Lahore 1.90–2.40 lakh. **Get your own quote**, in PKR on the Pakistan site."
         ],
         [
           "AirAsia Bangkok → Kuala Lumpur, with a 20 kg bag",
@@ -336,16 +398,16 @@
           "Free for Pakistanis since 25 May 2026."
         ],
         [
-          "Travel insurance (EFU Standard, up to 21 days)",
+          "Travel insurance (EFU Standard, up to 14 days)",
           {
-            "t": "3,400",
+            "t": "2,500",
             "cls": "num"
           },
           {
-            "t": "3,400",
+            "t": "2,500",
             "cls": "num"
           },
-          "USD 35,000 medical cover. Gold plan (USD 70k) is PKR 5,350."
+          "USD 35,000 medical, PKR 2,450. Gold (USD 70,000) is PKR 3,850."
         ],
         [
           "Polio certificate, bank letters, photos, printing",
@@ -371,14 +433,14 @@
         [
           "Hotels, 12 nights",
           {
-            "t": "81,900",
+            "t": "84,000",
             "cls": "num"
           },
           {
-            "t": "81,900",
+            "t": "84,000",
             "cls": "num"
           },
-          "Kandy 3 × USD 20, Colombo 2 × 25, Bangkok 4 × 25, KL 3 × 27.50 (incl. RM10 tourist tax)."
+          "Negombo 1 + Kandy 2 × USD 20, Colombo 1 × 25, Bangkok 5 × 25, KL 3 × 30 (incl. RM10 tax + 8% SST). This is the cheap end of section 8's ranges; every +USD 5 a night adds ≈ PKR 17,000."
         ],
         [
           "Food (halal)",
@@ -390,19 +452,19 @@
             "t": "39,200",
             "cls": "num"
           },
-          "Sri Lanka USD 9/day, Bangkok 13, KL 11."
+          "13 days ≈ USD 140: Sri Lanka USD 9/day, Bangkok 13, KL 11."
         ],
         [
-          "Transport and airport transfers (incl. 2 car trips in Sri Lanka)",
+          "Transport and airport transfers",
           {
-            "t": "61,600",
+            "t": "69,400",
             "cls": "num"
           },
           {
-            "t": "61,600",
+            "t": "69,400",
             "cls": "num"
           },
-          "Sri Lanka USD 138 (two car trips), Bangkok 54, KL 28."
+          "Sri Lanka USD 153 (incl. 2 car trips), Bangkok 54, KL 41 (incl. KLIA Ekspres on Day 13)."
         ],
         [
           "Sights and entry tickets",
@@ -450,18 +512,18 @@
             "t": "8,000",
             "cls": "num"
           },
-          "Water, laundry, tips, taxi to and from home airport."
+          "Water, laundry, tips, taxi to and from the home airport."
         ],
         {
           "cls": "total",
           "cells": [
             "Expected total",
             {
-              "t": "4,63,700",
+              "t": "4,72,700",
               "cls": "num"
             },
             {
-              "t": "4,93,200",
+              "t": "5,02,200",
               "cls": "num"
             },
             ""
@@ -470,13 +532,13 @@
         {
           "cls": "total",
           "cells": [
-            "Cushion left from 5,00,000",
+            "Left from 5,00,000",
             {
-              "t": "36,300",
+              "t": "27,300",
               "cls": "num"
             },
             {
-              "t": "6,800",
+              "t": "−2,200 (over)",
               "cls": "num"
             },
             ""
@@ -494,10 +556,10 @@
             "tone": "gold",
             "title": "Decision rule (do this before anything else)",
             "items": [
-              "Everything except the SriLankan ticket ≈ **PKR 2.85 lakh** (Karachi) or **2.9 lakh** (Lahore).",
-              "**Ticket ≤ PKR 1.8 lakh** → do this 3-country plan.",
-              "**Ticket above 1.8 lakh** → do the 2-country plan: **Sri Lanka 6 nights + Malaysia 7 nights** (KL + Penang). It costs about **PKR 4.4–4.5 lakh** and needs no Thai visa (section 12).",
-              "From Lahore, the 3-country plan usually comes out 5–20k over 5 lakh unless you find a sale fare. Either take the 2-country plan or use the 'Lahore lite' savings below."
+              "Everything except the SriLankan ticket ≈ **PKR 2.93 lakh** (Karachi) or **2.97 lakh** (Lahore), AirAsia included.",
+              "**Ticket ≤ PKR 1.8 lakh** → do this 3-country plan (at least ≈ PKR 20,000 left over).",
+              "**Ticket above 1.8 lakh** → do the 2-country plan: **Sri Lanka + Malaysia, 13 nights**, ≈ **PKR 4.5–4.6 lakh**, no Thai visa needed (section 12).",
+              "**From Lahore** the typical fare (≈ 2.05 lakh) is above the line: the 3-country total is ≈ 5.02 lakh, just over budget. Take the 2-country plan, or start from Karachi, or use the 'Lahore lite' savings (≈ 4.83 lakh, very little spare)."
             ]
           }
         ],
@@ -514,16 +576,16 @@
             ],
             "rows": [
               [
-                "Bus from the airport to Kandy via Colombo instead of a private car (longer day)",
+                "Bus from Negombo to Kandy via Colombo instead of a private car (a longer day)",
                 {
                   "t": "≈ 12,000",
                   "cls": "num"
                 }
               ],
               [
-                "One fewer night in Colombo (fly out on day 5)",
+                "Skip the Bangkok early check-in night (leave your bag at the hotel, check in at 2 pm)",
                 {
-                  "t": "≈ 11,000",
+                  "t": "≈ 7,000",
                   "cls": "num"
                 }
               ],
@@ -535,14 +597,14 @@
                 }
               ],
               [
-                "Pay hotels in local cash at check-in where allowed (avoids the card's 4% FX fee). Malaysia must be prepaid.",
+                "Pay hotels in local cash at check-in where allowed (avoids the card's 4% FX fee); then carry USD 1,000, not 900. Malaysia must be prepaid.",
                 {
                   "t": "≈ 2,000",
                   "cls": "num"
                 }
               ],
               [
-                "Skip the Petronas Skybridge (towers are free to see from KLCC Park). It is not in the budget anyway.",
+                "Skip the Petronas Skybridge (the towers are free to see from KLCC Park). It is not in the budget anyway.",
                 {
                   "t": "0",
                   "cls": "num"
@@ -554,7 +616,7 @@
                   "cls": ""
                 },
                 {
-                  "t": "**≈ 23,000**",
+                  "t": "**≈ 19,000**",
                   "cls": "num"
                 }
               ]
@@ -568,38 +630,44 @@
       "tone": "warn",
       "title": "Also keep in mind",
       "items": [
-        "**Show money is not spending money.** Thailand can ask to see **20,000 baht (≈ USD 600)** per person when you arrive. Carry about **USD 900 in cash** from Pakistan and keep USD 650 of it untouched until Bangkok immigration (section 9).",
-        "**Your bank balance must be much larger than the trip.** Visa officers want to see that you can afford the trip and still have money left. See section 4."
+        "**Show money is not spending money.** Thailand can ask to see **20,000 baht (≈ USD 600)** when you arrive, and Malaysia turns back travellers with too little money. Carry about **USD 900 in cash**. Keep USD 650 untouched until Bangkok immigration, and at least USD 300 until KL immigration (section 9).",
+        "**A visa refusal costs real money** (section 12): a Thai refusal loses ≈ PKR 40,000–70,000 on top of the plan. That is why the cushion matters.",
+        "**Your bank balance must be much larger than the trip** (section 4)."
       ]
     },
     {
       "type": "h2",
       "num": "3",
       "text": "Step-by-step timeline: what to do, and when",
-      "sub": "Weeks are counted back from departure. The example dates are for a Tue 23 March 2027 departure. Do the steps in this order: Thailand first because it is the slowest and strictest, then Malaysia, then Sri Lanka.",
+      "sub": "Weeks are counted back from departure; the example dates are for a Tue 23 March 2027 departure. Do the visas in this order: Thailand first (slowest and strictest), then Malaysia, then Sri Lanka.",
       "newPage": true
     },
     {
       "type": "steps",
       "items": [
         {
-          "title": "Check your passport",
+          "title": "Get a first airline price and decide: 3 countries or 2",
           "when": "Now (T−20 weeks)",
-          "text": "It must be valid at least **6 months after you come home** (so until at least October 2027) with **3+ blank pages** (Malaysia's rule). If not, renew it now: e-passport 36 pages, 5 years = Rs 9,000 (21 working days) or Rs 15,000 urgent (5 working days), paid cashless through Passport Fee Asaan. Keep your old passports; they show your travel history."
+          "text": "Price your dates on srilankan.com/en-pk (section 8) and apply the rule in section 2. Then you know which plan you are preparing for. You buy the ticket later (step 6)."
+        },
+        {
+          "title": "Check your passport",
+          "when": "Now",
+          "text": "It must be valid at least **6 months after you come home** (until at least October 2027) with **3+ blank pages** (Malaysia's rule). If not, renew now: e-passport 36 pages, 5 years = Rs 9,000 (21 working days) or Rs 15,000 urgent (5 working days), paid cashless through Passport Fee Asaan. Keep old passports; they show your travel history."
         },
         {
           "title": "Fix your tax and bank profile",
           "when": "Now → departure",
           "items": [
             "Check you are on FBR's **Active Taxpayer List** at iris.fbr.gov.pk (Verifications). Filers pay half the card tax and look much stronger to visa officers.",
-            "Keep a **steady personal balance** for the coming months and avoid big one-off deposits. Move money from the business account as regular monthly drawings (section 4).",
-            "Ask your bank for: a **12-month personal statement** (stamped and signed), a **business account statement**, and an **account maintenance certificate** for each."
+            "Keep a **steady personal balance** and avoid big one-off deposits; move money from the business account as regular monthly drawings (section 4).",
+            "Bank papers (stamped and signed): a **12-month personal statement**, a **business statement** and an **account maintenance certificate** for each. Collect them about a week before the Thai application (≈ mid-Jan), a fresh 3-month statement for Malaysia (≈ mid-Feb), and a fresh set a week before you fly, for FIA."
           ]
         },
         {
           "title": "Collect your business documents",
           "when": "T−12 weeks · by 29 Dec",
-          "text": "NTN certificate, last 2 years of FBR returns with wealth statement, chamber of commerce or sarafa/jewellers' association certificate, shop rent agreement or ownership papers, and a gold valuation certificate. Get English translations of anything in Urdu. Full list in section 4."
+          "text": "NTN certificate, last 2 years of FBR returns with wealth statement, chamber or sarafa/jewellers' association certificate, shop rent agreement or ownership papers, and (optional) a gold valuation certificate. Get English translations of anything in Urdu. Full list in section 4."
         },
         {
           "title": "Polio drops + NIMS certificate",
@@ -607,24 +675,28 @@
           "text": "Get the free oral polio dose at a government hospital, EPI centre or District Health Office (bring CNIC and passport). Then download the certificate at **nims.nadra.gov.pk** (≈ Rs 100). The dose must be **4 weeks to 12 months** before you fly. Don't rely on the airport counter."
         },
         {
-          "title": "Get the airline quote and decide: 3 countries or 2",
+          "title": "Buy the SriLankan ticket",
           "when": "T−9 weeks · ≈ 19 Jan",
-          "text": "Price the SriLankan multi-city ticket (section 8). Apply the decision rule in section 2. Book it, and ask the call centre (+94 11 777 1979) what a date or route change costs. Multi-city bookings can't be changed online."
+          "items": [
+            "Re-price it and apply the rule in section 2: the 3-country route (section 8) or the Plan B route (section 12).",
+            "**Before paying, phone the call centre (+94 11 777 1979): does this fare allow date and route changes, and what does a change cost?** Write the answer down. Choose a fare that is **non-refundable but changeable**: Thailand asks for a non-refundable ticket, and Plans B and C need changes.",
+            "Check each flight's **time**. Book hotels to match (section 8)."
+          ]
         },
         {
           "title": "Book AirAsia Bangkok → KL and all hotels",
           "when": "Same week",
-          "text": "Buy the AirAsia ticket with a 20 kg bag. Book every night: Bangkok and Sri Lanka with free cancellation, **Kuala Lumpur prepaid** (Malaysia asks for proof of PAID accommodation). Use only real bookings; fake or 'held' bookings mean refusal."
+          "text": "Buy AirAsia with a 20 kg bag. Book every night: Sri Lanka and Bangkok with free cancellation. **Kuala Lumpur must be prepaid** (Malaysia asks for proof of PAID accommodation); choose a 'pay now' rate that is still free to cancel. Use only real bookings; fake or 'held' bookings mean refusal. **After the visas are issued, don't cancel or change these bookings** (cancelled bookings are a red flag)."
         },
         {
           "title": "Apply for the Thailand e-Visa and pay the fee",
           "when": "T−8 weeks · ≈ 26 Jan",
-          "text": "Apply on thaievisa.go.th, then pay PKR 13,000 in cash at the Visa Gate the next working morning (section 5). Stay in Pakistan until it is approved, about 14 working days after the fee is received. **Print it.**"
+          "text": "Apply on thaievisa.go.th, then pay PKR 13,000 in cash the next working morning (Islamabad: embassy Visa Gate; Karachi: as the consulate tells you; section 5). Stay in Pakistan until it is approved, about 14 working days after the fee is received (≈ 16 Feb). **Print it.**"
         },
         {
           "title": "Apply for the Malaysia eVISA",
-          "when": "After Thai approval · ≈ 16–22 Feb",
-          "text": "On malaysiavisa.imi.gov.my (section 6). It takes 2–7 working days and is valid for 6 months, so applying early is safe. Print the eVISA Note."
+          "when": "Right after Thai approval · ≈ 16–22 Feb",
+          "text": "On malaysiavisa.imi.gov.my (section 6), about 6 weeks before you reach KL and before Malaysia's Eid holidays (≈ 10–11 Mar). It takes 2–7 working days and can be used for 6 months. Check your email daily: if they ask for more documents, reply within 5 days. Print the eVISA Note."
         },
         {
           "title": "Apply for the free Sri Lanka ETA",
@@ -632,9 +704,9 @@
           "text": "On eta.gov.lk, 2–4 weeks before you fly (section 7). The fee should show **zero**. Print the approval."
         },
         {
-          "title": "Buy insurance; sort money and SIM",
+          "title": "Insurance, money, phone",
           "when": "T−2 weeks",
-          "text": "Buy EFU (or similar) insurance in Pakistan before the trip starts. Buy about USD 900 from a licensed exchange company (keep the receipt). Switch on international use for your debit card. Pack (section 9)."
+          "text": "Buy EFU (or similar) insurance in Pakistan before the trip starts. Buy about USD 900 from a licensed exchange company (keep the receipt). Switch on international use for your debit card and **international roaming for your Pakistani SIM** (for bank OTPs). Pack (section 9)."
         },
         {
           "title": "Optional: visit the FIA facilitation desk",
@@ -642,21 +714,21 @@
           "text": "FIA zonal offices in Lahore and Karachi run pre-departure facilitation desks (9 am–5 pm, every day). They check visas, return ticket and cash limits. Re-check any new FIA rules."
         },
         {
-          "title": "Print everything and pack your FIA folder",
+          "title": "Print everything and fill in your trip card",
           "when": "T−2 days",
-          "text": "Two printed copies of every visa, ticket and hotel booking, plus PDFs on your phone. The Thai e-Visa **must be on paper**."
+          "text": "Two printed copies of every visa, ticket and hotel booking, plus PDFs on your phone. The Thai e-Visa **must be on paper**. Fill in the trip card in section 11."
         },
         {
           "title": "Fly",
           "when": "Day 1 · Tue 23 Mar",
-          "text": "Be at the airport **4 hours early**. Declare your USD cash and any jewellery to Customs (section 10)."
+          "text": "Be at the airport **4 hours early**. Declare your USD cash (Pass Track app or the Customs desk) and anything you wear of value, and keep the copies for your return (sections 9 and 10)."
         },
         {
           "title": "Two online arrival cards during the trip",
-          "when": "Days 3–10",
+          "when": "Days 4–10",
           "items": [
             "**Thailand TDAC**, free, within 72 hours before landing in Bangkok: tdac.immigration.go.th. Do it on Day 4 or 5.",
-            "**Malaysia MDAC**, free, within 3 days before landing in KL (submission day counts): imigresen-online.imi.gov.my/mdac/main. Do it on Day 8–10."
+            "**Malaysia MDAC**, free, within 3 days before landing in KL (submission day counts): imigresen-online.imi.gov.my/mdac/main. Do it on Day 8, 9 or 10."
           ]
         }
       ]
@@ -705,7 +777,7 @@
               "Passport (6+ months valid after return, 3+ blank pages) + old passports",
               "2 copies of CNIC; 2 copies of passport bio page and any previous visas",
               "Photos: **35 × 50 mm, white background, studio, taken within 6 months, no cap** (Malaysia's rule; also fine for Thailand). Keep a digital file under 2 MB.",
-              "**Proof of address** in your name matching your CNIC (utility bill or rent agreement); Thailand requires it",
+              "**Proof of address** where you live now (utility bill or rent agreement). Thailand requires it. If the bill is in your father's name, a common way to show the link is to add his CNIC and your Family Registration Certificate.",
               "SriLankan e-ticket, AirAsia ticket, hotel bookings, insurance, NIMS polio certificate",
               "**Cover letter** (template in section 13)"
             ]
@@ -716,9 +788,9 @@
             "title": "How to use your gold statements",
             "items": [
               "Embassies judge **money in the bank**, not gold. No official checklist accepts gold in place of a bank statement. Gold shows you are wealthy and have reasons to come back; it is **supporting evidence only**.",
-              "The strongest proof of gold is your **FBR wealth statement** showing it, year after year.",
-              "Add an **independent valuation certificate** (bank-approved gold appraiser or your jewellers' association, not your own shop). It should give weight, karat, rate used, total value, valuer's name, stamp and date.",
-              "Upload it under 'other supporting documents' and mention it in one line of the cover letter."
+              "The strongest proof is your **FBR wealth statement** showing the gold, year after year.",
+              "Optional: an **independent valuation certificate** (bank-approved appraiser or your jewellers' association, not your own shop), with weight, karat, rate, value, valuer's name, stamp and date.",
+              "**Only submit a valuation for gold that is in your wealth statement, at a similar value.** A valuation far above your tax returns is itself a red flag. If unsure, ask your tax adviser, or leave it out."
             ]
           }
         ]
@@ -735,13 +807,13 @@
           {
             "type": "table",
             "widths": [
-              "40%",
-              "60%"
+              "36%",
+              "64%"
             ],
             "rows": [
               [
                 "Thailand (single entry)",
-                "No official minimum for single entry (multiple entry needs > PKR 6.5 lakh for 6 months). Media and agents quote PKR 3.5–5 lakh."
+                "No minimum on the embassy checklist, but the e-Visa portal's 'more documents' screen mentions at least 30,000 baht (≈ PKR 2.5 lakh). Multiple entry needs > PKR 6.5 lakh for 6 months. Media and agents quote PKR 3.5–5 lakh."
               ],
               [
                 "Malaysia",
@@ -753,7 +825,7 @@
               ],
               [
                 "**Our advice**",
-                "Keep **PKR 7.5–10 lakh** steady in your **personal** account for 6+ months, about 1.5–2 times the trip cost. Then the trip money leaves a healthy balance behind. (Practical guidance, not an official rule.)"
+                "Keep **PKR 7.5–10 lakh** steady in your **personal** account for 6+ months, about 1.5–2 times the trip cost, so the trip money leaves a healthy balance behind. (Practical guidance, not an official rule.)"
               ]
             ]
           }
@@ -764,7 +836,7 @@
             "tone": "warn",
             "title": "Red flags that get visas refused",
             "items": [
-              "A **big deposit just before applying**, e.g. after selling gold. If you must, keep the sale invoice and make sure it matches your tax return.",
+              "A **big deposit just before applying** (e.g. after selling gold). If unavoidable, keep the sale invoice and make sure it matches your tax return.",
               "Balance far bigger than the income on your tax return, or a large business turnover with an empty personal account",
               "Not on the ATL / no tax returns",
               "Business name or address different on the NTN, bank account and chamber certificate",
@@ -792,7 +864,7 @@
         ],
         [
           "Fee",
-          "PKR 13,000, cash at the mission, non-refundable"
+          "PKR 13,000 (Nov 2026), cash, non-refundable; pay what the portal shows"
         ],
         [
           "Time",
@@ -804,7 +876,7 @@
         ],
         [
           "Which mission",
-          "Islamabad embassy if you live in Punjab/KP/ICT; Karachi consulate if in Sindh/Balochistan"
+          "Where you live now, shown by your address proof. In practice: Islamabad embassy for Punjab, KP, ICT, AJK, GB; Karachi consulate for Sindh, Balochistan. Unsure? Email thaievisa@mfa.go.th"
         ],
         [
           "At arrival",
@@ -814,30 +886,30 @@
       "steps": [
         {
           "title": "Book first, apply second.",
-          "text": "The embassy's checklist asks for a **confirmed, non-refundable air ticket** and accommodation. Upload your SriLankan e-ticket, the AirAsia Bangkok→KL ticket and your Bangkok hotel booking."
+          "text": "The embassy's checklist asks for a **confirmed, non-refundable air ticket** and accommodation. Upload your SriLankan e-ticket, the AirAsia Bangkok → KL ticket and your Bangkok hotel booking."
         },
         {
           "title": "Create an account on thaievisa.go.th",
-          "text": "Choose the mission where you live (Royal Thai Embassy Islamabad or Royal Thai Consulate-General Karachi), then **Tourist Visa (TR), single entry**."
+          "text": "Choose your mission (above), then **Tourist Visa (TR), single entry**."
         },
         {
           "title": "Fill the form and upload (JPG/PDF, max 3 MB each)",
-          "text": "Passport bio page, photo (within 6 months, matching how you look now), **proof of your current address in Pakistan**, tickets, hotel, 12-month bank statement + bank certificate, business letterhead letter, business registration papers (NTN, chamber/association), 2 CNIC copies, previous visas, cover letter. Add the gold valuation and wealth statement as supporting documents."
+          "text": "Passport bio page; photo (within 6 months, matching how you look now); **proof of your current address in Pakistan**; tickets; hotel; 12-month bank statement + bank certificate; business letterhead letter; business registration papers (NTN, chamber/association); 2 CNIC copies; previous visas; cover letter. Wealth statement (and valuation, if used) as supporting documents."
         },
         {
           "title": "Print the application confirmation and pay in cash",
-          "text": "Islamabad: at the embassy **Visa Gate**, Monday–Friday mornings (about 09:30–13:00), in person or through a trusted relative. Karachi: follow the consulate's payment instructions on its website. **Do not pay fixers**; the embassy warns against them."
+          "text": "**Islamabad:** at the embassy **Visa Gate**, Monday–Friday mornings (about 09:30–13:00), in person or through a trusted relative. **Karachi:** the consulate doesn't publish its payment steps in English, so before you apply, phone or email the Royal Thai Consulate-General Karachi (contacts on karachi.thaiembassy.org) and ask where and when to pay. **Do not pay fixers**; the embassy warns against them."
         },
         {
           "title": "Wait in Pakistan (≈ 14 working days)",
-          "text": "You must stay in Pakistan until the decision. Embassy holidays add days."
+          "text": "You must stay in Pakistan until the decision. Embassy holidays add days. Check your email (and spam folder) daily."
         },
         {
           "title": "Print the e-Visa (2–3 copies)",
           "text": "Phone copies are NOT accepted at check-in or at Thai immigration."
         },
         {
-          "title": "Within 72 hours before your Colombo → Bangkok flight",
+          "title": "Within 72 hours before landing in Bangkok",
           "text": "Fill the free **Thailand Digital Arrival Card** at https://tdac.immigration.go.th (avoid look-alike sites that charge)."
         }
       ],
@@ -847,21 +919,22 @@
         "Onward AirAsia ticket and SriLankan ticket home",
         "Bangkok hotel booking",
         "**20,000 baht (≈ USD 600) in cash or equivalent**, which officers may ask to see",
-        "Bank statement copy"
+        "Bank statement copy",
+        "Say: 'Tourism, 4 nights at [hotel], then Kuala Lumpur on [date].'"
       ],
-      "warn": "If Thailand refuses: you lose the PKR 13,000 fee. Switch to Plan B in section 12 (Sri Lanka + Malaysia). Ask SriLankan to change your Colombo → Bangkok flight to Colombo → Kuala Lumpur."
+      "warn": "If Thailand refuses, you lose the PKR 13,000 fee and the trip to pay it, usually the AirAsia fare too, and you pay SriLankan's change fee: about PKR 40,000–70,000 in total. See section 12. Also: Thailand plans a 450-baht entry fee and a 1,000-baht air departure tax; neither was in force in November 2026. If introduced, they will probably be added to air tickets."
     },
     {
       "type": "h2",
       "num": "6",
       "text": "Visa 2: Malaysia eVISA",
-      "sub": "Apply after the Thai approval, about 3–5 weeks before you reach KL."
+      "sub": "Apply right after the Thai approval, about 6 weeks before you reach KL."
     },
     {
       "type": "country",
       "flag": "🇲🇾",
       "name": "Malaysia: eVISA, Social visit (VTR), single entry",
-      "tag": "Apply 3–5 weeks before",
+      "tag": "Apply ≈ 6 weeks before",
       "facts": [
         [
           "Where",
@@ -899,15 +972,19 @@
         },
         {
           "title": "Upload",
-          "text": "Passport bio page; your **whole itinerary as one PDF** (SriLankan ticket + AirAsia ticket); **paid** KL hotel voucher; **last 3 months' bank statements** (personal + business merged into one PDF); a short cover letter (optional but useful)."
+          "text": "Passport bio page; your **whole itinerary as one PDF** (SriLankan ticket + AirAsia ticket); **paid** KL hotel voucher; **last 3 months' bank statements** (personal + business in one PDF); a short cover letter (optional but useful)."
         },
         {
           "title": "Check the total on the payment screen, then pay",
           "text": "It should be about RM126. Some 2026 websites claim RM200; the official fee table still shows RM20 for Pakistan."
         },
         {
+          "title": "Watch your email for 5 days",
+          "text": "If Immigration asks for more documents or an interview, reply **within 5 days**, or the application is rejected automatically and the fee is lost. Don't apply twice: a new approval cancels the old one."
+        },
+        {
           "title": "Download and print the eVISA Note",
-          "text": "Don't apply twice: a new approval cancels the old one."
+          "text": ""
         },
         {
           "title": "Within 3 days before arriving (counting today)",
@@ -920,16 +997,16 @@
         "SriLankan ticket home (KL → Colombo → Pakistan)",
         "**Paid** KL hotel voucher",
         "3-month bank statement",
-        "USD 300–500 in cash + a working card"
+        "At least USD 300 in cash + a working card",
+        "Say: 'Tourism, 3 nights at [hotel], flying home on [date].'"
       ],
-      "warn": "Malaysia's border agency has turned back Pakistani travellers at KLIA ('Not To Land') for fake hotel bookings, no return ticket or too little money (2025). Have every paper ready and answer simply: tourism, 3 nights, hotel name, flying home on [date]."
+      "warn": "In 2025 Malaysia's border agency turned back Pakistani travellers at KLIA ('Not To Land') for fake hotel bookings, no return ticket or too little money. If refused entry, you are put on a flight back to where you came from (Bangkok) at your own cost. Your single-entry Thai visa is already used, so you may have to buy a ticket home from the airport. Have every paper ready."
     },
     {
       "type": "h2",
       "num": "7",
       "text": "Visa 3: Sri Lanka ETA (free)",
-      "sub": "The easiest one. Do it last, 2–4 weeks before you fly.",
-      "newPage": true
+      "sub": "The easiest one. Do it last, 2–4 weeks before you fly."
     },
     {
       "type": "country",
@@ -964,12 +1041,16 @@
       ],
       "steps": [
         {
+          "title": "Check the free scheme is still on",
+          "text": "Press reports say it was approved for one year (to about May 2027), with a review around November 2026. A March 2027 trip is inside that, but if the site shows a fee for Pakistan, the scheme has changed."
+        },
+        {
           "title": "Open eta.gov.lk → Apply → Tourist ETA (individual)",
           "text": "Look-alike agent sites charge USD 20–100 for this free ETA."
         },
         {
           "title": "Type your details exactly as in your passport",
-          "text": "Occupation: business owner (gold/jewellery). Purpose: tourism. Arrival: Colombo (BIA). Address: your Kandy hotel. Mistakes can't be corrected later; you'd have to apply again."
+          "text": "Occupation: business owner (gold/jewellery). Purpose: tourism. Arrival: Colombo (BIA). Address: your Negombo hotel. Mistakes can't be corrected later; you'd have to apply again."
         },
         {
           "title": "The fee must show zero",
@@ -978,19 +1059,16 @@
         {
           "title": "Save the reference number; print the approval email",
           "text": "Track status on the site or the 24/7 helpline."
-        },
-        {
-          "title": "Re-check the free scheme before applying",
-          "text": "Press reports say it was approved for one year (to about May 2027). A March 2027 trip is inside that, but check the site."
         }
       ],
       "docs": [
         "Printed ETA approval",
         "SriLankan ticket showing your onward flight",
-        "First hotel booking",
-        "Proof of funds (cash, card, bank statement)"
+        "Hotel bookings",
+        "Proof of funds (cash, card, bank statement)",
+        "Say: 'Tourism, 4 nights in Negombo, Kandy and Colombo, then Bangkok on [date].'"
       ],
-      "warn": "Sri Lanka Customs: declare personal gold jewellery and foreign cash at the 'Arrival No. 1' Customs officer. Gold bars and biscuits are not allowed as passenger baggage."
+      "warn": "Sri Lanka Customs: tell the Customs officer in the arrival hall about any gold jewellery you are wearing. Gold bars and biscuits are not allowed as passenger baggage. Foreign cash needs a declaration only above USD 15,000."
     },
     {
       "type": "h2",
@@ -1009,33 +1087,32 @@
             "type": "steps",
             "items": [
               {
-                "title": "Go to srilankan.com → Book → Multi-city",
-                "text": "Enter 4 flights:",
+                "title": "srilankan.com/en-pk → Book → Multi-city",
+                "text": "Use the Pakistan site and pay in **PKR** (a foreign-currency payment adds ≈ 4% card fees). Enter 3 flights:",
                 "items": [
                   "Lahore or Karachi → **Colombo** (Day 1)",
-                  "Colombo → **Bangkok** (Day 6)",
-                  "Kuala Lumpur → Colombo (Day 13)",
-                  "Colombo → Lahore or Karachi (Day 13, same day)"
+                  "Colombo → **Bangkok** (the ≈ 01:05 flight on the night of Day 5 → Day 6)",
+                  "**Kuala Lumpur → Lahore or Karachi** (Day 13, as one flight; the site picks the Colombo connection)"
                 ]
               },
               {
-                "title": "Check the price and the fare rules",
-                "text": "Some cheapest fares don't allow a stopover in Colombo. If the website won't price it, call SriLankan (+94 11 777 1979) or a Pakistani IATA agent. Lahore flies about 4 times a week (check the days)."
+                "title": "Check the times before you pay",
+                "text": "In the 2026 schedule: Lahore 18:25 → Colombo ≈ 22:20 (Karachi lands ≈ 21:30); Colombo → Bangkok ≈ 01:05, landing ≈ 06:15; KL → Colombo mid-morning (≈ 08:00–09:45) or afternoon (≈ 15:00); Colombo → Pakistan ≈ 13:35–13:50. **Choose the morning KL flight** so you connect home the same day. Lahore and Karachi each have only about 4 flights a week."
               },
               {
-                "title": "Check baggage",
-                "text": "Economy is normally **30 kg + 7 kg cabin**. Confirm it on the fare."
+                "title": "If the website won't price it",
+                "text": "(1) Try dates 1–2 days earlier or later. (2) Call SriLankan or ask a Pakistani IATA travel agent for **one booking with a Colombo stopover**, and get the price and change rules by email. (3) **Don't** buy separate tickets: FIA's rule needs your return home on the same booking."
               },
               {
-                "title": "Never skip the first flight",
-                "text": "The rest of the ticket will be cancelled."
+                "title": "Baggage and the golden rule",
+                "text": "Economy is normally **30 kg + 7 kg cabin**; confirm it on the fare. **Never skip a flight**: the rest of the ticket is cancelled. Changes are by phone, not online."
               }
             ]
           },
           {
             "type": "p",
             "cls": "small",
-            "text": "Snapshot fares on srilankan.com (6 Nov 2026, round trips, no stopover): Karachi–Bangkok from PKR 1,62,874; Karachi–Colombo 1,70,218; Karachi–KL 1,89,973; Lahore–Bangkok 1,86,670; Lahore–Colombo 1,87,577; Lahore–KL 1,95,173. A stopover ticket usually costs the same or a bit more."
+            "text": "Fares seen on srilankan.com on 6 Nov 2026, for January 2027 dates, round trips with no stopover: Karachi–Bangkok from PKR 1,62,874; Karachi–Colombo 1,70,218; Karachi–KL 1,89,973; Lahore–Bangkok 1,86,670; Lahore–Colombo 1,87,577; Lahore–KL 1,95,173. A stopover ticket usually costs the same or a bit more, and March prices can differ. Get your own quote."
           }
         ],
         [
@@ -1046,43 +1123,44 @@
           {
             "type": "list",
             "items": [
-              "Book on airasia.com and **add the 20 kg bag at booking**. Compare with Batik Air on the same route.",
-              "AirAsia leaves from **Don Mueang (DMK)**, not Suvarnabhumi, and arrives at **KLIA Terminal 2**.",
-              "Your 30 kg SriLankan allowance applies again after KL, so **do your shopping in KL** (the last stop), not Bangkok."
+              "Book on airasia.com and **add the 20 kg bag at booking**. Compare Batik Air on the same route.",
+              "Check that the flight really runs on your date: Thai AirAsia suspended this route from April to October 2026 during the fuel crisis.",
+              "AirAsia leaves from **Don Mueang (DMK)**, not Suvarnabhumi, and lands at **KLIA Terminal 2**. SriLankan uses **KLIA Terminal 1**.",
+              "Your 30 kg allowance applies again after KL, so **do your shopping in KL** (the last stop), not Bangkok."
             ]
           },
           {
             "type": "h3",
-            "text": "Hotels: where to stay"
+            "text": "Hotels: where to stay (book to match the flight times)"
           },
           {
             "type": "table",
             "widths": [
-              "28%",
-              "72%"
+              "26%",
+              "74%"
             ],
             "rows": [
               [
-                "Kandy",
-                "Near the lake or Temple of the Tooth. Guesthouses USD 15–25."
+                "Negombo (night 1)",
+                "Near the beach road, ≈ 20 min from the airport, because you land at night. USD 15–25."
               ],
               [
-                "Colombo",
-                "Fort, Pettah or Kollupitiya (near Galle Face and the Red Mosque). USD 25–35."
+                "Kandy (2 nights)",
+                "Near the lake or Temple of the Tooth. USD 15–25."
               ],
               [
-                "Bangkok",
-                "Pratunam or Ratchathewi: near halal food, quieter than Sukhumvit Soi 3–11 (a nightlife area). USD 25–40."
+                "Colombo (1 night)",
+                "Fort, Pettah or Kollupitiya. USD 25–35. Ask for late check-out: you leave for the airport at ≈ 9 pm."
               ],
               [
-                "Kuala Lumpur",
-                "Bukit Bintang, Chinatown or near Masjid Jamek. RM100–140 + RM10/night tourist tax. **Prepay.**"
+                "Bangkok (5 nights)",
+                "**Book from the night of Day 5**, so the room is yours when you land at ≈ 06:15. Pratunam or Ratchathewi: near halal food and quieter than Sukhumvit Soi 3–11 (a nightlife area). USD 25–40."
+              ],
+              [
+                "Kuala Lumpur (3 nights)",
+                "Bukit Bintang, Chinatown or near Masjid Jamek. RM100–140 + RM10/night tourist tax (+8% service tax if not included). **Prepaid**, ideally still free to cancel."
               ]
             ]
-          },
-          {
-            "type": "callout",
-            "text": "Book on Booking.com/Agoda with **free cancellation** (except KL, which must be prepaid). Check the price includes taxes and service charge."
           }
         ]
       ]
@@ -1090,7 +1168,7 @@
     {
       "type": "h2",
       "num": "9",
-      "text": "Before you fly: polio, money, insurance, SIM",
+      "text": "Before you fly: polio, money, gold rules, insurance, SIM",
       "newPage": true
     },
     {
@@ -1116,7 +1194,7 @@
           },
           {
             "type": "p",
-            "text": "**EFU 'Worldwide excluding USA, Canada, Australia & Japan'**, up to 21 days: Standard (USD 35k medical) PKR 3,350, or Gold (USD 70k) PKR 5,350. Buy it online while you are in Pakistan. Compare TPL and Adamjee. Pre-existing illnesses are not covered."
+            "text": "**EFU 'Worldwide excluding USA, Canada, Australia & Japan'**, up to 14 days (this trip is 13): Standard (USD 35k medical) PKR 2,450, or Gold (USD 70k) PKR 3,850. If your dates run past 14 days, the 21-day band is PKR 3,350 / 5,350. Buy it online while in Pakistan (ages up to 66). Check that it covers every country you visit. Pre-existing illnesses are not covered."
           },
           {
             "type": "h3",
@@ -1128,8 +1206,16 @@
               "**Sri Lanka:** Dialog Tourist SIM, LKR 1,399 for 20 GB, at the Dialog store just after Customs.",
               "**Thailand:** AIS / TrueMove tourist SIM at Suvarnabhumi arrivals (roughly 299–599 baht).",
               "**Malaysia:** U Mobile (≈ RM15 for 7 days) or CelcomDigi (≈ RM25) at the operator's own KLIA counter.",
-              "Keep your Pakistani SIM on so bank OTP messages arrive."
+              "**Keep your Pakistani SIM working for bank OTPs:** switch on international roaming before you leave (receiving SMS is usually free), and switch mobile-data roaming off."
             ]
+          },
+          {
+            "type": "h3",
+            "text": "Packing and dress"
+          },
+          {
+            "type": "p",
+            "text": "Temples and the Grand Palace need **shoulders and knees covered**; trousers and a shirt are fine, and shoes come off. Bring a light jacket for Kandy evenings and the night flight, an umbrella, walking shoes, a universal plug adapter and a small padlock."
           }
         ],
         [
@@ -1140,10 +1226,10 @@
           {
             "type": "list",
             "items": [
-              "**Carry about USD 900 in clean USD 50/100 notes**, bought from a licensed exchange company with your CNIC (keep the receipt). Keep USD 650 for Thai immigration, and change money as you go.",
+              "**Carry about USD 900 in clean USD 50/100 notes** (USD 1,000 if you pay hotels in cash), bought from a licensed exchange company with your CNIC; keep the receipt.",
+              "Keep **USD 650 untouched until Bangkok immigration** and **at least USD 300 until KL immigration**. Pay mostly by card in Sri Lanka and Bangkok, and change money as you go.",
               "**Legal limits leaving Pakistan:** up to USD 5,000 per visit (USD 30,000 a year) in foreign currency. Declare it on the FBR **Pass Track** app or at the Customs desk. Pakistani notes: keep it to Rs 3,000 or less.",
-              "**Cards:** switch on international use in your banking app. Advance tax 236Y is 0.5% if you are on the ATL, 1% if not. Banks add about a 4% FX fee. The yearly card limit is USD 30,000.",
-              "Take **two cards from different banks**. Always choose to pay in **local currency** (say no to 'pay in PKR' at the machine).",
+              "**Cards:** switch on international use. Advance tax 236Y is 0.5% if you are on the ATL, 1% if not; banks add ≈ 4% FX fee. Yearly card limit USD 30,000. Take **two cards from different banks**, and always pay in **local currency** (say no to 'pay in PKR').",
               "Use ATMs inside banks or malls (card skimming is reported in Sri Lanka)."
             ]
           },
@@ -1153,19 +1239,11 @@
             "title": "Gold and jewellery: special rules for you",
             "items": [
               "**Do not carry business gold, coins, bars, samples or loose stones** out of Pakistan. State Bank rules do not allow exporting gold.",
-              "Wear only **minimal personal jewellery** and **declare it to Pakistan Customs when leaving**, so you can bring it back without questions or duty.",
-              "Sri Lanka and Malaysia also want jewellery and dutiable items declared on arrival.",
-              "Buying gold abroad? Check Pakistan Customs' current baggage rules and duty **before** you buy, and declare it on return.",
+              "**Safest: leave your gold jewellery at home.** SBP's general permission lets residents take out only non-gold jewellery worth up to about Rs 2,000; gold articles, or anything more, need SBP permission (Form 'J') before you travel.",
+              "Whatever you do wear, **declare it to Pakistan Customs when leaving** (form 'CD') and keep the stamped copy for your return. Sri Lanka and Malaysia also want jewellery declared on arrival.",
+              "Buying gold abroad? Check Pakistan Customs' current baggage rules and duty **before** you buy, declare it on return, and don't pay for gold or stock with your personal card (SBP: card use must match personal needs).",
               "**Gem scams:** in Sri Lanka and Bangkok, tuk-tuk drivers take tourists to 'special' gem shops. Don't buy on impulse."
             ]
-          },
-          {
-            "type": "h3",
-            "text": "Packing and dress"
-          },
-          {
-            "type": "p",
-            "text": "Temples (and the Grand Palace) need **shoulders and knees covered**; trousers and a shirt are fine, shoes come off. Bring a light jacket for Kandy evenings, an umbrella, comfortable walking shoes, a universal plug adapter and a small padlock."
           }
         ]
       ]
@@ -1201,11 +1279,10 @@
             "type": "list",
             "items": [
               "**Arrive 4 hours early.** Since October 2026 there are extra document checks before immigration.",
-              "**Same-airline rule:** FIA asks visit-visa travellers to Bangkok and Malaysia for a return ticket on the same airline/booking (Oct 2024; still applied). Your single SriLankan booking meets it.",
+              "**Same-airline rule:** FIA asks visit-visa travellers to Bangkok and Malaysia for a return ticket on the same airline/booking (directive of Oct 2024; no withdrawal found as of Nov 2026). Your single SriLankan booking meets it.",
               "**No Protector stamp** is needed for tourists. Carry nothing that looks like job-hunting (no CVs, no job offers).",
-              "Answer simply and consistently: *'Tourism, 13 days, Sri Lanka, Thailand, Malaysia. I own a gold business in [city]. I return on [date].'*",
-              "**There is no paid 'FIA clearance'.** A fake WhatsApp service was exposed in October 2026. Ignore anyone offering 'setting'.",
-              "The FIA e-immigration app was not launched as of November 2026. Clearance happens at the airport."
+              "Answer simply and consistently: **'Tourism, 13 days: Sri Lanka, Thailand, Malaysia. I own a gold business in [city]. I return on [date].'**",
+              "**There is no paid 'FIA clearance'.** A fake WhatsApp service was exposed in October 2026; ignore anyone offering 'setting'. The FIA e-immigration app had not launched in November 2026."
             ]
           },
           {
@@ -1213,9 +1290,10 @@
             "tone": "warn",
             "title": "If you are offloaded",
             "items": [
-              "Stay calm and politely ask for the **written reason / a copy of the offloading proforma**. The Lahore High Court (May 2026) said reasons must be recorded and given.",
+              "**Before the flight leaves**, call SriLankan (+94 11 777 1979) or go to its check-in desk and ask to move your booking to a new date (change fee). If you simply don't fly, the whole multi-city ticket is cancelled as a no-show.",
+              "Politely ask FIA for the **written reason / a copy of the offloading proforma**. The Lahore High Court (May 2026) said reasons must be recorded and given.",
               "Apply for review to the airport's Incharge Immigration / Deputy Director **within 7 days** (decision within 3 days), then the FIA Zonal Grievance Committee (decision within 10 days).",
-              "Complaints: **FIA helpline 1991**. Keep your boarding pass and tickets for refunds."
+              "Complaints: **FIA helpline 1991**. Keep your boarding pass and tickets."
             ]
           }
         ]
@@ -1225,7 +1303,7 @@
       "type": "h2",
       "num": "11",
       "text": "Day-by-day itinerary",
-      "sub": "Example dates: Tue 23 March → Sun 4 April 2027. Change them to your own dates; just keep the number of nights.",
+      "sub": "Example dates: Tue 23 March → Sun 4 April 2027, built around SriLankan's 2026 flight times. Use your own dates and times; keep the number of nights.",
       "newPage": true
     },
     {
@@ -1233,38 +1311,38 @@
       "items": [
         {
           "day": "Day 1<br>Tue 23 Mar",
-          "place": "🇵🇰 → 🇱🇰 Fly to Colombo, drive to Kandy",
-          "plan": "SriLankan flight (≈ 4 h). Buy a Dialog SIM after Customs. Private car to Kandy (≈ 3–3.5 h, about LKR 16,000–17,000 / USD 50; book via your guesthouse, or use Uber/PickMe). If you land late at night, sleep near the airport in Negombo and drive next morning.",
-          "cost": "Night: Kandy"
+          "place": "🇵🇰 → 🇱🇰 Fly to Colombo, sleep in Negombo",
+          "plan": "Evening SriLankan flight (≈ 4 h), landing ≈ 21:30–22:30. Change about USD 100 into rupees at a bank counter in the arrival hall, and buy a Dialog SIM after Customs. PickMe/Uber to your Negombo hotel (≈ 20 min, ≈ LKR 2,000–3,000).",
+          "cost": "Night: Negombo"
         },
         {
           "day": "Day 2<br>Wed 24",
-          "place": "Kandy",
-          "plan": "Morning: **Temple of the Tooth** (≈ LKR 1,500–2,000; light, modest clothes). Walk round Kandy Lake. Lunch at the **Kandyan Muslim Hotel** (since 1907). Afternoon: **Peradeniya Royal Botanic Gardens** (≈ LKR 3,540).",
+          "place": "Negombo → Kandy",
+          "plan": "Morning: private car to Kandy (≈ 3–3.5 h, about LKR 16,000–17,000 / USD 50; book via your hotel, or use Uber/PickMe). Afternoon: **Temple of the Tooth** (≈ LKR 1,500–2,000; light, modest clothes) and a walk round Kandy Lake. Dinner at the **Kandyan Muslim Hotel** (since 1907).",
           "cost": "Night: Kandy"
         },
         {
           "day": "Day 3<br>Thu 25",
           "place": "Sigiriya + Dambulla day trip",
-          "plan": "Leave at 6:00 by car with driver (agree an all-in price, about LKR 18,000–25,000). Climb **Sigiriya Lion Rock** at opening (show your original passport for the SAARC price, ≈ USD 20 instead of 35). Then the **Dambulla cave temple** (≈ LKR 3,000). Back by evening.",
+          "plan": "Leave at 6:00 by car with driver; agree an all-in price (about LKR 18,000–25,000) and check he has fuel (Sri Lanka still had fuel quotas in 2026). Climb **Sigiriya Lion Rock** at opening (show your original passport for the SAARC price, ≈ USD 20 instead of 35). Then the **Dambulla cave temple** (≈ LKR 3,000). Back by evening.",
           "cost": "Night: Kandy"
         },
         {
           "day": "Day 4<br>Fri 26",
           "place": "Kandy → Colombo",
-          "plan": "Jumu'ah in Kandy, then the **air-conditioned intercity bus** to Colombo (≈ 3.5–4 h, ≈ LKR 740). Trains from Colombo now stop at Peradeniya, not Kandy, because of cyclone damage, so the bus is simpler. Fri 26 Mar is Good Friday (holiday), so leave early. Evening at **Galle Face Green**. **Fill the Thai TDAC today or tomorrow** (within 72 hours of landing).",
+          "plan": "Early: **Peradeniya Botanic Gardens** (≈ LKR 3,540; on the Colombo road). Jumu'ah in Kandy, then the **air-conditioned intercity bus** to Colombo at about 2 pm (≈ 3.5–4 h, ≈ LKR 740). It is Good Friday, a public holiday, so buses are busy; a car (≈ USD 50) is the easy option. As of Nov 2026 trains from Colombo stop at Peradeniya, not Kandy (bridge repairs). Evening: **Galle Face Green**. **Fill the Thai TDAC tonight or tomorrow.**",
           "cost": "Night: Colombo"
         },
         {
           "day": "Day 5<br>Sat 27",
-          "place": "Colombo",
-          "plan": "**Jami Ul-Alfar (Red) Mosque** and **Pettah market**. Sea Street, Colombo's jewellers' street, is next door: interesting for a gold trader, but don't buy on impulse. Gangaramaya Temple, Independence Square. Optional instead: a day-trip by coastal train to **Galle Fort**.",
-          "cost": "Night: Colombo"
+          "place": "Colombo, then the night flight",
+          "plan": "**Jami Ul-Alfar (Red) Mosque** and **Pettah market**. Sea Street, Colombo's jewellers' street, is next door: interesting for a gold trader, but don't buy on impulse. Gangaramaya Temple, Independence Square. Late check-out or leave your bag at reception. About 9 pm, PickMe/Uber to the airport (≈ 45–60 min), with the printed Thai e-Visa ready for check-in.",
+          "cost": "Night: on the ≈ 01:05 flight to Bangkok"
         },
         {
           "day": "Day 6<br>Sun 28",
-          "place": "🇱🇰 → 🇹🇭 Fly to Bangkok",
-          "plan": "Colombo → Bangkok Suvarnabhumi (≈ 3.5 h). Airport Rail Link into the city (≈ 45 baht), Thai SIM at arrivals. Evening: halal dinner (Sukhumvit Soi 3 'Soi Arab', or near your hotel).",
+          "place": "🇱🇰 → 🇹🇭 Land in Bangkok ≈ 06:15",
+          "plan": "At immigration show the printed e-Visa, TDAC QR, hotel booking and onward ticket, and your 20,000 baht if asked. Thai SIM at arrivals. Airport Rail Link into the city (≈ 45 baht; get off at Ratchaprarop or Phaya Thai). Your room is ready (booked from last night): sleep. Late afternoon: **Chatuchak weekend market** (Sundays) or a halal dinner.",
           "cost": "Night: Bangkok"
         },
         {
@@ -1276,7 +1354,7 @@
         {
           "day": "Day 8<br>Tue 30",
           "place": "Ayutthaya day trip",
-          "plan": "Train from Krung Thep Aphiwat (≈ 1 h) or Hua Lamphong (≈ 2 h, ≈ 20 baht). Temple pass ≈ 300 baht (or 80 per temple). Hire a tuk-tuk or bicycle between the ruins. Back to Bangkok by evening. **Fill Malaysia MDAC from today.**",
+          "plan": "Train from Krung Thep Aphiwat (≈ 1 h) or Hua Lamphong (≈ 2 h, ≈ 20 baht). Temple pass ≈ 300 baht (or 80 per temple). Tuk-tuk or bicycle between the ruins; back by evening. **Fill the Malaysia MDAC (today, tomorrow or Thursday).**",
           "cost": "Night: Bangkok"
         },
         {
@@ -1288,7 +1366,7 @@
         {
           "day": "Day 10<br>Thu 1 Apr",
           "place": "🇹🇭 → 🇲🇾 Fly to Kuala Lumpur",
-          "plan": "Grab to **Don Mueang** (≈ 400 baht). AirAsia to KLIA2 (≈ 2 h). Airport bus to KL Sentral (≈ RM15), or KLIA Ekspres (RM65; RM58.50 if booked online). Malaysian SIM at the airport. Evening: **KLCC Park** and the lit Petronas Towers.",
+          "plan": "Grab to **Don Mueang** (≈ 400 baht), 2–3 h before the flight. AirAsia to KLIA2 (≈ 2 h). Show your papers at immigration; use an ATM or money changer and buy a SIM. Airport bus to KL Sentral (≈ RM15), then LRT or Grab to the hotel. Evening: **KLCC Park** and the lit Petronas Towers.",
           "cost": "Night: Kuala Lumpur"
         },
         {
@@ -1300,31 +1378,165 @@
         {
           "day": "Day 12<br>Sat 3",
           "place": "Batu Caves + Putrajaya",
-          "plan": "Morning: **Batu Caves** by KTM train (free; dress modestly). Afternoon: **Putrajaya** by KLIA Transit (RM16.60 each way): Putra Mosque, Iron Mosque, the lake. Evening: shopping (your 30 kg allowance is back). Optional: Petronas Skybridge (RM80–98, book a time slot, closed Mondays).",
+          "plan": "Morning: **Batu Caves** by KTM train (free; dress modestly). Afternoon: **Putrajaya** by KLIA Transit (RM16.60 each way): Putra Mosque, Iron Mosque, the lake. Evening: shopping (your 30 kg allowance is back), pack, early night. Optional: Petronas Skybridge (RM80–98, book a time slot).",
           "cost": "Night: Kuala Lumpur"
         },
         {
           "day": "Day 13<br>Sun 4",
-          "place": "🇲🇾 → 🇵🇰 Fly home",
-          "plan": "Airport bus or KLIA Ekspres to **KLIA Terminal 1** (SriLankan). Kuala Lumpur → Colombo (change planes; you don't leave the airport) → Lahore/Karachi. Declare any jewellery or purchases to Customs on arrival.",
-          "cost": "Home"
+          "place": "🇲🇾 → 🇱🇰 → 🇵🇰 Fly home",
+          "plan": "For the morning KL → Colombo flight, leave the hotel at ≈ 5 am: KLIA Ekspres (first trains from about 5 am; RM58.50 online) or Grab to **KLIA Terminal 1**. At check-in ask for your bag to be **checked through** to Lahore/Karachi. In Colombo follow the **Transfers** signs (not Arrivals) to your ≈ 13:35–13:50 flight home. Declare any jewellery or purchases to Pakistan Customs.",
+          "cost": "Home ≈ 17:00–18:00"
         }
       ]
     },
     {
       "type": "callout",
-      "title": "Prayer, food and safety on the way",
-      "items": [
-        "**Halal logos:** HAC (Sri Lanka), CICOT (Thailand), JAKIM (Malaysia). Big chains in Sri Lanka and Malaysia are generally halal.",
-        "Use **PickMe/Uber** (Sri Lanka) and **Grab** (Thailand, Malaysia) instead of street taxis. Agree tuk-tuk fares first.",
-        "Avoid Thailand's far south and anywhere near the Thai–Cambodian border (both under travel warnings). This plan doesn't go there."
+      "title": "If your KL → Colombo flight is the afternoon one",
+      "text": "It lands after the day's flight to Pakistan has left, so you stay one night in Colombo and fly home on Day 14. Your double-entry ETA lets you leave the airport (a Negombo hotel ≈ USD 20–25, from the cushion), or ask SriLankan when booking whether its free transit hotel applies (connections of 8–24 hours on one booking)."
+    },
+    {
+      "type": "cols",
+      "cols": [
+        [
+          {
+            "type": "table",
+            "cls": "tripcard",
+            "caption": "Your trip card: fill in and keep with your passport",
+            "widths": [
+              "40%",
+              "60%"
+            ],
+            "rows": [
+              [
+                "SriLankan booking ref.",
+                ""
+              ],
+              [
+                "Flight 1: Pakistan → Colombo (date, time)",
+                ""
+              ],
+              [
+                "Flight 2: Colombo → Bangkok (date, time)",
+                ""
+              ],
+              [
+                "Flight 3: Bangkok → KL, AirAsia (ref., time)",
+                ""
+              ],
+              [
+                "Flight 4: KL → Colombo → home (date, time)",
+                ""
+              ],
+              [
+                "Hotels: name + phone (Negombo, Kandy, Colombo, Bangkok, KL)",
+                "<br><br><br>"
+              ],
+              [
+                "Insurance policy no. + 24-hour help line",
+                ""
+              ],
+              [
+                "Pakistan missions in Colombo, Bangkok, KL (from mofa.gov.pk)",
+                "<br><br>"
+              ]
+            ]
+          }
+        ],
+        [
+          {
+            "type": "h3",
+            "text": "Emergency numbers"
+          },
+          {
+            "type": "table",
+            "widths": [
+              "50%",
+              "50%"
+            ],
+            "rows": [
+              [
+                "Sri Lanka police / ambulance",
+                "119 / 1990"
+              ],
+              [
+                "Thailand Tourist Police",
+                "1155"
+              ],
+              [
+                "Malaysia police / ambulance",
+                "999"
+              ],
+              [
+                "FIA helpline (Pakistan)",
+                "1991"
+              ],
+              [
+                "SriLankan Airlines",
+                "+94 11 777 1979"
+              ],
+              [
+                "Sri Lanka ETA helpline",
+                "+94 71 99 67 888"
+              ]
+            ]
+          },
+          {
+            "type": "callout",
+            "title": "Prayer, food and safety",
+            "items": [
+              "**Halal logos:** HAC (Sri Lanka), CICOT (Thailand), JAKIM (Malaysia).",
+              "Use **PickMe/Uber** (Sri Lanka) and **Grab** (Thailand, Malaysia) instead of street taxis. Agree tuk-tuk fares first.",
+              "Avoid Thailand's far south and the Thai–Cambodian border area (travel warnings). This plan doesn't go there."
+            ]
+          }
+        ]
       ]
     },
     {
       "type": "h2",
       "num": "12",
-      "text": "If something goes wrong: Plan B and Plan C",
+      "text": "If something goes wrong: costs, Plan B and Plan C",
       "newPage": true
+    },
+    {
+      "type": "table",
+      "widths": [
+        "22%",
+        "40%",
+        "38%"
+      ],
+      "head": [
+        "What happens",
+        "What you lose (approx.)",
+        "What to do"
+      ],
+      "rows": [
+        [
+          "**Thai e-Visa refused**",
+          "Fee 13,000 + trip to pay it (1,500–6,000) + AirAsia ≈ 26,600 (non-refundable) + SriLankan change fee: **≈ PKR 40,000–70,000**.",
+          "Switch to Plan B, but shorten it to ≈ 10 nights (e.g. skip Penang) to stay within 5 lakh."
+        ],
+        [
+          "**Malaysia eVISA refused**",
+          "Fee ≈ 9,000 + AirAsia ≈ 26,600 + KL hotel (unless free to cancel) + SriLankan change fee.",
+          "Stay those 3 nights in Bangkok (the Thai visa allows 60 days). Ask SriLankan to start your return from Bangkok. Never just skip the KL → Colombo flight."
+        ],
+        [
+          "**Offloaded by FIA on Day 1**",
+          "Change fee; hotels on free cancellation are refundable.",
+          "Call SriLankan **before the flight leaves** to move the dates (section 10)."
+        ],
+        [
+          "**Refused entry at KLIA**",
+          "A ticket home from Bangkok airport (the Thai visa is used).",
+          "Avoid it: paid hotel, return ticket, cash ≥ USD 300, clear answers (section 6)."
+        ],
+        [
+          "**Flight cancelled or delayed**",
+          "Usually nothing if you rebook on the same booking.",
+          "Phone SriLankan to rebook via Colombo. **Don't accept a reroute through Dubai, Doha, Muscat or Bahrain** while the 2026 Iran war continues (airport strikes, sudden airspace closures)."
+        ]
+      ]
     },
     {
       "type": "cols",
@@ -1332,37 +1544,32 @@
         [
           {
             "type": "h3",
-            "text": "Plan B: Sri Lanka + Malaysia (13 nights, ≈ PKR 4.4–4.5 lakh)"
+            "text": "Plan B: Sri Lanka + Malaysia (13 nights, ≈ PKR 4.5–4.6 lakh)"
           },
           {
             "type": "p",
-            "text": "Use this if **Thailand refuses the visa**, or if the 3-country ticket costs more than PKR 1.8 lakh. It is also the most relaxed version."
+            "text": "Use this if the 3-country ticket costs more than PKR 1.8 lakh (common from Lahore). It is also the most relaxed version, and needs no Thai visa. Everything except the ticket ≈ PKR 2.6 lakh; ticket ≈ 1.95 lakh (Karachi) to 2.05 lakh (Lahore)."
           },
           {
             "type": "steps",
             "items": [
               {
                 "title": "Ticket",
-                "text": "SriLankan: Lahore/Karachi → Colombo (stopover) → Kuala Lumpur, and KL → Colombo → home. If you already bought the 3-country ticket, call SriLankan to change Colombo→Bangkok into Colombo→KL (change fee + any fare difference)."
+                "text": "SriLankan: Lahore/Karachi → Colombo (stopover) → Kuala Lumpur, and KL → Colombo → home, on one booking. If you are switching from the 3-country ticket after a Thai refusal, ask SriLankan to change Colombo → Bangkok into Colombo → KL, keeping your flight home (change fee + any fare difference)."
               },
               {
                 "title": "Sri Lanka 6 nights",
-                "text": "Kandy 3 (with the Sigiriya/Dambulla day), Colombo 2, plus 1 night at Galle or Negombo."
+                "text": "Negombo 1, Kandy 2 (with the Sigiriya/Dambulla day), Colombo 2, plus 1 night in Galle or back in Negombo."
               },
               {
                 "title": "Malaysia 7 nights",
-                "text": "KL 4 (as in this plan) + **Penang 3**: George Town heritage streets, Kapitan Keling Mosque, Penang Hill, nasi kandar (Penang's famous halal food). ETS train KL ↔ Butterworth, about 4 hours."
+                "text": "KL 4 (one more night than the main plan) + **Penang 3**: George Town heritage streets, Kapitan Keling Mosque, Penang Hill, nasi kandar (Penang's famous halal food). ETS train KL ↔ Butterworth, about 4 hours."
               },
               {
-                "title": "Visas",
-                "text": "Sri Lanka free + Malaysia RM126. Malaysia's eVISA allows 30 days, but leaving and coming back needs a new eVISA, so stay inside Malaysia."
+                "title": "Visa",
+                "text": "Sri Lanka free + Malaysia RM126. Apply for the eVISA only once the ticket is final, uploading the new ticket and paid KL and Penang bookings. On the MDAC, the last port is Colombo. Stay inside Malaysia: leaving and coming back needs a new eVISA."
               }
             ]
-          },
-          {
-            "type": "p",
-            "cls": "small",
-            "text": "Estimated: everything except the ticket ≈ PKR 2.45 lakh; ticket ≈ 1.95 lakh (Karachi) to 2.05 lakh (Lahore)."
           }
         ],
         [
@@ -1372,70 +1579,51 @@
           },
           {
             "type": "p",
-            "text": "If both Thailand and Malaysia fail, both of these visas cost nothing. The Maldives gives every nationality a free 30-day visa on arrival."
+            "text": "Both visas cost nothing: the Maldives gives a free 30-day visa on arrival to almost every nationality, including Pakistan."
           },
           {
             "type": "list",
             "items": [
               "One SriLankan booking: Pakistan → Colombo (stopover) → Malé → Colombo → Pakistan.",
-              "Maldives rules: a **prepaid** booking at a registered guesthouse, a return ticket, enough money (carry at least USD 100 + 50 a day), and the free **IMUGA** declaration within 96 hours before landing (imuga.immigration.gov.mv).",
-              "Stay on a local island like **Maafushi** (guesthouses ≈ USD 50–80 a night after taxes). All food is halal; dress modestly; no public ferries on Fridays.",
-              "About **PKR 4.5–5 lakh** from Karachi for ~6 nights in Sri Lanka + 3–4 in the Maldives. Lahore costs more."
+              "Maldives rules: a **prepaid** booking at a registered guesthouse, a return ticket, enough money (carry at least USD 100 + 50 a day), and the free **IMUGA** declaration within 96 hours before landing (imuga.immigration.gov.mv). Carry your polio certificate.",
+              "Stay on a local island like **Maafushi**. Guesthouses cost ≈ USD 50–80 a night **after** taxes (≈ 17% TGST + 10% service charge + ≈ USD 6 green tax per night are added to base prices). All food is halal; dress modestly; no public ferries on Fridays.",
+              "About **PKR 4.5–5 lakh** from Karachi for ~6 nights in Sri Lanka + 3–4 in the Maldives; Lahore costs more. If you come here after visa refusals, add what is already lost, and cut the Maldives to 2–3 nights or postpone."
             ]
           },
           {
-            "type": "h3",
-            "text": "Other problems"
-          },
-          {
-            "type": "table",
-            "widths": [
-              "38%",
-              "62%"
-            ],
-            "rows": [
-              [
-                "Malaysia eVISA refused",
-                "Spend the 3 KL nights in Bangkok instead: change the SriLankan return to start from Bangkok, and cancel AirAsia."
-              ],
-              [
-                "Lost passport",
-                "Police report, then the Pakistan mission in that country (find the address on mofa.gov.pk before you go and save it)."
-              ],
-              [
-                "Sick or injured",
-                "Call your insurer's emergency number first. Keep every receipt."
-              ],
-              [
-                "Flight cancelled",
-                "Multi-city SriLankan changes are made by phone (+94 11 777 1979), not online."
-              ]
-            ]
+            "type": "callout",
+            "tone": "ok",
+            "title": "Thinking ahead: building travel history",
+            "text": "Clean trips with easy visas (Sri Lanka, Malaysia, Thailand) help later applications. After 3–5 trips over 1–2 years, with filed tax returns and a steady bank history, a **Schengen, UK or US** visa becomes much more realistic, and a valid one also unlocks the Turkey e-Visa and Georgia's e-visa. Never overstay, keep every boarding pass, and declare any past refusal honestly."
           }
         ]
       ]
     },
     {
-      "type": "h2",
-      "num": "13",
-      "text": "Cover letter template",
-      "sub": "One page on your business letterhead. Change the [brackets]. Use the same letter (with the country changed) for Thailand and Malaysia.",
-      "newPage": true
-    },
-    {
-      "type": "letter",
-      "paras": [
-        "[Your full name] · [Address, City] · Phone [ ] · Email [ ]<br>CNIC [ ] · Passport No. [ ] · Date: [ ]",
-        "To: The Visa Officer, Royal Thai Embassy, Islamabad [or: Immigration Department of Malaysia, eVISA Section]",
-        "**Subject: Application for a single-entry tourist visa, [arrival date] to [departure date] ([number] days)**",
-        "Dear Sir/Madam,",
-        "I am the proprietor of **[Business name]**, a gold and jewellery business at [shop address], [city], which I have run since [year]. My NTN is [ ], and I am a member of [chamber / sarafa association, membership no. ]. I am on FBR's Active Taxpayer List.",
-        "I am planning a holiday from [date] to [date]: Sri Lanka ([dates], Kandy and Colombo), **Thailand ([dates], Bangkok, [hotel name])**, then Malaysia ([dates], Kuala Lumpur), returning to [Lahore/Karachi] on [date] with SriLankan Airlines (booking reference [ ]).",
-        "I will pay for the trip myself. My personal account at [bank] (account ending [####]) shows a balance of PKR [ ] as of [date], and my business account at [bank] shows regular monthly turnover. I also attach my FBR income tax returns and wealth statements for [years], and a valuation certificate for my declared gold holdings, as supporting evidence.",
-        "My business continues under [manager/partner name] while I am away, and my family lives in [city]. I will resume work on [date]. [Optional: I have previously travelled to [countries] and returned on time.]",
-        "I will follow all visa conditions and leave before my permitted stay ends.",
-        "Enclosures: 1. Passport copy · 2. CNIC copies · 3. Air tickets · 4. Hotel bookings · 5. Personal bank statement (12 months) + bank certificate · 6. Business bank statement · 7. NTN + tax returns + wealth statement · 8. Business letter + registration/association certificate · 9. Gold valuation certificate · 10. Proof of address",
-        "Yours faithfully,<br>[Signature] · [Business stamp]"
+      "type": "group",
+      "blocks": [
+        {
+          "type": "h2",
+          "num": "13",
+          "text": "Cover letter template",
+          "sub": "One page on your business letterhead. Change the [brackets]. Use the same letter (with the country changed) for Thailand and Malaysia."
+        },
+        {
+          "type": "letter",
+          "paras": [
+            "[Your full name] · [Address, City] · Phone [ ] · Email [ ]<br>CNIC [ ] · Passport No. [ ] · Date: [ ]",
+            "To: The Visa Officer, Royal Thai Embassy, Islamabad [or: Royal Thai Consulate-General, Karachi, if you live in Sindh/Balochistan; for Malaysia: Immigration Department of Malaysia, eVISA Section]",
+            "**Subject: Application for a single-entry tourist visa, [arrival date] to [departure date] ([number] days)**",
+            "Dear Sir/Madam,",
+            "I am the proprietor of **[Business name]**, a gold and jewellery business at [shop address], [city], which I have run since [year]. My NTN is [ ], and I am a member of [chamber / sarafa association, membership no. ]. I am on FBR's Active Taxpayer List.",
+            "I am planning a holiday from [date] to [date]: Sri Lanka ([dates], Negombo, Kandy and Colombo), **Thailand ([dates], Bangkok, [hotel name])**, then Malaysia ([dates], Kuala Lumpur), returning to [Lahore/Karachi] on [date] with SriLankan Airlines (booking reference [ ]).",
+            "I will pay for the trip myself. My personal account at [bank] (account ending [####]) shows a balance of PKR [ ] as of [date], and my business account at [bank] shows regular monthly turnover. I also attach my FBR income tax returns and wealth statements for [years] [and a valuation certificate for the gold declared in my wealth statement] as supporting evidence.",
+            "My business continues under [manager/partner name] while I am away, and my family lives in [city]. I will resume work on [date]. [Optional: I have previously travelled to [countries] and returned on time.]",
+            "I will follow all visa conditions and leave before my permitted stay ends.",
+            "Enclosures: 1. Passport copy · 2. CNIC copies · 3. Air tickets · 4. Hotel bookings · 5. Personal bank statement (12 months) + bank certificate · 6. Business bank statement · 7. NTN + tax returns + wealth statement · 8. Business letter + registration/association certificate · 9. Proof of address · [10. Gold valuation certificate]",
+            "Yours faithfully,<br>[Signature] · [Business stamp]"
+          ]
+        }
       ]
     },
     {
@@ -1565,9 +1753,9 @@
         ],
         [
           "🇦🇪 UAE · 🇴🇲 Oman · 🇧🇭 Bahrain · 🇶🇦 Qatar",
-          "Agency/sponsored visas; Qatar visa on arrival suspended since Apr 2026",
+          "Agency or sponsored visas (Bahrain: e-visa). Qatar's visa on arrival suspended from Apr 2026; some reports say restored late Oct 2026 (unconfirmed)",
           "**Not now**",
-          "The 2026 Iran war is active (airport strikes, airspace closures; UK warnings updated 27 Oct 2026). High UAE refusal risk for Pakistanis."
+          "The 2026 Iran war is active (airport strikes, airspace closures; UK warnings updated 27 Oct 2026). High UAE refusal risk; Oman needs a sponsored visa."
         ],
         [
           "🇪🇬 Egypt · 🇯🇴 Jordan",
@@ -1578,93 +1766,26 @@
       ]
     },
     {
-      "type": "callout",
-      "tone": "ok",
-      "title": "Thinking ahead: building travel history",
-      "text": "Clean trips with these easy visas (Sri Lanka, Malaysia, Thailand) help later applications. After 3–5 trips over 1–2 years, with filed tax returns and a steady bank history, a **Schengen, UK or US** visa becomes much more realistic. A valid one also unlocks the Turkey e-Visa and Georgia's e-visa. Never overstay, keep every boarding pass, and declare any past refusal honestly."
-    },
-    {
       "type": "h2",
       "num": "15",
       "text": "Sources",
-      "sub": "Checked on 6 November 2026. Where official pages could not be opened, reputable 2026 news or travel sources were used, and the estimate is marked in the text. Re-check official pages before paying."
+      "sub": "Checked on 6 November 2026. Where official pages could not be opened, reputable 2026 news or travel sources were used, and estimates are marked in the text. Re-check official pages before paying."
     },
     {
       "type": "sources",
       "items": [
         "Sri Lanka Department of Immigration: free tourist ETA for 40 countries incl. Pakistan, effective 25.05.2026 (immigration.gov.lk PDF) and https://www.eta.gov.lk",
-        "Royal Thai Embassy Islamabad: e-Visa FAQ (Mar 2025), Tourist Visa checklist, consular fee sheet effective 15 Jul 2024 (islamabad.thaiembassy.org); TAT News, proof of funds reminder (6 Jul 2026); https://tdac.immigration.go.th",
+        "Royal Thai Embassy Islamabad: e-Visa FAQ (Mar 2025), Tourist Visa checklist, consular fee sheet effective 15 Jul 2024 (islamabad.thaiembassy.org); TAT News, proof of funds reminder (6 Jul 2026); Thailand PRD on the proposed entry fee (17 Aug 2026); https://tdac.immigration.go.th",
         "Malaysia Immigration: MyVISA FAQ and terms (last updated 6 Oct 2026), fee table, photo rules, MDAC (malaysiavisa.imi.gov.my, imigresen-online.imi.gov.my); The Star, KLIA Ekspres fares from 1 Jan 2027 (1 Oct 2026); NST and Malay Mail on KLIA 'Not To Land' (Jul–Aug 2025)",
-        "SriLankan Airlines route fare pages and luggage rules (srilankan.com, fares seen 6 Nov 2026); Kayak/Airpaz AirAsia KUL–DMK fares (Nov 2026); Wego and RinggitPlus on AirAsia 2026 fuel surcharges",
-        "Sri Lanka: NewsFirst and Sunday Times on the Colombo–Peradeniya rail restart (Sep–Oct 2026); Central Cultural Fund e-ticketing (SAARC tickets); Dialog tourist SIM page; UK FCDO travel advice (21 Sep 2026)",
+        "SriLankan Airlines route fare pages and luggage rules (srilankan.com, fares seen 6 Nov 2026); 2026 flight schedules for UL186/UL184, UL402, UL315/UL319, UL185/UL183 (FlightStats, Planemapper, Ixigo, Trip.com, Airportia); Kayak/Airpaz AirAsia KUL–DMK fares (Nov 2026); Wego, RinggitPlus and Thaiger on AirAsia 2026 fuel surcharges and suspensions",
+        "Sri Lanka: NewsFirst and Sunday Times on the Colombo–Peradeniya rail restart (Sep–Oct 2026); Central Cultural Fund e-ticketing (SAARC tickets); Dialog tourist SIM page; UK FCDO travel advice (21 Sep 2026); Sri Lanka Customs passenger guide",
         "Royal Grand Palace official ticket page; Islamic Arts Museum Malaysia 'Visit us' page; Malaysia 2027 public holidays (Human Resources Online, 25 Aug 2026)",
         "WHO 45th Polio IHR Emergency Committee statement (25 Aug 2026); Islamabad Airport (PAA) departure procedures; ARY on NIMS certificates (Sep 2026)",
-        "SBP press release on foreign currency limits (8 Nov 2022); FBR SRO 2201(I)/2022 (currency declaration); FBR withholding tax rate card TY2027 (236Y 0.5% / 1%); SBP Foreign Exchange Manual ch. 18 (gold and jewellery)",
+        "SBP press release on foreign currency limits (8 Nov 2022); FBR SRO 2201(I)/2022 (currency declaration); FBR withholding tax rate card TY2027 (236Y 0.5% / 1%); SBP Foreign Exchange Manual ch. 18 (gold and jewellery, Forms CD and J)",
         "Dawn (FIA same-airline rule, 2 Oct 2024; offloading cases 2025–26; facilitation desks, 5 Jan 2026); Express Tribune (pre-immigration checks, 1 Oct 2026); Profit (LHC judgment, 30 May 2026); Minute Mirror (FIA Standing Order 02/2026); Geo Fact Check (fake FIA clearance, 7 Oct 2026)",
         "EFU worldwide travel insurance brochure (Jan–Feb 2026); DGIP e-passport fees (page updated 23 Oct 2026); forex.pk open-market rates and SBP M2M rate (6 Nov 2026)",
         "Maldives Immigration tourist visa page (updated 10 Sep 2026); Wikipedia visa-policy pages for Vietnam, Cambodia, Oman, Bahrain, Qatar (Nov 2026); UK FCDO advice for UAE, Oman, Bahrain (27 Oct 2026) and Thailand (12 Oct 2026)",
         "UK Visit caseworker guidance v18.0 (8 Oct 2026) and FBR wealth-statement guidance, on how funds and assets are judged"
-      ]
-    }
-  ],
-  "tocBlocks": [
-    {
-      "type": "callout",
-      "tone": "gold",
-      "title": "How to use this plan",
-      "items": [
-        "**1.** Read sections 1 and 2, then get the SriLankan Airlines quote. The decision rule in section 2 tells you whether to do 3 countries or 2.",
-        "**2.** Follow the timeline in section 3 **in order**. Each step points to the section with the details.",
-        "**3.** Tick the checklists as you go. Print sections 4, 10 and 11 and keep them in your hand luggage."
-      ]
-    },
-    {
-      "type": "h3",
-      "text": "Official websites you will use (bookmark these; avoid look-alike sites)"
-    },
-    {
-      "type": "table",
-      "widths": [
-        "38%",
-        "62%"
-      ],
-      "rows": [
-        [
-          "Sri Lanka ETA (free)",
-          "https://www.eta.gov.lk"
-        ],
-        [
-          "Thailand e-Visa",
-          "https://www.thaievisa.go.th"
-        ],
-        [
-          "Thailand arrival card (TDAC, free)",
-          "https://tdac.immigration.go.th"
-        ],
-        [
-          "Malaysia eVISA",
-          "https://malaysiavisa.imi.gov.my"
-        ],
-        [
-          "Malaysia arrival card (MDAC, free)",
-          "https://imigresen-online.imi.gov.my/mdac/main"
-        ],
-        [
-          "Polio certificate (NIMS)",
-          "https://nims.nadra.gov.pk"
-        ],
-        [
-          "FBR Active Taxpayer List check",
-          "https://iris.fbr.gov.pk (Verifications)"
-        ],
-        [
-          "SriLankan Airlines (multi-city)",
-          "https://www.srilankan.com · call centre +94 11 777 1979"
-        ],
-        [
-          "Maldives arrival declaration (Plan C)",
-          "https://imuga.immigration.gov.mv"
-        ]
       ]
     }
   ]

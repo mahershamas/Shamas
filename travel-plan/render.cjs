@@ -67,6 +67,7 @@ const R = {
   letter: (b) => `<div class="letter">${b.paras.map((p) => `<p>${inline(p)}</p>`).join("")}</div>`,
   sources: (b) => `<ol class="sources">${b.items.map((s) => `<li>${inline(s)}</li>`).join("")}</ol>`,
   spacer: () => `<div class="spacer"></div>`,
+  group: (b) => `<div class="keep">${b.blocks.map(block).join("")}</div>`,
   pagebreak: () => `<div class="new-page"></div>`,
 };
 function block(b) {

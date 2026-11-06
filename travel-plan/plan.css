@@ -42,16 +42,16 @@ b { font-weight: 650; }
 
 /* ---------- cover ---------- */
 .cover {
-  padding: 22mm 14mm 10mm;
+  padding: 16mm 14mm 8mm;
   height: 282mm;
   background: linear-gradient(160deg, #0B4B59 0%, #0E5E6F 55%, #127A7F 100%);
   color: #fff;
   break-after: page;
-  display: flex; flex-direction: column; gap: 6mm;
+  display: flex; flex-direction: column; gap: 4.5mm;
 }
 .cover a { color: #fff; text-decoration: underline; }
 .cover__kicker { font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; color: #F3D27A; font-weight: 600; }
-.cover h1 { font-family: var(--display); font-size: 31pt; line-height: 1.08; font-weight: 800; letter-spacing: -.01em; }
+.cover h1 { font-family: var(--display); font-size: 29pt; line-height: 1.08; font-weight: 800; letter-spacing: -.01em; }
 .cover__sub { font-size: 12pt; color: #D8EEF0; max-width: 165mm; }
 .cover__foot { margin-top: auto; font-size: 8.4pt; color: #CFE6E8; border-top: 1px solid rgba(255,255,255,.25); padding-top: 4mm; }
 .cover .callout { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.35); color: #fff; }
@@ -185,3 +185,13 @@ tr { break-inside: avoid; }
 /* ---------- sources ---------- */
 .sources { list-style: decimal; padding-left: 5mm; font-size: 7.8pt; color: var(--muted); }
 .sources li { margin-bottom: .8mm; }
+
+/* ---------- trip card (fill-in) ---------- */
+.tripcard td { height: 8.5mm; }
+.tripcard td:last-child { background: #fff !important; border-bottom: 1px solid #b9c3cc; }
+.tripcard tbody tr:nth-child(even) td:first-child { background: var(--soft); }
+
+.keep { break-inside: avoid; }
+.budget table { font-size: 8.2pt; }
+.budget th, .budget td { padding: 1.15mm 1.8mm; }
+.cover { overflow: hidden; }
