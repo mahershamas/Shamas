@@ -14,6 +14,11 @@ Also in this repo: **[`lunch-plan/`](lunch-plan/)**, a researched and audited 30
 made only from dishes on this menu, as a printable PDF
 ([`lunch-plan/30-day-lunch-plan.pdf`](lunch-plan/30-day-lunch-plan.pdf)).
 
+And **[`travel-plan/`](travel-plan/)**: a researched, step-by-step plan for a 3-country trip from
+Pakistan (Sri Lanka → Thailand → Malaysia) within PKR 5 lakh. It covers visas, documents, budget and
+a day-by-day itinerary, as a printable PDF
+([`travel-plan/5-lakh-travel-plan.pdf`](travel-plan/5-lakh-travel-plan.pdf)).
+
 ## Run locally
 
 The page loads `data/menu.json` with `fetch`, so it must be served over HTTP

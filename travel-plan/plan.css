@@ -74,8 +74,11 @@ b { font-weight: 650; }
 
 /* ---------- toc ---------- */
 .toc { break-after: page; padding-top: 4mm; }
-.toc__t { font-family: var(--display); font-size: 18pt; font-weight: 800; color: var(--brand); margin-bottom: 4mm; }
-.toc ol li { display: flex; gap: 4mm; padding: 2.2mm 0; border-bottom: 1px solid var(--line); font-size: 10.5pt; }
+.toc__t { font-family: var(--display); font-size: 18pt; font-weight: 800; color: var(--brand); margin-bottom: 2mm; }
+.toc ol { margin-bottom: 5mm; }
+.toc ol li { display: flex; gap: 4mm; padding: 1.3mm 0; border-bottom: 1px solid var(--line); font-size: 10pt; }
+.toc .tbl table { font-size: 8.4pt; }
+.toc .tbl td { padding: 1.1mm 2mm; }
 .toc ol li span { color: var(--gold); font-weight: 700; min-width: 8mm; }
 
 /* ---------- headings ---------- */

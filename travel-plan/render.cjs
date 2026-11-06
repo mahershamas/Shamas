@@ -20,7 +20,7 @@ const esc = (s) => String(s == null ? "" : s)
 
 // Inline markup: **bold**, [label](https://url), and bare https:// links.
 function inline(s) {
-  let h = esc(s);
+  let h = esc(s).replace(/&lt;br&gt;/g, "<br>");
   h = h.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
   h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2">$1</a>');
   h = h.replace(/(^|[\s(])(https?:\/\/[^\s)<]+[^\s)<.,;:])/g, '$1<a href="$2">$2</a>');
@@ -88,7 +88,7 @@ const coverHtml = `<section class="cover">
   <div class="cover__foot">${inline(cover.foot)}</div>
 </section>`;
 
-const toc = plan.toc ? `<nav class="toc"><div class="toc__t">Inside this plan</div><ol>${plan.toc.map((t) => `<li><span>${inline(t.n)}</span>${inline(t.t)}</li>`).join("")}</ol></nav>` : "";
+const toc = plan.toc ? `<nav class="toc"><div class="toc__t">Inside this plan</div><ol>${plan.toc.map((t) => `<li><span>${inline(t.n)}</span>${inline(t.t)}</li>`).join("")}</ol>${(plan.tocBlocks || []).map(block).join("")}</nav>` : "";
 
 const body = plan.blocks.map(block).join("\n");
 const css = fs.readFileSync(path.join(here, "plan.css"), "utf8");
