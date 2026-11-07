@@ -35,8 +35,9 @@ const T0 = 117.0;
 const DEG = Math.PI / 180;
 
 export function ilyLayout(ctx) {
-  // portrait: line L15 at 84 px keeps the orbiting stars clear of its ends; line L16 breaks into two rows there
-  if (ctx.portrait) return { R0: [540, 820], bs: 0.9, hz: 1250, hzEng: 820, lySize: 84, mindSize: 50, mindBreak: true, west: [150, 820] };
+  // portrait: line L15 at 84 px keeps the orbiting stars clear of its ends; line L16 breaks into two rows there, at
+  // its landscape size (58 px: the phone-width floor), the two rows still well inside band A's clear interior
+  if (ctx.portrait) return { R0: [540, 820], bs: 0.9, hz: 1250, hzEng: 820, lySize: 84, mindSize: 58, mindBreak: true, west: [150, 820] };
   return { R0: [960, 430], bs: 1.0, hz: 820, hzEng: 430, lySize: 104, mindSize: 58, mindBreak: false, west: [230, 430] };
 }
 

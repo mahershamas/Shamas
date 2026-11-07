@@ -78,8 +78,9 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
     const k = 0.6;
     this.small = [L.plateC[0] - L.plateW * k / 2, L.plateC[1] - ph * k / 2, L.plateW * k, ph * k];
     this.lay = ctx.portrait
-      ? { x: 540, hair: 806, y12: 900, y13a: 900, y13b: 1010, size: 45, script: 65, breaks12: [4] }
+      ? { x: 540, hair: 795, y12: 900, y13a: 900, y13b: 1030, size: 56, script: 78, breaks12: [4] }
       : { x: 960, hair: 458, y12: 560, y13a: 500, y13b: 610, size: 50, script: 72, breaks12: null };
+    this.lay.gk = this.lay.script / 72;                               // glow and glint offsets follow the script size
   },
   // the receding photo rect at time t
   rectAt(ctx, t) {
@@ -95,17 +96,24 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
     if (t < 93.0) {
       const r = this.rectAt(ctx, t);
       const leave = 1 - tl.seg(t, 90.0, 91.0, E.inOutSine);            // portrait: scene 7's warm mist and soft edges
-      if (ctx.portrait) this.mist(target, t, leave);
+      // portrait: the border only gathers once the photo's sides are inside the frame (gate); until it has, the photo keeps
+      // its soft fbm-broken edges (the sides too, once they are in the frame) and part of the mist, so it never shows a
+      // bare hard edge; the edges sharpen as the border arrives (the gold reads at full strength from about 0.1 of its
+      // opacity, so the feather is gone by 0.4 of the gate)
+      const gate = ctx.portrait ? 1 - tl.seg(r[2] * 1.2, 1000, 1150) : 1;
+      const edge = ctx.portrait ? 1 - E.inOutSine(Math.min(1, 2.5 * gate)) : 0;
+      const soft = ctx.portrait ? Math.max(leave, edge) : 0;
+      if (ctx.portrait) this.mist(target, t, Math.max(leave, 0.5 * (1 - gate)));
       const sink = tl.seg(t, 91.0, 92.5, E.inOutSine);
       const fade = 1 - tl.seg(t, 92.3, 92.95, E.inOutSine);
       const cam = ctx.photoCamera([0, 0, window.PHOTO_META.size[0], window.PHOTO_META.size[1]], { dest: r, tag: 's08' });
-      PH.draw(target, cam, { exposure: -3 * sink, opacity: fade, edgeFade: ctx.portrait && leave > 0 ? { top: 80 * leave, bottom: 80 * leave } : null });
+      PH.draw(target, cam, { exposure: -3 * sink, opacity: fade, edgeFade: soft > 0 ? { top: 80 * soft, bottom: 80 * soft, left: 80 * edge, right: 80 * edge } : null });
       // the seat thread (no knot glyph), quieter once the plate is small
       const small = tl.seg(t, 91.6, 92.9, E.inOutSine);
       PH.thread(target, cam, { tip: window.PHOTO_META.size[0], steady: 0.7, I: Math.pow(2, -3 * sink) * fade * (1 - 0.6 * small), fresh: 0 });
       // the gilded border gathers round the photo as it arrives in the window layout, then sinks with it
       // (portrait: only once its sides are inside the frame, never as two bare full-width bars)
-      const bo = tl.seg(t, 90.1, 90.9, E.inOutSine) * fade * (ctx.portrait ? 1 - tl.seg(r[2] * 1.2, 1000, 1150) : 1);
+      const bo = tl.seg(t, 90.1, 90.9, E.inOutSine) * fade * gate;
       if (bo > 0.002) K.band.rect(target, bandAround(ctx, r, { progress: 1, opacity: bo, tint: [1, 1, 1].map(v => v * Math.pow(2, -3 * sink)),
         key: [r[0] - 0.3 * r[2], r[1] - 0.8 * r[3]], keyZ: 500 * r[2] / 1000 }));
       // ink closes in round the plate (91.8-92.9), centred between the faces and stopping just outside them
@@ -134,9 +142,9 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
     // through the held breath at 104.0)
     const gw = tl.seg(t, 101.7, 103.2, E.inOutSine) * (1 - tl.seg(t, 106.6, 107.6, E.inOutSine));
     if (gw > 0) {
-      const nf = tl.seg(t, 102.0, 104.0, E.inOutSine), U = ctx.U;
+      const nf = tl.seg(t, 102.0, 104.0, E.inOutSine), U = ctx.U * Ly.gk;   // gk: the script size over landscape's 72
       const ex = Ly.x - 340 * U + 340 * U * nf, ew = (120 + 220 * nf) * U;
-      G.draw(this.P.glow, { uE: [ex, Ly.y13b - 22, ew, 75 * U], uC: this.col.warm, uI: gw }, target,
+      G.draw(this.P.glow, { uE: [ex, Ly.y13b - 22 * Ly.gk, ew, 75 * U], uC: this.col.warm, uI: gw }, target,
         { blend: 'add', viewport: vp(ctx, target, [Ly.x - 760, Ly.y13b - 230, 1520, 420]) });
     }
   },
@@ -151,7 +159,7 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
         exit: { at: 4.6, kind: 'opacity', dur: 1.0 },
         // the held breath: nothing moves 104.0-104.3, then the leaf is laid and its sweep lands at 105.2
         gild: { at: 2.3, dur: 0.9 },
-        glints: [{ at: 4.85, x: Ly.x + 150 * ctx.U, y: Ly.y13b - 30 * ctx.U, size: 26, I: 3.2, dur: 0.45 }],
+        glints: [{ at: 4.85, x: Ly.x + 150 * ctx.U * Ly.gk, y: Ly.y13b - 30 * ctx.U * Ly.gk, size: 26 * Ly.gk, I: 3.2, dur: 0.45 }],
         gold: { look: 'winter_gold', key: [Ly.x - 260, Ly.y13b - 260], keyZ: 300, keyI: 4 },
       };
       out.push(...ctx.text.nibEntries(e));

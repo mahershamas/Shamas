@@ -366,7 +366,8 @@ const scene = {
   captions(ctx, tau) { return this.narrative(ctx, T0 + tau); },
   post(ctx, tau) {
     const t = T0 + tau, li = this.lightsAt(ctx, t);
-    return { ghosts: 0, ca: 0.0015, streak: { threshold: 4.0, strength: 0.04 }, bloom: { add: 0.05 * li.flash } };
+    // portrait: lower chromatic aberration (the radial shift crosses the horizontal hatch of the lower sea there)
+    return { ghosts: 0, ca: ctx.portrait ? 0.0005 : 0.0015, streak: { threshold: 4.0, strength: 0.04 }, bloom: { add: 0.05 * li.flash } };
   },
 };
 export default scene;

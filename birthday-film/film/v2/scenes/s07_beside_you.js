@@ -44,8 +44,10 @@ export function fullRect(cam) {
   const a = cam.toFrame([0, 0]), b = cam.toFrame([m.size[0], m.size[1]]);
   return [a[0], a[1], b[0] - a[0], b[1] - a[1]];
 }
-export function captionY(ctx) { return ctx.portrait ? 1580 : 930; }
-export function photoStyle(ctx) { return { base: 'narrativePhoto', size: ctx.portrait ? 45 : 50 }; }
+// portrait: 56 px (about 22 px x-height on an upright phone), the baseline a little lower so the ascenders stay clear
+// of the photo's dissolving bottom edge at the end of the push
+export function captionY(ctx) { return ctx.portrait ? 1588 : 930; }
+export function photoStyle(ctx) { return { base: 'narrativePhoto', size: ctx.portrait ? 56 : 50 }; }
 // a soft shadow only; legibility comes from the feathered band darkened under each line (drawCaptionBands)
 export const CAPTION_SHADOW = { dy: 1, alpha: 0.35, blur: 4 };
 export function l9Entry(ctx, t) {
@@ -100,6 +102,16 @@ void main(){
   o = vec4(acc / ws, 1.0);
 }`;
 const COPY_FS = `uniform sampler2D uSrc; out vec4 o; void main(){ o = vec4(texture(uSrc, screenUV()).rgb, 1.0); }`;
+// portrait: the bokeh discs (drawn into a scratch target) are added only over the picture, fading out towards its
+// dissolving top and bottom edges (uY: image top, image bottom, inset, fade length; frame px), never over the mist
+const BOKEHMASK_FS = `
+uniform sampler2D uSrc; uniform vec4 uY;
+out vec4 o;
+void main(){
+  float y = framePx().y;
+  float m = smoothstep(uY.x + uY.z, uY.x + uY.z + uY.w, y) * (1.0 - smoothstep(uY.y - uY.z - uY.w, uY.y - uY.z, y));
+  o = vec4(texture(uSrc, screenUV()).rgb * m, 0.0);
+}`;
 // the faces keep a lighter blur than the room: the lightly blurred photo is laid over the heavily blurred one inside
 // the two face ellipses (frame px), feathered over uF px
 const FACEMIX_FS = `
@@ -221,7 +233,7 @@ const scene = {
   id: 's07_beside_you', t0: 73.0, t1: 90.0, internalScale: 1, look: 'photo',
   async init(ctx) {
     const { G, glsl } = ctx;
-    this.P = { scrim: G.program('s07.scrim', glsl.frag(SCRIM_FS)) };
+    this.P = { scrim: G.program('s07.scrim', glsl.frag(SCRIM_FS)), bokehMask: G.program('s07.bokehmask', glsl.frag(BOKEHMASK_FS)) };
     this.mist = createMist(ctx);
     this.blur = createBlur(ctx);
     this.soften = createSoften(ctx);
@@ -265,7 +277,17 @@ const scene = {
       this.blur.faces(R, target, sig, Math.min(2.5, 0.36 * sig), this.faceZones(ctx, cam), 60 * ctx.U);
       G.release(R);
     }
-    if (s.blur > 0.002) PH.bokeh(target, cam, { I: s.blur, grow: s.blur, t: t - 73.5 });
+    if (s.blur > 0.002) {
+      const bo = { I: s.blur, grow: s.blur, t: t - 73.5 };
+      if (ctx.portrait) {
+        const B = G.acquire(target.w, target.h, { format: 'hdr', scale: target.scale == null ? 1 : target.scale });
+        G.clear(B, [0, 0, 0, 0]);
+        PH.bokeh(B, cam, bo);
+        const fr = fullRect(cam);
+        G.draw(this.P.bokehMask, { uSrc: B, uY: [fr[1], fr[1] + fr[3], 30 * ctx.U, 120 * ctx.U] }, target, { blend: 'add' });
+        G.release(B);
+      } else PH.bokeh(target, cam, bo);
+    }
     if (!ctx.portrait) G.draw(this.P.scrim, { uY: [800, 1080], uA: 1 }, target, { blend: 'premul', viewport: [0, 0, target.w, Math.ceil(280 * (target.scale || 1))] });
     // the thread (the two-loop knot glyph is retired; the thread and its travelling glint remain). Portrait: the seat is
     // mostly hidden behind the people, so the visible ends are wider and brighter.

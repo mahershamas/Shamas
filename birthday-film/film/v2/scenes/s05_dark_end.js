@@ -25,7 +25,7 @@ const T0 = 54.0;
 
 export function dusk(ctx) {
   if (ctx.portrait) return {
-    W: 1080, hz: 1150, notch: [700, 1096], sun0: 1074, sun1: 1118, R: 22, textX: 540, yA: 620, yB: 692, size: 54 * 0.9,
+    W: 1080, hz: 1150, notch: [700, 1096], sun0: 1074, sun1: 1118, R: 22, textX: 540, yA: 615, yB: 697, size: 56,
     orbEnd: [540, 1248], colW: 0.03 * 1080,
     ridges: [
       { base: 1166, amp: 70, par: 1.0, f: 0.0042, seed: 11.3, floor: 0.0, det: 2.2, bumps: [[0, 170, 1.05], [1080, 120, 0.7], [-60, 260, 0.2], [1120, 260, 0.15]] },
@@ -248,6 +248,7 @@ uniform vec4 uGl2;       // molten front (layout px below the horizon), sun layo
 uniform vec2 uSunS;      // screen x of the sun's column
 uniform float uMistBK, uSpan;
 uniform vec2 uMolFade;   // frame y where the molten sheen fades out (portrait: the path keeps only its sparkles there)
+uniform vec3 uNearLod;   // extra reflection blur toward the frame's bottom: amount (mip levels), from frame y, to frame y (portrait)
 out vec4 o;
 void main(){
   vec2 px = framePx(); vec2 q = toLayout(px);
@@ -260,6 +261,8 @@ void main(){
   vec2 look = px + R.xy * uS;
   look.y = max(look.y, hzS + 0.6);
   float lod = 0.3 + 1.1 * nearK + 1.8 * R.w;
+  // portrait: the near water reflects the high sky, where its stars would break into blocky dashes; it blurs them away
+  lod += uNearLod.x * smoothstep(uNearLod.y, uNearLod.z, px.y);
   vec3 refl = textureLod(uA, pxToUV(look), lod).rgb;
   // wind-ruffled streaks reflect a broad patch of sky: lighter, softer
   vec3 broad = textureLod(uA, pxToUV(vec2(look.x, look.y + 40.0 * uS)), 4.5).rgb;
@@ -532,6 +535,7 @@ const scene = {
         uGl: [(1 + 1.2 * gold) * Math.min(1, fade), 0.0068 + 0.004 * molten, 0.040 + 0.03 * molten, molten],
         uGl2: [span * tl.seg(t, 60.0, 60.385), st.sun.x, st.sun.y, 1745], uSunS: sunS, uSpan: span,
         uMolFade: ctx.portrait ? [1500, 1700] : [1e5, 2e5],
+        uNearLod: ctx.portrait ? [2.2, 1350, 1720] : [0, 1e5, 2e5],
       }, U), target, { blend: 'premul', viewport: [0, 0, target.w, Math.min(target.h, Math.ceil((H - top) * sc))] });
     }
     // the lines sit on the dusk sky (stratus, the first stars): a soft darker band under each

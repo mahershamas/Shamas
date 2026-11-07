@@ -233,9 +233,11 @@ async function boot() {
         if (kind === 2) {
           // gold-dust dissolve: the field and its feather at quarter resolution (static in time: only the threshold moves)
           M = G.target('frame.dmask', W / 4, H / 4, { scale: 0.25 });
+          // portrait may override the centre and the radial aspect (an aspect tuned for 16:9 turns the iris into a tide in 9:16)
           const ctr = (PORTRAIT && o.centerPortrait) || o.center || [0.5, 0.5];
+          const asp = (PORTRAIT && o.aspectPortrait) || o.aspect || [1, 1];
           G.draw(P.dmask, { uNScale: o.scale || 14, uOct: o.oct || 3, uWarp: o.warp == null ? 0.9 : o.warp, uRadial: o.radial || 0,
-            uFeather: o.feather || 48, uSeed: o.seed || 0, uCalm: o.calm || 0, uCtr: [ctr[0] * W, ctr[1] * H], uAsp: o.aspect || [1, 1] }, M);
+            uFeather: o.feather || 48, uSeed: o.seed || 0, uCalm: o.calm || 0, uCtr: [ctr[0] * W, ctr[1] * H], uAsp: asp }, M);
         }
         G.draw(P.trans, { uA: RA, uB: RB, uM: M || RA, uKind: kind, uW: tr.w, uGold: o.gold || 0, uLumaKey: o.lumaKey || 0,
           uGrain: o.grain == null ? 0.35 : o.grain, uTime: t, uRamp: rampOf(o.goldLook || Lb.scene.look) }, C);

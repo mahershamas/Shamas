@@ -30,13 +30,14 @@ export const TRANSITIONS = [
   { from: 's05_dark_end', to: 's06_window', t0: 63.0, t1: 64.5, kind: 'over' },           // scene 5 underneath (full resolution, as every outgoing scene now)
   { from: 's06_window', to: 's07_beside_you', t0: 73.0, kind: 'cut' },                    // through-glass lands on the first crop
   { from: 's07_beside_you', to: 's08_honest', t0: 90.0, kind: 'cut' },                    // scene 8 recedes the photo itself
-  { from: 's08_honest', to: 's09_ocean_later', t0: 107.2, t1: 108.8, kind: 'inkbleed', opts: { radial: 0.65, center: [0.5, 0.52], centerPortrait: [0.5, 0.5], aspect: [0.6, 1], lumaKey: 0.5, gold: 0.5, scale: 24, feather: 64, seed: 37 } },
+  { from: 's08_honest', to: 's09_ocean_later', t0: 107.2, t1: 108.8, kind: 'inkbleed', opts: { radial: 0.65, center: [0.5, 0.52], centerPortrait: [0.5, 0.5], aspect: [0.6, 1], aspectPortrait: [1, 0.5], lumaKey: 0.5, gold: 0.5, scale: 24, feather: 64, seed: 37 } },
   { from: 's09_ocean_later', to: 's10_i_love_you', t0: 117.0, kind: 'cut' },              // hard cut, cue 'stop'
   { from: 's10_i_love_you', to: 's11_come_back', t0: 131.5, t1: 133.0, kind: 'custom', ease: p => p },   // scene 11: luma-keyed ink bleed of the sea only, one continuous sky (spread over the whole 131.5-133.0 hand-off)
   // the sea dissolves into ink from the four edges in, toward the knot's centre (the knot's first stroke at 138.0 lands
   // while it does); the shared gold-dust dissolve rather than scene 12's iris, so no front reads as a coastline
+  // (aspectPortrait: in 9:16 x needs about twice the weight of y for the front to reach all four edges together)
   { from: 's11_come_back', to: 's12_promise', t0: 137.6, t1: 139.0, kind: 'inkbleed',
-    opts: { radial: 0.72, center: [0.5, 0.435], centerPortrait: [0.5, 0.448], aspect: [0.8, 1], gold: 0.4, scale: 24, feather: 80, seed: 113 } },
+    opts: { radial: 0.72, center: [0.5, 0.435], centerPortrait: [0.5, 0.448], aspect: [0.8, 1], aspectPortrait: [1, 0.45], gold: 0.4, scale: 24, feather: 80, seed: 113 } },
   { from: 's12_promise', to: 's13_signature', t0: 144.4, t1: 145.4, kind: 'custom' },              // scene 13: the knot crumbles to dust
   // the dawn sea comes in from the frame edges; the bordered photograph goes last, toward the sun's point
   { from: 's13_signature', to: 's14_first_light', t0: 154.6, t1: 156.0, kind: 'inkbleed',

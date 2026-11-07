@@ -2,7 +2,7 @@
   Scene 12: promise (137.8-145.4), package P8.
   Ink ground #07080C with a faint warm vignette (#1A120C at the knot) and an almost invisible vellum fibre. One
   endless knot (core/knot.js promiseKnot: four lobes, three turns, ONE closed strand, verified at init: parity,
-  alternation, one component), a 14 px gold-leaf ribbon with an umber keyline and true over/under gaps (2.2 ribbon
+  alternation, one component), a 14 px (portrait 18 px) gold-leaf ribbon with an umber keyline and true over/under gaps (2.2 ribbon
   widths at every under-crossing), precomputed into the 8B data texture.
   138.0-141.0 the pen tip travels the whole strand (arc-length reveal, easeInOutSine) and returns to its own beginning
   at exactly 141.000 (cue 'knot_close', the E major downbeat): no loose end. 141.0-141.4 a specular flare sweeps the
@@ -90,7 +90,10 @@ void main(){
 }`;
 
 function layoutOf(ctx) {
-  return ctx.portrait ? { c: [540, 860], R: 190, textY: 1200, size: 48.6, bgR: 520 } : { c: [960, 470], R: 170, textY: 760, size: 54, bgR: 470 };
+  // portrait: the knot about 46 percent of the frame width (R 240, ribbon, warm ground, key height and closing glint
+  // scaled with it) and line L18 at 60 px, set below the furthest reach of the closing ring
+  return ctx.portrait ? { c: [540, 860], R: 240, rib: 18, textY: 1290, size: 60, bgR: 640, keyZ: 505, glint: 62 }
+    : { c: [960, 470], R: 170, rib: 14, textY: 760, size: 54, bgR: 470, keyZ: 400, glint: 52 };
 }
 
 const scene = {
@@ -105,10 +108,10 @@ const scene = {
     this.crumble = G.program('p8.s12.crumble', glsl.frag(CRUMBLE_FS));
     this.kdust = ctx.particles.program('p8.s12.kdust', KDUST);
     this.knotData = promiseKnot({ cx: L.c[0], cy: L.c[1], R: L.R });
-    const v = ctx.verifyKnot(this.knotData, { ribbon: 14, gapFactor: 2.2 });
+    const v = ctx.verifyKnot(this.knotData, { ribbon: L.rib, gapFactor: 2.2 });
     if (!v.ok || v.components !== 1) throw new Error('promise knot failed its checks: ' + JSON.stringify(v));
     this.verify = v;
-    this.kt = ctx.knot.texture(this.knotData, { ribbon: 14, gapFactor: 2.2 });
+    this.kt = ctx.knot.texture(this.knotData, { ribbon: L.rib, gapFactor: 2.2 });
     this.start = ctx.knot.tipAt(this.kt, 0);
     const D = h => ctx.displayToScene(h);
     this.col = { inC: D('#1A120C'), outC: D('#07080C') };
@@ -127,7 +130,7 @@ const scene = {
     for (let i = 0; i < ND; i++) {
       const j = Math.floor(rnd() * n);
       const a = kn.ang ? kn.ang[j] : 0;
-      const off = (rnd() - 0.5) * 13 * ctx.U;
+      const off = (rnd() - 0.5) * (L.rib - 1) * ctx.U;
       const x0 = kn.pts[j * 2] - Math.sin(a) * off - L.c[0], y0 = kn.pts[j * 2 + 1] + Math.cos(a) * off - L.c[1];
       const x = L.c[0] + x0 * cr - y0 * sr, y = L.c[1] + x0 * sr + y0 * cr;
       const rad = Math.min(1, Math.hypot(x - L.c[0], y - L.c[1]) / (L.R * 1.15));
@@ -183,13 +186,13 @@ const scene = {
     const flare = t >= 141.0 && t < 141.4 ? (t - 141.0) / 0.4 : 0;
     // the closing breath: the leaf brightens a little as the strand closes, then settles
     const close = t >= 141.0 ? Math.exp(-(t - 141.0) / 0.6) : 0;
-    ctx.knot.draw(target, this.kt, { progress: prog, rotation: rot, center: L.c, key, keyZ: 400, keyI: 4 + 1.5 * close, flare, flareI: 3.2, tipI: 4.5 * tl.seg(t, 138.0, 138.6, E.inOutSine) });   // the nib lights up as the ink settles
+    ctx.knot.draw(target, this.kt, { progress: prog, rotation: rot, center: L.c, key, keyZ: L.keyZ, keyI: 4 + 1.5 * close, flare, flareI: 3.2, tipI: 4.5 * tl.seg(t, 138.0, 138.6, E.inOutSine) });   // the nib lights up as the ink settles
     if (t >= 141.0 && t < 142.0) {
       // the ring pulses out at most 70 px (scaled) and is gone before it could cross line L18
       const k = (t - 141.0) / 0.8;
-      if (k < 1) ctx.knot.ring(target, { center: L.c, r: (L.R + 14) + 70 * (L.R / 170) * E.outCubic(k), width: 3.2, I: 0.5 * Math.pow(1 - k, 2) * (1 - tl.smoothstep(0.4, 0.75, k)) });
+      if (k < 1) ctx.knot.ring(target, { center: L.c, r: (L.R + L.rib) + 70 * (L.R / 170) * E.outCubic(k), width: 3.2, I: 0.5 * Math.pow(1 - k, 2) * (1 - tl.smoothstep(0.4, 0.75, k)) });
       const g = (t - 141.0) / 0.5;
-      if (g < 1) ctx.gold.glint(target, { x: this.start[0], y: this.start[1], size: 52, I: 3.2 * Math.sin(Math.PI * Math.pow(g, 0.4)), rot: 0.2 });
+      if (g < 1) ctx.gold.glint(target, { x: this.start[0], y: this.start[1], size: L.glint, I: 3.2 * Math.sin(Math.PI * Math.pow(g, 0.4)), rot: 0.2 });
     }
   },
   captions(ctx, tau) {

@@ -11,7 +11,9 @@
   (71.0-71.6, cues 'portrait1'..'portrait4'); 71.5-72.65 the camera passes through the glass: photo and border zoom
   about one fixed point (the border, nearer the lens, a little faster) and the border leaves on a radial blur
   (71.75-72.25) before any gap opens round the photo, the snow streaks past the lens and is gone by 72.8, and the photo
-  lands exactly on scene 7's first crop and holds there until the cut at 73.0 (invisible).
+  lands exactly on scene 7's first crop and holds there until the cut at 73.0 (invisible). Portrait: the border dissolves
+  as the push begins (71.5-71.8), before its roundels can reach the frame's sides, while the photo's edges soften into
+  scene 7's warm mist; the photo stays centred until its sides have left the frame, then glides to scene 7's crop.
   The pens' glints run with a weak anamorphic streak (64.5-67.2); the default streak is back for the meet spark.
   Transition in: kind 'over' (63.0-64.5); this scene's surround is premultiplied over scene 5 and it takes over the orb.
   Lines: L8a at 66.0 and L8b at 69.0 laid out once as one line in landscape (no reflow), two centred rows in portrait;
@@ -38,7 +40,7 @@ export function windowLayout(ctx) {
   // border and its roundels keep about 80 px margins on the 1080 px width, placed so that the border's bottom centre
   // (centreline 428 layout px below the plate centre) is where scene 5's orb lands (y 1248); the two lines are stacked
   // below it (textY2) instead of sharing one row.
-  if (ctx.portrait) return { plateC: [540, 1248 - 428 * 0.82], plateW: 820, s0: 0.82, textY: 1390, textY2: 1455, textSize: 44 };
+  if (ctx.portrait) return { plateC: [540, 1248 - 428 * 0.82], plateW: 820, s0: 0.82, textY: 1394, textY2: 1477, textSize: 56 };
   return { plateC: [960, 500], plateW: 1000, s0: 1, textY: 1010, textY2: null, textSize: 46 };
 }
 export function bandAround(ctx, r, o = {}) {
@@ -219,6 +221,16 @@ void main(){
   float m = 1.0 - smoothstep(uR - uF, uR + uF, d);
   o = texture(uSrc, screenUV()) * m;
 }`;
+// portrait: additive light (the grains) faded out toward the frame's left and right edges (frame px: zero at uE.x, full
+// at uE.y from each edge)
+const SIDEFADE_FS = `
+uniform sampler2D uSrc; uniform vec2 uE;
+out vec4 o;
+void main(){
+  float x = framePx().x;
+  float m = smoothstep(uE.x, uE.y, x) * smoothstep(uE.x, uE.y, uFrame.x - x);
+  o = texture(uSrc, screenUV()) * m;
+}`;
 function vpOf(ctx, target, r) {
   const s = target.scale == null ? 1 : target.scale;
   const x0 = Math.max(0, Math.floor(r[0] * s) - 1), x1 = Math.min(target.w, Math.ceil((r[0] + r[2]) * s) + 1);
@@ -235,7 +247,7 @@ const scene = {
     this.snow = createSnow(ctx);
     this.mist = createMist(ctx);
     this.soften = createSoften(ctx);
-    this.P = { orb: G.program('s06.orb', glsl.frag(ORB_FS)), lamp: G.program('s06.lamp', glsl.frag(LAMP_FS)), wipe: G.program('s06.wipe', glsl.frag(WIPE_FS)), scrim: G.program('s06.scrim', glsl.frag(`uniform vec2 uY; uniform float uA; out vec4 o;
+    this.P = { sideFade: G.program('s06.sidefade', glsl.frag(SIDEFADE_FS)), orb: G.program('s06.orb', glsl.frag(ORB_FS)), lamp: G.program('s06.lamp', glsl.frag(LAMP_FS)), wipe: G.program('s06.wipe', glsl.frag(WIPE_FS)), scrim: G.program('s06.scrim', glsl.frag(`uniform vec2 uY; uniform float uA; out vec4 o;
 void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 0.0, 1.0); k = k * k * (3.0 - 2.0 * k) * 0.55 + k * 0.45; o = vec4(0.0, 0.0, 0.0, uA * 0.58 * k); }`)) };
     const pp = ctx.post.params('photo');
     const S = h => ctx.displayToScene(h, pp);
@@ -263,6 +275,14 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
     const rect = [F[0] + Z * (r0[0] - F[0]), F[1] + Z * (r0[1] - F[1]), r0[2] * Z, r0[3] * Z];
     const Zb = Z * (1 + 0.12 * g);
     const bandRect = [F[0] + Zb * (r0[0] - F[0]), F[1] + Zb * (r0[1] - F[1]), r0[2] * Zb, r0[3] * Zb];
+    if (ctx.portrait) {
+      // portrait: photo and border stay centred on the frame while the photo's sides are in view (with their soft
+      // edges), then glide to scene 7's crop (its face box centred) once they have left the frame
+      const cx0 = r0[0] + r0[2] / 2, cx1 = this.endRect[0] + this.endRect[2] / 2;
+      const cx = cx0 + (cx1 - cx0) * ctx.tl.smoothstep((ctx.W + 80 * ctx.U) / r0[2], this.Zend, Z);
+      rect[0] = cx - rect[2] / 2;
+      bandRect[0] = cx - bandRect[2] / 2;
+    }
     return { g, Z, Zb, rect, bandRect };
   },
   tipsAt(ctx, t) {
@@ -295,8 +315,13 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
     const lit = 0.35 * tl.seg(t, 64.6, 66.0) + 0.65 * tl.seg(t, 69.0, 71.5, E.inOutSine);
     this.backdrop(target, { inner: this.col.night0, outer: this.col.night1, center: [L.plateC[0], L.plateC[1] + 80 * L.s0], radius: 0.95, alpha: bgA,
       spill: { rect: geo.rect, color: this.col.spill, I: 0.022 * lit * (1 - geo.g), width: 110 * L.s0 } });
-    // portrait: scene 7's warm mist gathers round the photo as it lands (its edges dissolve into it)
-    if (ctx.portrait && geo.g > 0) this.mist(target, t, tl.seg(t, 71.9, 72.9, E.inOutSine));
+    // portrait: scene 7's warm mist gathers round the photo as the border dissolves and the photo flies at the lens (its
+    // edges dissolve into it)
+    if (ctx.portrait && geo.g > 0) this.mist(target, t, tl.seg(t, 71.6, 72.4, E.inOutSine));
+    // portrait: the photo's edges soften as its border dissolves (an fbm-broken feather that widens as the photo nears
+    // and lands as scene 7's 80 px); the side feathers go once the sides have left the frame
+    const fe = ctx.portrait && geo.g > 0 ? 80 * (0.5 + 0.5 * geo.Z / this.Zend) * tl.seg(t, 71.5, 71.85, E.inOutSine) : 0;
+    const feLR = fe * (1 - tl.seg(t, 72.1, 72.35));
     const cam = geo.g > 0 ? ctx.photoCamera([0, 0, window.PHOTO_META.size[0], window.PHOTO_META.size[1]], { dest: geo.rect, tag: 's06-glass' })
       : ctx.photoCamera([0, 0, window.PHOTO_META.size[0], window.PHOTO_META.size[1]], { dest: this.plateRect, tag: 's06' });
     // 2 the plate: frost, grains, engraving, colour
@@ -312,7 +337,7 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
       if (wiping) { dst = G.acquire(target.w, target.h, { format: 'hdr', scale: target.scale == null ? 1 : target.scale }); G.clear(dst, [0, 0, 0, 0]); }
       PH.draw(dst, cam, {
         engrave: { reveal: t - 65.5, key: [keyX, this.plateRect[1] - 260 * L.s0] },
-        edgeFade: ctx.portrait && geo.g > 0 ? { top: 80 * tl.seg(t, 71.9, 72.9, E.inOutSine), bottom: 80 * tl.seg(t, 71.9, 72.9, E.inOutSine) }
+        edgeFade: ctx.portrait && geo.g > 0 ? { top: fe, bottom: fe, left: feLR, right: feLR }
           : frostLeft > 0.01 ? { top: 12 * frostLeft, bottom: 12 * frostLeft, left: 12 * frostLeft, right: 12 * frostLeft } : null,
         colour: { r: colourR, rim: 18, rimI: 1.1 }, frost: { r: frostR, t: t - 66.0, rAt: tt => this.frostR(ctx, 66 + tt), amount: 1 - geo.g },
       });
@@ -322,7 +347,18 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
         G.draw(this.P.wipe, { uSrc: dst, uO: W.o, uR: W.R, uF: W.F }, target, { blend: 'premul', viewport: vp });
         G.release(dst);
       }
-      if (t > 65.5 && t < 68.5) PH.grains(target, cam, { t: t - 65.5, tipAt: tr => this.tipsAt(ctx, 65.5 + tr) });
+      if (t > 65.5 && t < 68.5) {
+        const go = { t: t - 65.5, tipAt: tr => this.tipsAt(ctx, 65.5 + tr) };
+        if (ctx.portrait) {
+          // portrait: the plate leaves about 50 px either side, so the grains' outward spray thins out before the
+          // frame's left and right edges instead of being cut by them
+          const gt = G.acquire(target.w, target.h, { format: 'hdr', scale: target.scale == null ? 1 : target.scale });
+          G.clear(gt, [0, 0, 0, 0]);
+          PH.grains(gt, cam, go);
+          G.draw(this.P.sideFade, { uSrc: gt, uE: [4 * ctx.U, 62 * ctx.U] }, target, { blend: 'add' });
+          G.release(gt);
+        } else PH.grains(target, cam, go);
+      }
       for (let i = 0; i < 4; i++) PH.portraitGlint(target, cam, { index: i, life: tl.seg(t, this.portraitT[i] - 0.1, this.portraitT[i] + 0.5) });
     }
     // 3 the border (drawn into the scene target so its keyline and shadow sit on the night). Through the glass it leaves
@@ -330,7 +366,13 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
     // sides pass the frame's edges.
     if (t >= 64.5 && t < 72.3) {
       let op = 1 - tl.seg(t, 71.75, 72.25, E.inOutSine);
-      if (ctx.portrait) op *= 1 - tl.seg(geo.bandRect[2] * 1.2, 1000, 1150);
+      if (ctx.portrait) {
+        // portrait: the border dissolves as the push begins (71.5-71.8), and in any case before its roundels' outer
+        // edge (597 layout px from the band's centre, at the border's scale) can reach the frame's left or right edge
+        const bs = geo.bandRect[2] / 1000, bc = geo.bandRect[0] + geo.bandRect[2] / 2;
+        const ext = Math.max(ctx.W / 2 - (bc - 597 * bs), bc + 597 * bs - ctx.W / 2);
+        op *= 1 - Math.max(tl.seg(t, 71.5, 71.8, E.inOutSine), tl.seg(ext, 512 * ctx.U, 528 * ctx.U));
+      }
       const keyX = this.keyX(ctx, t);
       const base = { progress: this.bandProg(ctx, t), key: [keyX, -150], keyZ: 500, tipI: 2.5 };
       if (geo.g <= 0) K.band.rect(target, bandAround(ctx, this.plateRect, Object.assign({ opacity: op }, base)));
@@ -342,7 +384,7 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
         const taps = d > 0.0005 ? [-1, 0, 1] : [0];
         for (const k of taps) {
           const z = 1 + k * d;
-          const F = this.Fp, br = geo.bandRect;
+          const br = geo.bandRect, F = ctx.portrait ? [br[0] + br[2] / 2, this.Fp[1]] : this.Fp;
           const r = [F[0] + z * (br[0] - F[0]), F[1] + z * (br[1] - F[1]), br[2] * z, br[3] * z];
           K.band.rect(target, bandAround(ctx, r, Object.assign({ opacity: op / (taps.length === 3 ? (k === 0 ? 2.2 : 3.2) : 1), shadow: 0.25 }, base)));
         }

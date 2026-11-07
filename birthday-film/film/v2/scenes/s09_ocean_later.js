@@ -143,7 +143,8 @@ const scene = {
     this.fx.draw(target, u, { viewport: [0, 0, ctx.W, ctx.H] });
   },
   captions(ctx, tau) { return this.narrative(ctx, T0 + tau); },
-  // chromatic aberration kept low so the starfield and the hatch stay clean
-  post() { return { ca: 0.0012, ghosts: 0 }; },
+  // chromatic aberration kept low so the starfield and the hatch stay clean (lower still in portrait, where the radial
+  // shift crosses the horizontal hatch of the lower sea)
+  post(ctx) { return { ca: ctx && ctx.portrait ? 0.0005 : 0.0012, ghosts: 0 }; },
 };
 export default scene;

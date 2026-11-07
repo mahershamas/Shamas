@@ -23,7 +23,8 @@ const T0 = 30.0;
 export function shoresLayout(ctx) {
   if (ctx.portrait) return {
     hz: 820, hz0: 960, west: [150, 820], east: [930, 820], ctrl: [540, 300], merX: k => 930 - 156 * k,
-    textY: 1500, capY: 520, textSize: 52 * 0.9, clamp: [54, 1026], breaks: { L4: [4], L5: [6] },
+    // portrait narrative size: 56 px (about 22 px x-height on a 1080-wide frame held upright), never below landscape's 52
+    textY: 1500, capY: 520, textSize: 56, clamp: [54, 1026], breaks: { L4: [4], L5: [6] },
   };
   return {
     hz: 430, hz0: 540, west: [230, 430], east: [1690, 430], ctrl: [960, 70], merX: k => 1690 - 292 * k,
@@ -555,7 +556,9 @@ const scene = {
     // the house small caps (lining figures, 30 px landscape / 34 portrait, #E3C27A at 95 %), a quick 8 ms letter
     // stagger; both stay until 53.8 and leave with the dissolve into scene 5
     const cap = { base: 'caps', size: ctx.portrait ? 34 : 30, tracking: 0.2 };
-    const en = { base: 'caps', stagger: 0.008 };
+    // portrait: a gentler closing-tracking entrance (0.30em, not 0.50em), so the widened label never reaches the frame
+    // edge while its clamp holds it 54 px in (null keeps the house value in landscape)
+    const en = { base: 'caps', stagger: 0.008, trackEm: ctx.portrait ? 0.30 : null };
     if (t >= 47.9) out.push({ lineId: 'L6a', tau: t - 48.0, x: L.east[0], y: L.capY, style: cap, enter: en, clampX: L.clamp, exit: { at: 5.8, kind: 'default', dur: 0.7 } });
     if (t >= 51.9) out.push({ lineId: 'L6b', tau: t - 52.0, x: L.west[0], y: L.capY, style: cap, enter: en, clampX: L.clamp, exit: { at: 1.8, kind: 'default', dur: 0.7 } });
     return out;
@@ -563,8 +566,10 @@ const scene = {
   post(ctx, tau) {
     const t = T0 + tau;
     const dim = 1 - 0.3 * ctx.tl.seg(t, 53.2, 54.0, ctx.tl.E.inOutSine);
-    // chromatic aberration at the house minimum over the 1-2 px engraving (no split hatch or star doublets), no ghosts
-    return { ghosts: 0, ca: 0.0015, exposure: Math.log2(dim) };
+    // chromatic aberration at the house minimum over the 1-2 px engraving (no split hatch or star doublets), no ghosts;
+    // in portrait the radial shift runs across the horizontal hatch of the lower sea (pink/green doubled lines), so it is
+    // a third of that there
+    return { ghosts: 0, ca: ctx.portrait ? 0.0005 : 0.0015, exposure: Math.log2(dim) };
   },
 };
 export default scene;

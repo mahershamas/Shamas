@@ -114,8 +114,9 @@ const scene = {
     // the plate (photo width w, centred on ctr) is the last view of the photograph: large, with the signature and the
     // line below it; the three pickup sparkles rise just above the border
     this.lay = ctx.portrait
-      ? { ctr: [540, 860], w: 800, knot: [540, 860, 190], y19a: 1340, y19b: 1410, size19b: 42, spark: [[440, 470], [540, 454], [640, 438]] }
-      : { ctr: [960, 425], w: 740, knot: [960, 470, 170], y19a: 822, y19b: 880, size19b: 38, spark: [[880, 70], [960, 56], [1040, 42]] };
+      // portrait: the from-line at 52 px (phone-width floor) and the signature at 80 px, so it stays clearly beneath it
+      ? { ctr: [540, 860], w: 800, knot: [540, 860, 240], knotRib: 18, y19a: 1352, y19b: 1436, size19a: 80, size19b: 52, spark: [[440, 470], [540, 454], [640, 438]] }
+      : { ctr: [960, 425], w: 740, knot: [960, 470, 170], knotRib: 14, y19a: 822, y19b: 880, size19a: 64, size19b: 38, spark: [[880, 70], [960, 56], [1040, 42]] };
     // the knot as scene 12 leaves it (rotating 0.5 deg/s after 141.4)
     const [kx, ky, R] = this.lay.knot;
     const kn = promiseKnot({ cx: kx, cy: ky, R, rotation: (0.5 * (144.4 - 141.4)) * Math.PI / 180 });
@@ -125,7 +126,7 @@ const scene = {
     for (let i = 0; i < NK; i++) {
       const j = Math.floor(rnd() * n);
       const a = kn.ang ? kn.ang[j] : 0;
-      const off = (rnd() - 0.5) * 13 * ctx.U;
+      const off = (rnd() - 0.5) * (this.lay.knotRib - 1) * ctx.U;
       const x = kn.pts[j * 2] - Math.sin(a) * off, y = kn.pts[j * 2 + 1] + Math.cos(a) * off;
       const vert = Math.min(1, Math.max(0, (y - (ky - R)) / (2 * R)));
       const d = 0.45 * vert + 0.55 * (0.25 + 0.5 * rnd());       // the same law as the dissolve front (noise replaced by a draw)
@@ -196,7 +197,7 @@ const scene = {
     const t = T0 + tau, L = this.lay, out = [];
     if (t >= 145.0 && t < 155.1) {
       out.push(...ctx.text.nibEntries({
-        lineId: 'L19a', tau: t - 145.0, x: ctx.W / 2, y: L.y19a, style: { base: 'script', size: 64 }, enter: { base: 'nib', dur: 1.6 },
+        lineId: 'L19a', tau: t - 145.0, x: ctx.W / 2, y: L.y19a, style: { base: 'script', size: L.size19a }, enter: { base: 'nib', dur: 1.6 },
         gild: { at: 1.6, dur: 0.4, feather: 50 }, exit: { at: 9.0, kind: 'opacity', dur: 1.0 },
         gold: { look: 'photo', key: [ctx.W / 2 - 200, L.y19a - 240], keyZ: 280, keyI: 3.6 },
       }));
