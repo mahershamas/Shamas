@@ -8,6 +8,7 @@
    node render.js --html ../film/index.html --out ../private/out/film.mp4 --audio ../private/out/music.wav
         [--fps 30] [--workers 3] [--start 0] [--end 10] [--crf 19] [--preset slow] [--grain 0.16] [--variant portrait]
         [--tune film] [--maxrate 12M] [--bufsize 24M] [--abitrate 256k] [--master [path]] [--encode v2]
+        [--segdir DIR [--chunks N] [--keep]]   resumable: finished chunks are skipped when the command is rerun
    node render.js --html ... --stills 0,10.5,42 --outdir ../private/out/stills [--variant portrait]
 
  --encode v2 sets the version-2 delivery settings (SPEC 4.4): --workers 2 --crf 14 --preset slow --tune grain
@@ -103,14 +104,27 @@ async function main() {
   const tStart = parseFloat(args.start || '0'), tEnd = parseFloat(args.end || String(film.duration));
   const f0 = Math.round(tStart * fps), f1 = Math.round(tEnd * fps), total = f1 - f0;
   console.log(`film ${width}x${height} ${film.duration}s; rendering frames ${f0}..${f1} (${total}) at ${fps} fps with ${workers} workers`);
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'film-'));
-  const segs = [], procs = []; const per = Math.ceil(total / workers);
-  for (let i = 0; i < workers; i++) {
+  // --segdir DIR [--chunks N]: resumable rendering. Frames are split into N chunks rendered by a pool of `workers`;
+  // each finished chunk leaves DIR/segNN.mkv plus a .done marker and is skipped when the same command is rerun.
+  const resumable = !!args.segdir;
+  const tmp = resumable ? path.resolve(args.segdir) : fs.mkdtempSync(path.join(os.tmpdir(), 'film-'));
+  if (resumable) fs.mkdirSync(tmp, { recursive: true });
+  const nChunks = resumable ? Math.max(workers, parseInt(args.chunks || String(workers * 4), 10)) : workers;
+  const segs = [], jobs = []; const per = Math.ceil(total / nChunks);
+  for (let i = 0; i < nChunks; i++) {
     const s = f0 + i * per, e = Math.min(f1, s + per); if (s >= e) break;
-    const segPath = path.join(tmp, `seg${String(i).padStart(2, '0')}.mkv`); segs.push(segPath);
-    const cfg = { html, start: s, end: e, fps, segPath, width, height, idx: i };
-    procs.push(new Promise((res, rej) => { const p = fork(__filename, ['--worker', JSON.stringify(cfg), ...(args.variant ? ['--variant', args.variant] : []), '--fps', String(fps)], { stdio: 'inherit' }); p.on('exit', c => c === 0 ? res() : rej(new Error('worker ' + i + ' exit ' + c))); }));
+    const segPath = path.join(tmp, `seg${String(i).padStart(3, '0')}.mkv`); segs.push(segPath);
+    const done = segPath + '.done';
+    const key = JSON.stringify({ s, e, fps, width, height, variant: args.variant || '' });
+    if (resumable && fs.existsSync(done) && fs.readFileSync(done, 'utf8') === key && fs.existsSync(segPath)) { console.log(`chunk ${i} (${s}-${e}) already done, skipped`); continue; }
+    jobs.push({ i, cfg: { html, start: s, end: e, fps, segPath, width, height, idx: i }, done, key });
   }
+  const runJob = j => new Promise((res, rej) => {
+    const p = fork(__filename, ['--worker', JSON.stringify(j.cfg), ...(args.variant ? ['--variant', args.variant] : []), '--fps', String(fps)], { stdio: 'inherit' });
+    p.on('exit', c => { if (c === 0) { if (resumable) fs.writeFileSync(j.done, j.key); res(); } else rej(new Error('worker ' + j.i + ' exit ' + c)); });
+  });
+  const queue = jobs.slice();
+  const procs = Array.from({ length: Math.min(workers, queue.length) }, async () => { while (queue.length) await runJob(queue.shift()); });
   const t0 = Date.now(); await Promise.all(procs);
   console.log(`frames done in ${((Date.now() - t0) / 1000).toFixed(0)}s; final encode`);
   const list = path.join(tmp, 'list.txt'); fs.writeFileSync(list, segs.map(s => `file '${s}'`).join('\n'));
@@ -148,6 +162,6 @@ async function main() {
     await encode(mpath, true);
     console.log('wrote', mpath);
   }
-  fs.rmSync(tmp, { recursive: true, force: true });
+  if (!resumable || args.keep !== 'true') fs.rmSync(tmp, { recursive: true, force: true });
 }
 main().catch(e => { console.error(e); process.exit(1); });
