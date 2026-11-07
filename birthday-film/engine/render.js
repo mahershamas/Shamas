@@ -9,6 +9,7 @@
         [--fps 30] [--workers 3] [--start 0] [--end 10] [--crf 19] [--preset slow] [--grain 0.16] [--variant portrait]
         [--tune film] [--maxrate 12M] [--bufsize 24M] [--abitrate 256k] [--master [path]] [--encode v2]
         [--segdir DIR [--chunks N] [--keep]]   resumable: finished chunks are skipped when the command is rerun
+        [--res 2] [--segcodec hq10 [--segcrf 6]] [--grainres 0.333] [--level 5.1]   4K: output scale, 10-bit intermediate, grain size, H.264 level
    node render.js --html ... --stills 0,10.5,42 --outdir ../private/out/stills [--variant portrait]
 
  --encode v2 sets the version-2 delivery settings (SPEC 4.4): --workers 2 --crf 14 --preset slow --tune grain
@@ -43,7 +44,16 @@ const maxrate = args.maxrate || '12M';
 const bufsize = args.bufsize || '24M';
 const abitrate = args.abitrate || '256k';
 const grain = args.grain == null ? 0.16 : parseFloat(args.grain);
-const variantQ = args.variant ? `&variant=${args.variant}` : '';
+// --grainres: grain noise resolution as a fraction of the output size (default 2/3; 1/3 at 4K keeps the HD grain size)
+const grainRes = args.grainres == null ? 2 / 3 : parseFloat(args.grainres);
+// --res N: output scale (the page renders N times the frame pixels, same layout); 1 = the HD frame
+const resQ = args.res && args.res !== '1' ? `&res=${args.res}` : '';
+const variantQ = (args.variant ? `&variant=${args.variant}` : '') + resQ;
+// --segcodec lossless (default: libx264rgb qp 0) | hq10 (10-bit 4:4:4 x264 at --segcrf, default 6: visually lossless,
+// far smaller, for 4K renders on a tight disk)
+const segcodec = args.segcodec || 'lossless';
+const segcrf = args.segcrf || '6';
+const level = args.level || '4.1';
 
 async function openFilm(html, width, height) {
   const browser = await chromium.launch({ args: ['--allow-file-access-from-files'] });
@@ -66,9 +76,13 @@ async function capturePng(cdp) {
 
 async function runWorker({ html, start, end, fps, segPath, width, height, idx }) {
   const { browser, page, cdp } = await openFilm(html, width, height);
+  const enc = segcodec === 'hq10'
+    ? ['-vf', 'scale=out_color_matrix=bt709:out_range=pc:flags=accurate_rnd+full_chroma_int,format=yuv444p10le',
+       '-c:v', 'libx264', '-profile:v', 'high444', '-crf', segcrf, '-preset', 'fast', '-g', '30',
+       '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'pc']
+    : ['-c:v', 'libx264rgb', '-qp', '0', '-preset', 'ultrafast', '-g', '30'];
   const ff = spawn('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error',
-    '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', 'pipe:0',
-    '-c:v', 'libx264rgb', '-qp', '0', '-preset', 'ultrafast', '-g', '30', segPath], { stdio: ['pipe', 'inherit', 'inherit'] });
+    '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', 'pipe:0', ...enc, segPath], { stdio: ['pipe', 'inherit', 'inherit'] });
   const frames = end - start; const t0 = Date.now();
   for (let f = start; f < end; f++) {
     await page.evaluate(t => window.seek(t), f / fps);
@@ -129,16 +143,18 @@ async function main() {
   console.log(`frames done in ${((Date.now() - t0) / 1000).toFixed(0)}s; final encode`);
   const list = path.join(tmp, 'list.txt'); fs.writeFileSync(list, segs.map(s => `file '${s}'`).join('\n'));
   const dur = tEnd - tStart;
-  const gw = Math.round(width * 2 / 3), gh = Math.round(height * 2 / 3);
+  const gw = Math.round(width * grainRes), gh = Math.round(height * grainRes);
+  // hq10 segments are 10-bit 4:4:4 full-range BT.709 YUV; lossless segments are full-range RGB
+  const inConv = segcodec === 'hq10' ? 'in_range=pc:in_color_matrix=bt709:' : 'in_range=pc:';
   function encode(outPath, hevc) {
     const ffArgs = ['-y', '-hide_banner', '-loglevel', 'warning', '-stats', '-f', 'concat', '-safe', '0', '-i', list];
     if (args.audio) ffArgs.push('-ss', String(tStart), '-i', path.resolve(args.audio));
     const pix = hevc ? 'yuv420p10le' : 'yuv420p';
-    let fc = `[0:v]scale=in_range=pc:out_range=tv:out_color_matrix=bt709:flags=accurate_rnd+full_chroma_int,format=yuv444p[v]`;
+    let fc = `[0:v]scale=${inConv}out_range=tv:out_color_matrix=bt709:flags=accurate_rnd+full_chroma_int,format=yuv444p[v]`;
     if (grain > 0) {
       ffArgs.push('-f', 'lavfi', '-i', `color=c=0x808080:s=${gw}x${gh}:r=${fps}`);
       const gi = args.audio ? 2 : 1;
-      fc += `;[${gi}:v]format=yuv444p,lutyuv=y=128:u=128:v=128,noise=c0s=40:c0f=t,scale=${width}:${height}:flags=bilinear[g];[v][g]blend=all_mode=overlay:all_opacity=${grain},format=${pix}[out]`;
+      fc += `;[${gi}:v]format=yuv444p,lutyuv=y=128:u=128:v=128,noise=c0s=40:c0f=t,scale=${width}:${height}:flags=${grainRes < 0.5 ? 'bicubic' : 'bilinear'}[g];[v][g]blend=all_mode=overlay:all_opacity=${grain},format=${pix}[out]`;
     } else fc += `;[v]format=${pix}[out]`;
     ffArgs.push('-filter_complex', fc, '-map', '[out]');
     if (args.audio) ffArgs.push('-map', '1:a');
@@ -146,7 +162,7 @@ async function main() {
       ffArgs.push('-c:v', 'libx265', '-preset', preset, '-crf', '16', '-profile:v', 'main10', '-tag:v', 'hvc1',
         '-x265-params', 'keyint=60:min-keyint=30:aq-mode=3:colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited:log-level=error');
     } else {
-      ffArgs.push('-c:v', 'libx264', '-preset', preset, '-crf', crf, '-profile:v', 'high', '-level', '4.1', '-tune', tune,
+      ffArgs.push('-c:v', 'libx264', '-preset', preset, '-crf', crf, '-profile:v', 'high', '-level', level, '-tune', tune,
         '-maxrate', maxrate, '-bufsize', bufsize, '-x264-params', 'keyint=60:min-keyint=30:aq-mode=3:aq-strength=1.1:psy-rd=1.0,0.15');
     }
     ffArgs.push('-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv', '-r', String(fps), '-movflags', '+faststart');
