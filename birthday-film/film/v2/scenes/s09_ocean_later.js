@@ -26,7 +26,10 @@ void main(){
   float nearS = clamp(below / uSpan, 0.0, 1.0);
   // the lights' reflection columns survive a vertical smear: soft gold pillars under each light
   float colm = exp(-0.5 * pow((p.x - uLx.x) / (uLx.z * (0.6 + 0.9 * nearS)), 2.0)) + exp(-0.5 * pow((p.x - uLx.y) / (uLx.z * (0.6 + 0.9 * nearS)), 2.0));
-  o = vec4((uCol * mix(0.55, 1.0, sqrt(nearS)) + uColC * colm * uLx.w * (0.5 + 0.5 * nearS)) * uK * cov, 0.0);
+  // the hatch's brightness varies along each line (sheen, crests): under a vertical smear that survives as soft
+  // vertical gold streaks, not a flat plane
+  float st = 0.45 + 1.1 * vn(vec2(p.x / 19.0, below / 240.0 + 3.0)) * (0.5 + vn(vec2(p.x / 67.0 + 7.0, below / 520.0)));
+  o = vec4((uCol * st * mix(0.35, 1.0, sqrt(nearS)) + uColC * colm * uLx.w * (0.5 + 0.5 * nearS)) * uK * cov, 0.0);
 }`;
 const DEG = Math.PI / 180;
 // the build's percussion (master timeline, section 8): hits and the bar-39 tipper roll
@@ -61,9 +64,12 @@ const scene = {
     const { tl } = ctx, L = this.L;
     const e = t - 107.4;                              // already moving under the ink bleed
     const dir = 35 * DEG;                             // the track: forward and to the right
-    const bank = -4 * DEG * tl.seg(t, 107.4, 110.0, tl.E.inOutSine) * (1 + 0.12 * Math.sin(2 * Math.PI * 0.21 * (t - 108)));
+    // the bank breathes between about 1.8 and 4 degrees and the height bobs gently, so it reads as flight, not a
+    // tilted still
+    const bank = -4 * DEG * tl.seg(t, 107.4, 110.0, tl.E.inOutSine) * (0.55 + 0.45 * Math.sin(2 * Math.PI * 0.11 * (t - 108)));
+    const h = 14 + 0.6 * Math.sin(2 * Math.PI * 0.17 * (t - 108));
     const up = 50 * DEG * tl.seg(t, 116.4, 117.0, tl.E.inQuad);
-    return { h: 14, x: 9 * Math.sin(dir) * e, z: 9 * Math.cos(dir) * e, yaw: 0, roll: bank, pitch: ctx.horizonPitch(L.hz, ctx.H, 0.6) - up, fovY: 0.6 };
+    return { h, x: 9 * Math.sin(dir) * e, z: 9 * Math.cos(dir) * e, yaw: 0, roll: bank, pitch: ctx.horizonPitch(L.hz, ctx.H, 0.6) - up, fovY: 0.6 };
   },
   pulse(t) {
     let p = 0;
@@ -92,16 +98,17 @@ const scene = {
       tau: t - 100.0, cam, camPrev: prev, motionAA: 0.6, look: 'night_sea',
       amp: 1 + 0.4 * b, spacing: 0.35 - 0.07 * b, width: 1 + 0.18 * pu,
       lineNear: this.lineCols.near, lineFar: this.lineCols.far, lineDim: '#7A5216',
-      lights, stars: 0, shield, shieldK: 0.94,
+      lights, stars: 0, shield, shieldK: 0.82,
     });
-    S.stars(target, cam, { tau: t - 100.0, I: 0.55 + 0.7 * ctx.tl.seg(t, 116.3, 116.9), camPrev: prev, shutter: 0.3 });
+    S.stars(target, cam, { tau: t - 100.0, I: 0.55 + 0.7 * ctx.tl.seg(t, 116.3, 116.9), camPrev: prev, shutter: 0.15 });
     // the smeared hatch's mean tone (only while the camera pitches)
     const hz0 = S.horizonY(cam, 0), hz1 = S.horizonY(cam, ctx.W);
     const sweep = Math.abs(S.horizonY(prev, ctx.W / 2) - S.horizonY(cam, ctx.W / 2)) * 0.6;
     const k = 1 - Math.exp(-sweep / 14);
     if (k > 0.01 && (hz0 + hz1) / 2 < ctx.H + 50) {
       const lx = lights.map(l => l[0]);
-      ctx.G.draw(this.toneP, { uHzC: (hz0 + hz1) / 2, uAng: Math.atan2(hz1 - hz0, ctx.W), uK: k, uSpan: Math.max(200, ctx.H - (hz0 + hz1) / 2), uCol: this.toneC,
+      // at under half strength: the sea stays dark, its gold showing as streaks (never a flat khaki plane)
+      ctx.G.draw(this.toneP, { uHzC: (hz0 + hz1) / 2, uAng: Math.atan2(hz1 - hz0, ctx.W), uK: k * 0.45, uSpan: Math.max(200, ctx.H - (hz0 + hz1) / 2), uCol: this.toneC,
         uColC: this.toneCol, uLx: [lx[0] == null ? -1e4 : lx[0], lx[1] == null ? -1e4 : lx[1], 26, 0.55 + 0.3 * pu] }, target, { blend: 'add' });
     }
     // arc and lights in the scene target, so the ink-bleed from scene 8 reveals them with the sea
@@ -136,5 +143,7 @@ const scene = {
     this.fx.draw(target, u, { viewport: [0, 0, ctx.W, ctx.H] });
   },
   captions(ctx, tau) { return this.narrative(ctx, T0 + tau); },
+  // chromatic aberration kept low so the starfield and the hatch stay clean
+  post() { return { ca: 0.0012, ghosts: 0 }; },
 };
 export default scene;

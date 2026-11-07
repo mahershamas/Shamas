@@ -108,42 +108,82 @@ vec3 goldRamp(float s){
   else c = GOLD_R6 + GOLD_R5 * min(s - 1.0, 1.2) * 0.9;     // past white-hot: warm HDR energy for the bloom
   return c;
 }
+// Burnished-leaf environment and leaf texture shared with core/knot.js (which shades analytic ribbon normals).
+// env: a studio sky above (bright where a bevel faces up), a deep floor below (#6E4A12 where it faces down) and a dark
+// reflected horizon band just below the facing direction, which is what makes polished metal read as metal.
+float goldEnv(vec3 N){
+  float up = -N.y;
+  float e = 0.50 + 0.66 * sign(up) * pow(abs(up), 0.75) - 0.07 * N.x;
+  e *= 1.0 - 0.42 * exp(-pow((N.y - 0.16) / 0.11, 2.0));
+  return max(e, 0.06);
+}
+// leaf tone: gold leaf is laid in overlapping squares (about 64 px here), each burnished a little differently, with a
+// faint raised seam where two squares overlap; a fine crackle (Voronoi cell edges) runs through the thick leaf.
+// Returns (tone multiplier, crack 0..1, seam 0..1).
+vec3 goldLeafTex(vec2 fragPx, float thick){
+  vec2 lp = rot2(0.035) * fragPx / 64.0;
+  float row = floor(lp.y);
+  lp.x += 0.5 * h11(row * 3.1 + 0.7);                        // squares offset row by row, as they are laid
+  vec2 id = floor(lp), f = fract(lp);
+  float hc = h12(id + 17.0);
+  float tone = 0.90 + 0.17 * hc;                             // each square burnished to its own depth
+  // overlap seam on the left and top edge of each square (the next square laps over it), slightly wavy
+  float dEdge = min(f.x + 0.012 * sin(lp.y * 23.0 + hc * 6.0), f.y + 0.012 * sin(lp.x * 19.0 + hc * 4.0)) * 64.0;
+  float seam = (1.0 - smoothstep(0.4, 1.6, dEdge)) * thick * goldDetail;
+  float edge = voronoiEdge(fragPx / 15.0 + hc * 3.0);
+  float crack = (1.0 - smoothstep(0.0, 0.045, edge)) * thick * goldDetail;
+  // the crackle is fine and broken: only some cell walls have opened
+  crack *= smoothstep(0.35, 0.65, vn(fragPx / 9.0 + 4.1));
+  return vec3(mix(1.0, tone, thick * goldDetail), crack, seam);
+}
 float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 keyPos, float keyI, vec3 fillPos, float fillI,
             float bump, float lod, vec4 sweep, float sweepY){
   float st = exp2(lod) * 0.9;
   vec2 sx = duvDx * st, sy = duvDy * st;
-  float gx = textureLod(mask, uv + sx, lod).a - textureLod(mask, uv - sx, lod).a;
-  float gy = textureLod(mask, uv + sy, lod).a - textureLod(mask, uv - sy, lod).a;
+  // central differences on the blurred mask, averaged over four sub-texel offsets: the bilinear mip is piecewise
+  // linear, so a single difference gives flat facets one mip texel wide on a big display bevel
+  float gx = 0.0, gy = 0.0;
+  for (int k = 0; k < 4; k++){
+    vec2 o = (vec2(k == 1 || k == 2 ? 0.5 : -0.5, k >= 2 ? 0.5 : -0.5) + vec2(0.13, -0.11)) * 0.5;
+    vec2 c = uv + (duvDx * o.x + duvDy * o.y) * exp2(lod);
+    gx += textureLod(mask, c + sx, lod).a - textureLod(mask, c - sx, lod).a;
+    gy += textureLod(mask, c + sy, lod).a - textureLod(mask, c - sy, lod).a;
+  }
+  gx *= 0.25; gy *= 0.25;
   vec3 N = normalize(vec3(-vec2(gx, gy) * bump * 0.5, 1.0));      // frame coords, y down
-  // thick parts of the leaf show the crackle and the beaten texture; hairlines stay clean
+  // thick parts of the leaf show the crackle, the squares and the beaten texture; hairlines stay clean
   float thick = smoothstep(0.45, 0.85, textureLod(mask, uv, lod + 0.5).a);
-  float edge = voronoiEdge(fragPx / 18.0);
-  float crack = (1.0 - smoothstep(0.0, 0.06, edge)) * thick * goldDetail;
+  vec3 lt = goldLeafTex(fragPx, thick);
+  float crack = lt.y;
+  // beaten leaf: a fine low-amplitude ripple in the normal (catches the key light as a broken sheen)
+  vec2 bt = vec2(vn(fragPx * 0.30 + 1.3), vn(fragPx * 0.30 + 8.9)) - 0.5;
+  N = normalize(N + vec3(bt * 0.05 * thick * goldDetail, 0.0));
   float mott = fbm(fragPx * 0.018 + 5.3, 3);
   float grain = vn(fragPx * 0.45) * thick * goldDetail;
-  float rough = 0.32 + 0.18 * crack;
-  // soft studio environment from above: up-facing bevels bright, down-facing bevels a deeper base gold
-  float up = -N.y;
-  float env = 0.54 + 0.50 * up - 0.06 * N.x;
+  float rough = 0.20 + 0.22 * crack;
+  float env = goldEnv(N);
   // the leaf is never perfectly flat: broad soft reflections of the room drift across it
   float broad = fbm(fragPx * 0.0065 + 2.1, 3);
-  env = max(env, 0.16) * (0.76 + 0.48 * broad) * (0.95 + 0.10 * mott);
+  env = env * (0.64 + 0.72 * broad) * (0.93 + 0.14 * mott) * lt.x;
   // GGX key (and fill), scalar; plus a broad sheen lobe so the light reads across the whole word
   vec3 V = vec3(0.0, 0.0, 1.0);
   vec3 L = normalize(vec3(keyPos.xy - fragPx, keyPos.z));
   float sharp = 0.12 * (0.35 + 0.65 * goldDetail);
-  float spec = ggx(N, V, L, rough, vec3(1.0)).x * keyI * sharp + ggx(N, V, L, 0.75, vec3(1.0)).x * keyI * 0.10;
-  if (fillI > 0.0){ vec3 L2 = normalize(vec3(fillPos.xy - fragPx, fillPos.z)); spec += ggx(N, V, L2, rough, vec3(1.0)).x * fillI * sharp + ggx(N, V, L2, 0.75, vec3(1.0)).x * fillI * 0.10; }
+  float spec = ggx(N, V, L, rough, vec3(1.0)).x * keyI * sharp + ggx(N, V, L, 0.70, vec3(1.0)).x * keyI * 0.09;
+  if (fillI > 0.0){ vec3 L2 = normalize(vec3(fillPos.xy - fragPx, fillPos.z)); spec += ggx(N, V, L2, rough, vec3(1.0)).x * fillI * sharp + ggx(N, V, L2, 0.70, vec3(1.0)).x * fillI * 0.09; }
+  spec *= mix(1.0, lt.x, 0.6);
   // speculars roll off past white-hot so small type never sparkles into noise; strikes (below) may go further
-  float s = env * 0.86 + spec;
+  float s = env * 0.84 + spec;
   s = s < 1.0 ? s : 1.0 + 0.35 * (1.0 - exp(-(s - 1.0) / 0.35));
   // struck-metal sweep: a slanted band of light that flashes the flat leaf and catches the bevels
   if (sweep.z > 0.0){
     float b = exp(-pow((fragPx.x - sweep.x + (fragPx.y - sweepY) * sweep.w) / max(sweep.y, 1.0), 2.0));
     float flat_ = smoothstep(0.75, 1.0, N.z);
-    s += sweep.z * b * (0.35 + 0.65 * flat_) * (1.0 - 0.5 * crack);
+    s += sweep.z * b * (0.35 + 0.65 * flat_) * (1.0 - 0.5 * crack) * lt.x;
   }
-  s *= (1.0 - 0.12 * crack) * (0.96 + 0.08 * grain);
+  // crackle: dark hairline fissures; seams: a faint raised lip (bright on the lit side, a hair of shadow under it)
+  s *= (1.0 - 0.22 * crack) * (0.96 + 0.08 * grain);
+  s *= 1.0 + 0.10 * lt.z * (s > 0.6 ? 1.0 : -0.8);
   return s;
 }
 vec3 goldLeafEx(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 keyPos, float keyI, vec3 fillPos, float fillI,
@@ -263,10 +303,12 @@ export function createGold(G) {
       }
       if (sweep && sweep.y == null) sweep.y = lay.rows[0].y - lay.line.xh * 0.5;
       const size = lay.line.size;
-      const lod = Math.min(2.8, Math.max(0.5, Math.log2(size / 40)));
+      // bevel width ~ 2^lod px: display sizes keep a narrow, crisp struck bevel (a wide one reads as a soft pillow)
+      const lod = Math.min(2.0, Math.max(0.5, Math.log2(size / 40)));
+      const bump = size >= 160 * U ? 8.5 : 6;
       const look = (entry.gold && entry.gold.look) || o.look;
       api.draw(target, Object.assign({
-        mask: m.rt, rect: m.rect, maskFlipY: true, textMask: true, lod, blend: 'premul', detail: Math.min(1, Math.max(0, (size - 50 * U) / (60 * U))),
+        mask: m.rt, rect: m.rect, maskFlipY: true, textMask: true, lod, bump, blend: 'premul', detail: Math.min(1, Math.max(0, (size - 50 * U) / (60 * U))),
         key: [ink[0] + (ink[1] - ink[0]) * 0.2, lay.rows[0].y - size * 2.2], keyZ: size * 2.5 + 120 * U, keyI: 4,
       }, entry.gold || {}, o, { opacity: m.lineOpacity * (entry.gold && entry.gold.opacity != null ? entry.gold.opacity : 1), sweep, look }));
       for (const gp of entry.glints || []) {

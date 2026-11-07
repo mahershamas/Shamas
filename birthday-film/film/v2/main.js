@@ -10,13 +10,22 @@
   --allow-file-access-from-files) or served over http (python3 -m http.server from the repository root).
 
   seek(t), per SPEC 6.3:
-    1 timeline.active(t): one scene, or two inside a transition window (outgoing at internalScale 0.5)
+    1 timeline.active(t): one scene, or two inside a transition window (both at their own internalScale; the
+      outgoing one is no longer halved: half-resolution line art aliased into moire)
     2 each scene's render(ctx, tau, p, target) -> its own HDR target (scale = internalScale); full-res single scenes
       render straight into the frame target C
-    3 transition shader -> C (crossfade | over | inkbleed | custom)
-    4 overlay(ctx, tau, p, target) and the scene's 'hdr' caption entries (gold leaf) -> C, additive; during a transition
-      each scene's overlay goes through a scratch target and is added with its transition weight
+    3 transition shader -> C (crossfade | over | inkbleed | custom). 'inkbleed' is the gold-dust dissolve: a fine
+      domain-warped fbm field (optionally mixed with a radial term) is evaluated at quarter resolution together with
+      a feather that is at least opts.feather frame px wide across the front (from the field's own gradient), then
+      the full-resolution pass luma-keys it with the incoming scene (its highlights arrive first), adds a fine grain
+      inside the feather, and lays a whisper of sparse HDR glints along the front, coloured through the gold ramp.
+      There is no outline: nothing is drawn on the front itself but those few glints.
+    4 overlay(ctx, tau, p, target) -> C, additive; the scene's 'hdr' caption entries (gold leaf) go through the text
+      target frame.T and are composited over (premultiplied); frame.T's alpha also tells post which pixels are
+      exempt from chromatic aberration. During a transition each scene's overlay and text go through a scratch target
+      and are added with its transition weight.
     5 post.run: bloom ... AgX + grade (3D LUT) + TPDF dither -> canvas; 6 captions (display space) onto the canvas
+      The chromatic aberration a scene asks for is capped at CA_MAX (CA_FLASH for the second after the merger cue).
   The ctx object handed to scenes is documented in makeCtx() below.
 */
 import { createGL, hex, hexLin } from './core/gl.js';
@@ -24,7 +33,7 @@ import * as glsl from './core/glsl.js';
 import * as TL from './core/timeline.js';
 import { createPost, displayToScene, sceneToDisplay } from './core/post.js';
 import { createText, loadFonts, styleOf } from './core/text.js';
-import { createGold } from './core/gold.js';
+import { createGold, GOLD_RAMPS } from './core/gold.js';
 import { createParticles, glyphPoints, shuffle } from './core/particles.js';
 import { createKnot, closedKnot, verifyKnot } from './core/knot.js';
 import { loadPhoto, photoCamera, faceEllipses, createPhotoRenderer, photoAssertLog } from './core/photo.js';
@@ -52,9 +61,55 @@ function loadJSON(url, optional) {
 }
 
 const SRC_COPY = glsl.frag(`uniform sampler2D uA; uniform float uK; out vec4 o; void main(){ o = texture(uA, screenUV()) * uK; }`);
-const SRC_TRANS = glsl.frag(`
-uniform sampler2D uA, uB; uniform int uKind; uniform float uW, uEdge, uGold, uNScale, uLumaKey; uniform int uOct;
+// the director's ceiling on chromatic aberration (post.js DEFAULTS.ca is 0.0015)
+const CA_MAX = 0.003, CA_FLASH = 0.004;
+
+// gold-dust dissolve, stage 1 (quarter resolution): x = the dissolve field (lower = the incoming scene arrives
+// earlier), y = half-width of the feather in field units (at least uFeather/2 frame px across the front)
+const SRC_DMASK = glsl.frag(`
+uniform float uNScale, uWarp, uRadial, uFeather, uSeed, uCalm; uniform int uOct; uniform vec2 uCtr, uAsp;
 out vec4 o;
+float calmK = 1.0;   // 0 inside the calm core (no texture there: a smooth soft iris), 1 outside
+float field(vec2 px){
+  float s = min(uFrame.x, uFrame.y);
+  vec2 p = px / s * uNScale + uSeed;
+  // a light domain warp (value noise, not fbm) so the front curls like fibres rather than tracing islands
+  p += uWarp * (vec2(vn(p * 0.45 + 3.7), vn(p * 0.45 + 11.3)) - 0.5);
+  float n = (fbm(p, uOct) - 0.5) * 1.5 + 0.5;
+  calmK = 1.0;
+  if (uRadial != 0.0){
+    // distance from the centre point (uAsp stretches it: x 0.4 = a wide ellipse along a horizon), 1 at the farthest corner
+    vec2 c0 = (vec2(0.0) - uCtr) * uAsp, c1 = (vec2(uFrame.x, 0.0) - uCtr) * uAsp, c2 = (uFrame - uCtr) * uAsp, c3 = (vec2(0.0, uFrame.y) - uCtr) * uAsp;
+    float rmax = sqrt(max(max(dot(c0, c0), dot(c1, c1)), max(dot(c2, c2), dot(c3, c3))));
+    float rr = length((px - uCtr) * uAsp) / rmax;
+    // uRadial > 0: the frame edges first and the centre point last; < 0: outward from the centre point
+    // uCalm: within that radius of the centre point the noise fades out (faces in a photograph dissolve evenly)
+    calmK = uCalm > 0.0 ? smoothstep(uCalm * 0.5, uCalm * 1.6, rr) : 1.0;
+    n = mix(0.5, n, calmK);
+    n = uRadial > 0.0 ? mix(n, 1.0 - rr, uRadial) : mix(n, rr, -uRadial);
+  }
+  return n;
+}
+void main(){
+  vec2 px = framePx();
+  float h = 3.0;   // frame px
+  float nx = field(px + vec2(h, 0.0)), ny = field(px + vec2(0.0, h));
+  float n = field(px);
+  float g = length(vec2(nx - n, ny - n)) / h;      // field units per frame px
+  // the floor keeps the feather soft where the field is flat (its extrema), which would otherwise cut a hard edge
+  o = vec4(n, max(g * uFeather * 0.5, 0.06), calmK, 1.0);
+}`);
+
+const SRC_TRANS = glsl.frag(`
+uniform sampler2D uA, uB, uM; uniform int uKind; uniform float uW, uGold, uLumaKey, uGrain, uTime;
+uniform vec3 uRamp[7];
+out vec4 o;
+vec3 rampAt(float s){
+  s = clamp(s, 0.0, 1.0) * 6.0; int i = int(min(floor(s), 5.0)); float f = s - float(i);
+  vec3 a = uRamp[0], b = uRamp[1];
+  for (int k = 1; k < 6; k++) if (k == i){ a = uRamp[k]; b = uRamp[k + 1]; }
+  return mix(a, b, f);
+}
 void main(){
   vec2 uv = screenUV();
   vec4 a = texture(uA, uv), b = texture(uB, uv);
@@ -62,18 +117,38 @@ void main(){
   if (uKind == 0) c = mix(a.rgb, b.rgb, uW);
   else if (uKind == 1) c = b.rgb + a.rgb * (1.0 - clamp(b.a, 0.0, 1.0));
   else {
-    vec2 px = framePx() / uFrame.y;
-    float n = (fbm(px * uNScale, uOct) - 0.5) * 2.2 + 0.5;
-    n -= uLumaKey * clamp(luma(b.rgb), 0.0, 1.0);
-    float thr = mix(-0.3 - uEdge - uLumaKey, 1.3 + uEdge, uW);
-    float fw = max(fwidth(n), 1e-4);
-    float m = 1.0 - smoothstep(thr - fw, thr + fw, n);
-    c = mix(a.rgb, b.rgb, m);
-    if (uGold > 0.0 && uEdge > 0.0){
-      // a thin gilded rim on the dissolving edge: uEdge in noise units, at least about 1.5 px wide
-      float wdt = max(uEdge * 0.2, fw * 1.5);
-      float e = (1.0 - smoothstep(wdt - fw, wdt + fw, abs(n - thr))) * step(0.001, uW) * step(uW, 0.999);
-      c = mix(c, vec3(1.0, 0.71, 0.29) * 0.8, e * uGold);
+    vec2 px = framePx();
+    vec3 mf = texture(uM, uv).xyz;
+    float F = mf.y, calm = mf.z;
+    // luma key: the incoming scene's highlights come through first
+    float key = 1.0 - exp(-1.6 * max(luma(b.rgb), 0.0));
+    float x = mf.x - uLumaKey * key;
+    float lo = -uLumaKey - 0.15, hi = 1.15;     // the field spans about [0.05, 0.95]; the end ramps below tidy the rest
+    float thr = mix(lo, hi, uW);
+    float m = 1.0 - smoothstep(thr - F, thr + F, x);
+    // fine grain inside the feather (2-3 px dust), never outside it
+    float gr = vn(px / 2.6 + 41.0) - 0.5;
+    m = clamp(m + gr * uGrain * calm * 4.0 * m * (1.0 - m), 0.0, 1.0);
+    // clean ends whatever the field's range
+    m = max(m * smoothstep(0.0, 0.08, uW), smoothstep(0.92, 1.0, uW));
+    // mix in a compressed domain (Reinhard): in linear HDR a few percent of a sun already saturates after the
+    // tonemap, which would print the feather as a hard edge on every highlight
+    vec3 ca = max(a.rgb, 0.0), cb = max(b.rgb, 0.0);
+    vec3 y = mix(ca / (1.0 + ca), cb / (1.0 + cb), m);
+    c = y / max(1.0 - y, 1e-4);
+    if (uGold > 0.0){
+      // a whisper of glints along the front: one candidate in ~16 cells of 7 px, a soft 1 px dot that twinkles
+      float band = exp(-2.0 * pow((x - thr) / F, 2.0)) * step(0.02, uW) * step(uW, 0.98);
+      vec2 cell = floor(px / 7.0);
+      vec2 hh = h22(cell + 913.0);
+      if (band > 0.02 && hh.x > 0.985){
+        vec2 at = cell * 7.0 + 1.5 + 4.0 * vec2(h12(cell + 57.0), h12(cell + 171.0));
+        float d2 = dot(px - at, px - at);
+        float dotk = exp(-d2 / 1.4);
+        float tw = 0.5 + 0.5 * sin(uTime * 7.0 + hh.y * 40.0);
+        float k = band * dotk * tw * uGold * calm;
+        c += rampAt(0.5 + 0.5 * tw * dotk) * k * 1.6;
+      }
     }
   }
   o = vec4(c, 1.0);
@@ -95,7 +170,9 @@ async function boot() {
   const sea = createSea(G);
   const photo = await loadPhoto(G);
   const photoR = createPhotoRenderer(G, photo);
-  const P = { copy: G.program('main.copy', SRC_COPY), trans: G.program('main.trans', SRC_TRANS) };
+  const P = { copy: G.program('main.copy', SRC_COPY), trans: G.program('main.trans', SRC_TRANS), dmask: G.program('main.dmask', SRC_DMASK) };
+  const rampOf = look => new Float32Array([].concat(...(GOLD_RAMPS[look] || GOLD_RAMPS.winter_gold)));
+  const flashT = TL.cue('merger');
 
   const ctx = makeCtx({ G, text, gold, particles, knot, post, sea, photo, photoR });
   const timeline = new TL.Timeline(SCENES, TRANSITIONS);
@@ -152,12 +229,21 @@ async function boot() {
       } else {
         const kind = tr.kind === 'crossfade' ? 0 : tr.kind === 'over' ? 1 : 2;
         const o = tr.opts || {};
-        G.draw(P.trans, { uA: RA, uB: RB, uKind: kind, uW: tr.w, uEdge: o.edge == null ? 0.03 : o.edge, uGold: o.gold || 0,
-          uNScale: o.scale || 3, uOct: o.oct || 5, uLumaKey: o.lumaKey || 0 }, C);
+        let M = null;
+        if (kind === 2) {
+          // gold-dust dissolve: the field and its feather at quarter resolution (static in time: only the threshold moves)
+          M = G.target('frame.dmask', W / 4, H / 4, { scale: 0.25 });
+          const ctr = (PORTRAIT && o.centerPortrait) || o.center || [0.5, 0.5];
+          G.draw(P.dmask, { uNScale: o.scale || 14, uOct: o.oct || 3, uWarp: o.warp == null ? 0.9 : o.warp, uRadial: o.radial || 0,
+            uFeather: o.feather || 48, uSeed: o.seed || 0, uCalm: o.calm || 0, uCtr: [ctr[0] * W, ctr[1] * H], uAsp: o.aspect || [1, 1] }, M);
+        }
+        G.draw(P.trans, { uA: RA, uB: RB, uM: M || RA, uKind: kind, uW: tr.w, uGold: o.gold || 0, uLumaKey: o.lumaKey || 0,
+          uGrain: o.grain == null ? 0.35 : o.grain, uTime: t, uRamp: rampOf(o.goldLook || Lb.scene.look) }, C);
       }
     }
-    // 4 overlay (additive HDR) and gold-leaf caption entries
+    // 4 overlay (additive HDR) and gold-leaf caption entries (through frame.T, whose alpha exempts them from CA)
     const single = !A.transition;
+    let TM = null;
     A.layers.forEach((L, i) => {
       const hdrEntries = caps[i].filter(isHDR);
       if (!L.scene.overlay && !hdrEntries.length) return;
@@ -165,7 +251,17 @@ async function boot() {
       const target = single ? C : G.target('frame.O', W, H);
       if (!single) G.clear(target, [0, 0, 0, 0]);
       if (L.scene.overlay) L.scene.overlay(ctx, L.tau, L.p, target);
-      for (const e of hdrEntries) gold.drawText(target, text, e);
+      if (hdrEntries.length) {
+        const T = single ? G.target('frame.T', W, H) : G.target('frame.TL', W, H);
+        G.clear(T, [0, 0, 0, 0]);
+        for (const e of hdrEntries) gold.drawText(T, text, e);
+        G.draw(P.copy, { uA: T, uK: 1 }, target, { blend: 'premul' });
+        if (single) TM = T;
+        else {
+          if (!TM) { TM = G.target('frame.T', W, H); G.clear(TM, [0, 0, 0, 0]); }
+          G.draw(P.copy, { uA: T, uK: L.weight }, TM, { blend: 'add' });
+        }
+      }
       if (!single) G.draw(P.copy, { uA: target, uK: L.weight }, C, { blend: 'add' });
     });
     if (PROFILE) sync(C);
@@ -177,7 +273,8 @@ async function boot() {
       return post.params(look, L.scene.post ? L.scene.post(ctx, L.tau, L.p) || {} : {});
     });
     const pp = single ? params[0] : post.lerp(params[0], params[1], A.transition.w);
-    post.run(C, pp, frame);                       // bloom ... grade, dither -> canvas
+    pp.ca = Math.min(pp.ca, t >= flashT && t < flashT + 1.0 ? CA_FLASH : CA_MAX);
+    post.run(C, pp, frame, { noCA: TM });         // bloom ... grade, dither -> canvas
     // 6 captions (display space, on the canvas)
     caps.forEach(list => { for (const e of list) if (!isHDR(e)) text.drawCaption(null, e); });
     if (PROFILE) { sync(null); const T2 = now(); DEBUG.timings = { t, content: T1 - T0, post: T2 - T1, scenes: A.layers.map(L => L.scene.id) }; }

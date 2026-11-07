@@ -56,7 +56,7 @@
                color = '#FFD9A0', wash = 0.7, rim = 1.0}: warm key/rim light on both heads and shoulders (feathered
                ellipses, 60 source px feather), relighting proportional to the photo's own albedo.
         engrave {reveal (seconds since the grains started; per-pixel reveal with the grain delay d(uv), faces first;
-               default: fully revealed), spacing = 4.35 source px (3 px on the 1000 px plate), key [x,y] frame px
+               default: fully revealed), spacing = 6.5 source px (4.5 px on the 1000 px plate: it survives a phone downscale), key [x,y] frame px
                (moving key light for the metallic lines), keyI = 1}: the gold engraving (#E3B341 hatch at 35 degrees,
                -35 degree cross-hatch below luma 0.35, Sobel edges) on night vellum #120D09.
         colour {r (bloom radius in photo diagonals, 0..1.2), edge = 0.08, rim = 12 (frame px), rimI = 1.6}: colour
@@ -64,8 +64,10 @@
                Without `colour` the engraving (if any) is fully replaced by colour; with engrave and no colour the
                plate is pure engraving.
         frost {r (cleared radius in plate diagonals, 0..1.15), amount = 1, t (seconds since clearing began, for the
-               droplets), drops = 3, warp = 40 (frame px), rimPx = 30}: fogged glass over the plate (#C9D2DC at 55 %,
-               4 px refraction where frosted), clearing from the faces' midpoint; three droplets run down from the rim.
+               droplets), drops = 3, warp = 40 (frame px), rimPx = 18}: fogged glass over the plate, lit from inside by
+               a warm lamp (amber, brightest at the centre, crystals bright toward the edges; 4 px refraction only in the
+               fully frosted zone), clearing from the faces' midpoint like breath on glass (a wide soft warm edge, a
+               partial thinning while small); three droplets run down from the edge.
         edgeFade {top, bottom, left, right (frame px)}: the plate's edges dissolve (premultiplied alpha, fbm-broken)
                into whatever the scene drew behind (scene 7 portrait: 80 px into warm mist).
         debug true: the debug mask still (people mask, face box, ellipses, seat spline, landmarks) over the photo.
@@ -78,11 +80,11 @@
     PH.bokeh(target, cam, {I = 1, t = 0 (s, drift), drift = 6 (px/s up), size = 1, grow = 1 (0..1 disc growth)})
         about 60 warm discs (60-180 px) splatted from the photo's own highlights (seeded, never on the faces).
     PH.thread(target, cam, {tip (source x of the drawing tip, 0..w), from = 0, I = 1, steady = 0.7, glint (source x
-        of a travelling glint or null), glintI = 4, knot (0..1 progress of the two-loop knot, or null), knotI = 1.6,
-        occlude = true, width = 2 (frame px), look})
+        of a travelling glint or null), glintI = 4 (saturates at 2.2), knot (0..1 progress, kept for compatibility),
+        knotGlyph = false, knotI = 1.6, occlude = true, width = 2 (frame px), look})
         The gold thread along the seat edge (Catmull-Rom spline through PHOTO_META.seatEdge, analytic SDF), hidden
-        behind the people mask except at the knot; the knot (core/knot.js seatKnot, thread style) is drawn above the
-        mask at PH.knotPoint(). The glint flares softly when it crosses the knot.
+        behind the people mask. The travelling glint is a soft round bead of light that brightens the thread under it.
+        The two-loop seat-knot glyph is retired (director's decision): it is drawn only with knotGlyph: true.
     PH.glint(target, cam, {at: [x, y] source px | 'pendant', life (0..1), size = 24, I = 6, rot})  four-point star
     PH.portraitGlint(target, cam, {index (0..3), life (0..1), I = 1})  light running across the glass of a wall
         portrait (PHOTO_META.wallPortraits) and a small star on its frame at the peak
@@ -257,6 +259,7 @@ uniform float uBloomR, uBloomEdge, uRimPx, uRimI; uniform vec3 uRimC;
 #endif
 #if FROST
 uniform sampler2D uFrost; uniform float uFrostR, uFrostAmt, uFrostT, uWarp, uRimF; uniform vec2 uMid; uniform vec3 uFrostC;
+uniform vec3 uLampD, uLampM, uLampB, uCryst;   // lamplight through the rime: deep, mid, bright amber; crystal warm white
 uniform vec4 uDrop[3]; uniform int uDrops;
 #endif
 #if DEBUG
@@ -394,7 +397,7 @@ void main(){
   float lodE = baseLod + 0.5;
   float Ls = pow(luma(photoAt(src, lodE)), 1.0 / 2.2);
   float Lb = pow(luma(photoAt(src, lodE + 2.2)), 1.0 / 2.2);
-  float st = 1.3 / spx;
+  float st = 1.9 / spx;                                         // edges about 1.5 frame px wide (survive a 0.5x downscale)
   float lc = pow(luma(photoAt(src, lodE + 0.4)), 0.4545);
   float l10 = pow(luma(photoAt(src + vec2(st, 0.0), lodE + 0.4)), 0.4545), l01 = pow(luma(photoAt(src + vec2(0.0, st), lodE + 0.4)), 0.4545);
   vec2 gL = vec2(l10 - lc, l01 - lc) * 2.8;
@@ -418,7 +421,8 @@ void main(){
   float ink2 = (1.0 - smoothstep(w2 - aa2, w2 + aa2, f2)) * step(0.001, w2);
   ink2 = mix(ink2, 2.0 * w2, smoothstep(0.45, 0.8, aa2));
   float ink = max(ink1, ink2 * 0.6);
-  ink = max(ink, edge * 0.75);
+  ink = max(ink, edge * 0.80);
+  ink = clamp(ink * 1.15, 0.0, 1.0);                             // lines a little stronger against the vellum
   // metallic: each line is a ridge; its cross-section normal catches the moving key light
   float across = clamp((fract(z1) - 0.5) / max(w1, 0.05), -1.0, 1.0);
   vec2 kd = normalize(uKey - px + vec2(1e-3));
@@ -463,8 +467,15 @@ void main(){
     float dd = length(src - uMid) + warp;
     float R = uFrostR * plateDiag;
     float rimS = uRimF / spx;
-    float fr = max(smoothstep(R, R + rimS * 0.6, dd), 1.0 - smoothstep(0.0, 0.012, uFrostR)) * uFrostAmt;
-    float rimBoost = exp(-pow((dd - R - rimS * 0.45) / (rimS * 0.5), 2.0)) * step(0.0001, uFrostR) * uFrostAmt;
+    // breath on glass: the fog thins from the faces' midpoint with a wide, soft edge (never a hole with a hard rim);
+    // while the cleared patch is small it is only a partial thinning, so it never shows as a dark blot
+    float soft = rimS * 2.2 + 0.08 * R;
+    float clearK = smoothstep(0.0, 0.10, uFrostR);
+    float fr = (1.0 - (1.0 - smoothstep(R - soft * 0.6, R + soft * 0.6, dd)) * clearK) * uFrostAmt;
+    // the condensation is a touch denser just outside the breath edge (soft and warm, about rimPx wide)
+    float rimBoost = 0.35 * exp(-pow((dd - R - soft * 0.45) / (rimS * 0.6), 2.0)) * clearK * uFrostAmt;
+    // refraction only in the fully frosted zone, faded out well before the breath edge
+    float refrK = smoothstep(R + soft * 0.6, R + soft * 0.6 + 40.0 / spx, dd) * step(0.0001, uFrostR) + (1.0 - step(0.0001, uFrostR));
     // droplets: clear trails running down from the rim
     for (int i = 0; i < 3; i++){
       if (i >= uDrops) break;
@@ -482,7 +493,7 @@ void main(){
     float dens = clamp(F.r + rimBoost * 0.45, 0.0, 1.4);
     if (fr > 0.0){
       vec2 g = (F.gb - 0.5) * 2.0;
-      vec2 rs = src + g * (4.0 / spx) * fr;
+      vec2 rs = src + g * (4.0 / spx) * fr * refrK;
       vec3 behind = grade(photoAt(rs, baseLod + 3.2), skin);
 #if ENGRAVE
       float Lbb = pow(luma(photoAt(rs, baseLod + 3.0)), 1.0 / 2.2);
@@ -495,19 +506,24 @@ void main(){
       behind = engB;
 #endif
 #endif
-      // the lines behind stay faintly legible through the rime; the room behind the glass is lamp-lit
+      // a lamp-lit room seen through rime from the snowy dark: the fog scatters warm amber light (brightest toward the
+      // lamp at the centre, the pane's edges about 40 % darker), the lines behind stay faintly legible through it
       behind = mix(behind, disp, 0.35);
-      float inner = exp(-pow(length((src - uMid) / uSize) / 0.6, 2.0));
-      behind += vec3(0.060, 0.032, 0.012) * inner;
-      float lb = luma(behind);
-      vec3 lit = uFrostC * (0.24 + 1.1 * lb / (lb + 0.22));
-      float k = clamp(0.62 * dens, 0.0, 0.8);
-      vec3 frosted = behind * (1.0 - k) + lit * k;
-      // needle crystals catch the light; a few of them glint
+      vec2 cq = (src - uMid) / uSize;
+      float inner = exp(-pow(length(cq * vec2(1.0, 1.25)) / 0.55, 2.0));
+      float ex = min(min(fuv.x, 1.0 - fuv.x), min(fuv.y, 1.0 - fuv.y));
+      float vign = smoothstep(0.0, 0.30, ex);
+      float mott = 0.84 + 0.32 * fbm(src / 170.0 + 1.3, 3);
+      vec3 glow = mix(uLampD, uLampM, inner) * mix(0.60, 1.0, vign) * mott + uLampB * pow(inner, 3.0) * 0.35;
+      float k = clamp(0.72 * dens, 0.0, 0.85);
+      vec3 frosted = behind * (1.0 - k) + glow * (0.30 + 0.85 * k);
+      // needle crystals catch the light, brightest toward the pane's edges; a few of them glint
       float nd = F.a * (1.0 + rimBoost);
-      frosted += uFrostC * nd * (0.07 + 0.55 * lb);
+      float lb = luma(behind);
+      float rimE = 1.0 - smoothstep(0.0, 0.22, ex);                 // toward the pane's edges
+      frosted += uCryst * nd * (0.025 + 0.42 * rimE + 0.12 * lb);
       float sp = smoothstep(0.965, 0.995, h12(floor(src * spx / 1.5) + 17.0)) * smoothstep(0.25, 0.6, nd);
-      frosted += uFrostC * sp * (0.25 + 1.2 * lb);
+      frosted += uCryst * sp * (0.12 + 0.6 * lb + 0.8 * rimE);
       disp = mix(disp, frosted, fr);
     }
   }
@@ -712,9 +728,10 @@ void main(){
   if (uGlintI > 0.0){
     float gx = (src.x - uGlintX) * spx;
     float gk = exp(-gx * gx / (2.0 * 26.0 * 26.0));
-    c += (uCore * core * 2.5 + uGlow * glow * 2.0) * gk * uGlintI;
+    c += (uCore * core * 1.6 + uGlow * glow * 1.6) * gk * uGlintI;
+    // a soft round bead of light (about 10 px) so the glint reads without relying on the anamorphic streak
     float gr = length(vec2(gx, d));
-    c += uHot * uGlintI * 0.35 * exp(-gr * gr / 30.0);
+    c += uHot * uGlintI * (0.32 * exp(-gr * gr / (2.0 * 7.0 * 7.0)) + 0.35 * exp(-gr * gr / 18.0));
   }
   c *= span;
   // the tip glow is not clipped by the span end
@@ -743,11 +760,10 @@ void main(){
   vec2 q = (p - c) / max(hs.x, hs.y);
   float x = dot(q, normalize(vec2(1.0, -0.6)));
   float pos = mix(-1.6, 1.6, uLife);
-  float band = exp(-pow((x - pos) / 0.16, 2.0)) + 0.35 * exp(-pow((x - pos + 0.32) / 0.07, 2.0));
+  // a thin diagonal specular line (the picture stays visible under it); the star at its peak is the event
+  float band = exp(-pow((x - pos) / 0.06, 2.0));
   float env = sin(3.14159265 * clamp(uLife, 0.0, 1.0));
-  // a faint lift of the whole glass while the light passes
-  float sheen = 0.10 * env;
-  o = vec4(uCol * uI * box * (band * env + sheen), 0.0);
+  o = vec4(uCol * uI * box * band * env, 0.0);
 }`);
 
 // bokeh discs (instanced quads)
@@ -764,7 +780,7 @@ void main(){
   vec2 c = vec2(float(gl_VertexID & 1), float((gl_VertexID >> 1) & 1)) * 2.0 - 1.0;
   vQ = c * (r + 2.0); vR = r;
   float stag = clamp(uGrow * 1.6 - C.a * 0.6, 0.0, 1.0);
-  vCol = vec4(C.rgb * D.w * stag, 1.0);
+  vCol = vec4(C.rgb * D.w * stag * mix(0.25, 1.0, C.a), 1.0);    // per-disc opacity 0.25 .. 1
   gl_Position = clipOfPx(ctr + vQ);
 }`;
 const FS_BOKEH = frag(`
@@ -772,11 +788,12 @@ in vec2 vQ; in vec4 vCol; in float vR;
 out vec4 o;
 void main(){
   float r = length(vQ);
-  float edge = 1.0 - smoothstep(vR - 2.2, vR + 0.8, r);
+  float edge = 1.0 - smoothstep(vR - 1.6, vR + 0.6, r);
   float rn = r / max(vR, 1.0);
-  // a lens disc: soft interior, a slightly brighter rim, a faint inner ring
-  float body = 0.70 + 0.16 * smoothstep(0.62, 0.98, rn) - 0.08 * (1.0 - rn) * (1.0 - rn);
-  o = vec4(vCol.rgb * body * edge, 0.0);
+  // a lens disc: a slightly darker centre, a brighter 1.5 px rim (onion-ring of a real aperture)
+  float body = 0.55 + 0.35 * smoothstep(0.75, 0.98, rn);
+  float rim = exp(-pow((r - (vR - 1.4)) / 1.5, 2.0)) * 0.45;
+  o = vec4(vCol.rgb * (body + rim) * edge, 0.0);
 }`);
 
 // ------------------------------------------------------------------------------------------------ renderer
@@ -873,7 +890,8 @@ export function createPhotoRenderer(G, photo) {
   }
   const V = {
     vellum: hexDisp('#120D09'), g0: hexDisp('#6E4A12'), g1: hexDisp('#B8862B'), g2: hexDisp('#E3B341'), g3: hexDisp('#FFE7A3'),
-    frost: hexDisp('#C9D2DC'), haze: hexDisp('#E39A4C'), lift: hexDisp('#120D09'),
+    frost: hexDisp('#D6D0C6'), haze: hexDisp('#E39A4C'), lift: hexDisp('#120D09'),
+    lampD: hexDisp('#5A321A'), lampM: hexDisp('#B8763C'), lampB: hexDisp('#F2C88A'), cryst: hexDisp('#F6E4C8'),
   };
   // white balance gains for a colour-temperature shift (display-linear, luma-normalised)
   function wbGains(dK) {
@@ -909,7 +927,8 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
   PH.draw = function (target, cam, o = {}) {
     // engraving and frost are skipped once they are entirely cleared from the image (pure geometry, no visual change)
     const colourDone = o.colour && o.colour.r >= colourFull + (o.colour.edge == null ? 0.08 : o.colour.edge) + 0.04;
-    const frostDone = o.frost && o.frost.r != null && o.frost.r * diag >= frostFull + ((o.frost.warp == null ? 40 : o.frost.warp) + (o.frost.rimPx == null ? 30 : o.frost.rimPx)) / cam.sx + 4;
+    // frost: the breath edge is 0.6 x (2.2 rimPx / scale + 0.08 R) wide beyond R
+    const frostDone = o.frost && o.frost.r != null && o.frost.r * diag * (1 - 0.6 * 0.08) - 0.6 * 2.2 * (o.frost.rimPx == null ? 18 : o.frost.rimPx) / cam.sx >= frostFull + (o.frost.warp == null ? 40 : o.frost.warp) / cam.sx + 4;
     const f = { DOF: !!(o.dof && o.dof.radius > 0.01), PAR: !!(o.parallax && (o.parallax[0] || o.parallax[1])), LIGHT: !!(o.light && (o.light.I == null || o.light.I > 0)),
       ENGRAVE: !!o.engrave && !colourDone, COLOUR: !!(o.engrave && o.colour), FROST: !!(o.frost && (o.frost.amount == null || o.frost.amount > 0) && !frostDone), DEBUG: !!o.debug };
     f.COLOUR = f.COLOUR && f.ENGRAVE && o.colour.r > 0;
@@ -948,7 +967,7 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
     }
     if (f.ENGRAVE) {
       const E = o.engrave;
-      Object.assign(U, { uRevT: E.reveal == null ? 1e3 : E.reveal, uSpacing: E.spacing || 4.35, uKey: E.key || [d[0] - 200, d[1] - 300], uKeyI: E.keyI == null ? 1 : E.keyI,
+      Object.assign(U, { uRevT: E.reveal == null ? 1e3 : E.reveal, uSpacing: E.spacing || 6.5, uKey: E.key || [d[0] - 200, d[1] - 300], uKeyI: E.keyI == null ? 1 : E.keyI,
         uFaceA: FA, uFaceB: FB, uDiag: diag, uVellum: V.vellum, uG0: V.g0, uG1: V.g1, uG2: V.g2, uG3: V.g3 });
     }
     if (f.COLOUR) {
@@ -976,7 +995,8 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
       }
       void R;
       Object.assign(U, { uFrost: frostRT, uFrostR: F.r || 0, uFrostAmt: F.amount == null ? 1 : F.amount, uFrostT: t, uWarp: F.warp == null ? 40 : F.warp,
-        uRimF: F.rimPx == null ? 30 : F.rimPx, uMid: MID, uFrostC: V.frost, uDrop: drops, uDrops: nd });
+        uRimF: F.rimPx == null ? 18 : F.rimPx, uMid: MID, uFrostC: V.frost, uDrop: drops, uDrops: nd,
+        uLampD: V.lampD, uLampM: V.lampM, uLampB: V.lampB, uCryst: V.cryst });
     }
     if (f.DEBUG) {
       const fb = meta.faceBoxUV;
@@ -1040,12 +1060,12 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
     if (vx1 > vx0 && vy1 > vy0 && (tip > (o.from || 0) || o.glint != null)) {
       G.draw(threadProg, Object.assign({
         uMask: mask, uSize: [PW, PH_], uSeat: seatTex, uTip: tip, uFrom: o.from || 0, uI: I, uSteady: o.steady == null ? 0.7 : o.steady,
-        uHw: (o.width || 2) / 2, uGlintX: o.glint == null ? -1e4 : o.glint, uGlintI: o.glint == null ? 0 : (o.glintI == null ? 4 : o.glintI),
-        uOcc: o.occlude === false ? 0 : 1, uKnot: knotPt, uKnotR: knotR, uFresh: o.fresh == null ? (tip < PW ? 0.9 : 0) : o.fresh,
+        uHw: (o.width || 2) / 2, uGlintX: o.glint == null ? -1e4 : o.glint, uGlintI: o.glint == null ? 0 : 2.2 * (1 - Math.exp(-(o.glintI == null ? 4 : o.glintI) / 2.2)),
+        uOcc: o.occlude === false ? 0 : 1, uKnot: knotPt, uKnotR: o.knotGlyph ? knotR : 0, uFresh: o.fresh == null ? (tip < PW ? 0.9 : 0) : o.fresh,
         uCore: sceneCol('#FFE7A3', look), uGlow: sceneCol('#D4A64A', look), uHot: sceneCol('#FFF4D6', look),
       }, cam.uniforms), target, { blend: 'add', viewport: [vx0, th - vy1, vx1 - vx0, vy1 - vy0] });
     }
-    if (o.knot != null && o.knot > 0) {
+    if (o.knotGlyph && o.knot != null && o.knot > 0) {
       const kt = knotTex();
       let kI = o.knotI == null ? 1.6 : o.knotI;
       if (o.glint != null) kI *= 1 + 2.2 * Math.exp(-Math.pow((o.glint - knotPt[0]) / 45, 2));   // the glint flares on the knot
@@ -1079,10 +1099,10 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
     const ins = 0.12 * (b[0] - a[0]);
     const glass = [a[0] + ins, a[1] + ins, b[0] - ins, b[1] - ins];
     const I = o.I == null ? 1 : o.I;
-    G.draw(sweepProg, { uRect: [a[0] - 2, a[1] - 2, b[0] - a[0] + 4, b[1] - a[1] + 4], uGlass: glass, uLife: life, uI: 0.55 * I, uCol: sceneCol('#FFE7A3', o.look || 'photo') },
+    G.draw(sweepProg, { uRect: [a[0] - 2, a[1] - 2, b[0] - a[0] + 4, b[1] - a[1] + 4], uGlass: glass, uLife: life, uI: 0.2 * I, uCol: sceneCol('#FFE7A3', o.look || 'photo') },
       target, { blend: 'add', mode: gl.TRIANGLE_STRIP, count: 4 });
     const env = Math.exp(-Math.pow((life - 0.55) / 0.16, 2));
-    if (env > 0.02) gold().glint(target, { x: a[0] + ins * 1.1, y: a[1] + ins * 1.1, size: 18 * Math.max(0.8, cam.sx), I: 3.2 * env * I, rot: 0.1,
+    if (env > 0.02) gold().glint(target, { x: a[0] + ins * 1.1, y: a[1] + ins * 1.1, size: 18 * Math.max(0.8, cam.sx), I: 4.0 * env * I, rot: 0.1,
       col: sceneCol('#FFF4D6', o.look || 'photo') });
   };
 
@@ -1110,18 +1130,21 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
       const inSkin = [skinA, skinB].some(e => Math.hypot((sxp - e[0]) / (e[2] * 1.5), (syp - e[1]) / (e[3] * 1.4)) < 1);
       if (inSkin) continue;
       const warm = c[0] > c[1] && c[1] >= c[2] * 0.9;                       // warm sources only (lamps, wood, brass)
-      const w = warm ? Math.pow(Math.max(0, l - 0.28), 1.3) * (0.5 + (c[0] - c[2]) * 2.0) : 0;
+      let w = warm ? Math.pow(Math.max(0, l - 0.28), 1.3) * (0.5 + (c[0] - c[2]) * 2.0) : 0;
+      if (sxp < PW / 3) w *= 2.2;                                              // favour the lamp-lit stair on the left
       if (w > 0.002) cand.push([sxp, syp, w, c]);
     }
     const rnd = mulberry32(0xB0E7);
     const total = cand.reduce((a, c) => a + c[2], 0);
     const used = [];
-    for (let k = 0; k < 1200 && used.length < 60 && cand.length; k++) {
+    let right = 0;
+    for (let k = 0; k < 2400 && used.length < 60 && cand.length; k++) {
       let r = rnd() * total, j = 0;
       while (j < cand.length - 1 && r > cand[j][2]) { r -= cand[j][2]; j++; }
       const c = cand[j];
       const sx = c[0] + (rnd() - 0.5) * 16, sy = c[1] + (rnd() - 0.5) * 16;
       if (used.some(u => Math.hypot(u[0] - sx, u[1] - sy) < 62)) continue;
+      if (sx > PW * 2 / 3) { if (right >= 24) continue; right++; }             // at most 40 % of the discs in the right third
       used.push([sx, sy]);
       const size = 30 + 60 * Math.pow(rnd(), 1.4);                              // radius frame px at 1080p (60-180 px discs)
       const warm = rnd();

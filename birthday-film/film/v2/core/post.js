@@ -4,12 +4,19 @@
     2 bloom: 6-level dual filter (Kawase/Bjorge), Karis average on the first down, soft-knee threshold,
       level weights [0.6, 0.8, 0.9, 1.0, 1.2, 1.4] normalised.  hdr' = hdr*(1 - mix*[thr==0]) + bloom*(mix + add)
       (threshold 0: energy-conserving mix; threshold > 0: additive glow of the thresholded energy)
-    3 anamorphic streak at quarter resolution: threshold, 5 horizontal Kawase passes (offsets 1,3,9,27,81 texels), tint
-    4 ghosts and halo from bloom mip 2 (only when params.ghosts > 0: scenes with a point light in frame)
+    3 anamorphic streak: threshold at quarter resolution (3-tap vertical soften), then a horizontal-only pyramid
+      (7 levels, W/4 .. W/256, 1-3-3-1 down, tent up) summed with weights STREAK_W: a sum of Gaussians of doubling
+      width, so the profile falls off smoothly (monotone, no flat top, no hard ends; visible to about +-600 px), tint
+    4 ghosts and halo from bloom mip 2 (only when params.ghosts > 0: scenes with a point light in frame), gated off on
+      dark frames (mean luma of bloom mip 6 below about 0.03), where they read as dust on the lens
     5 lens dirt: seeded Canvas texture (300 discs, 25 hexagons, 6 smudges) x (mip4 + mip5)/2 x dirt, gated by
       smoothstep(0.15, 1.2, luma) so that dim fields never show the dust (only point lights and flashes do)
     6 halation: mip1 x (1.0, 0.28, 0.08) x halation x smoothstep(0.6, 2.0, luma(mip1))
-    7 chromatic aberration: radial, uv offset = ca * d * (|d|/|corner|)^2 (aspect-corrected; full ca in the corners), scene term only
+    7 chromatic aberration: radial and isotropic in frame px, shift = ca * min(W,H) * r^3 px (r = distance from the
+      centre / half-diagonal, so 1 in the corners; portrait is no worse than landscape), R outward and B inward, each
+      averaged over two taps (a short smear rather than a split dot). Skipped where the shift is under 0.05 px.
+      Gold-leaf text is exempt: run(..., {noCA: rt}) takes a coverage target (alpha) of the HDR text, and where it
+      covers (at the pixel or at either shifted tap) the unshifted scene is used. Captions are drawn after the post.
     8 vignette: aspect-aware, params.vignette
     9 AgX, then the look: CDL (slope/offset/power) + saturation in AgX display space, split tone in linear display,
       face-ellipse hue protection (photo look), sRGB encode  -> display target (RGBA16F, sRGB-encoded values)
@@ -26,7 +33,8 @@
     const post = createPost(G)
     post.params(lookName | [{look, w}], ...overrides) -> params    (deep-merged; see DEFAULTS and LOOKS)
     post.lerp(paramsA, paramsB, w) -> params                     (numeric deep lerp; used across transitions)
-    post.run(hdrRT, params, frameIndex)                          whole chain to the canvas (dithered, sRGB); draw captions after
+    post.run(hdrRT, params, frameIndex, {noCA})                  whole chain to the canvas (dithered, sRGB); draw captions after
+                                                                 noCA: optional RT whose alpha marks pixels exempt from CA
     post.mips                                                    {d1..d6} bloom down levels of the last run (read-only)
     displayToScene(rgbOrHex, params = DEFAULTS) -> [r,g,b]       linear scene HDR value that the tonemap + grade turn into
                                                                  the given display sRGB colour (centre of frame, no bloom);
@@ -46,11 +54,11 @@ import { mulberry32 } from './timeline.js';
 export const DEFAULTS = {
   exposure: 0,
   bloom: { threshold: 0, knee: 0.5, mix: 0.05, add: 0 },
-  streak: { threshold: 2.0, strength: 0.08, tint: [1.0, 0.85, 0.62] },
-  ghosts: 0,
+  streak: { threshold: 2.0, strength: 0.06, tint: [1.0, 0.85, 0.62] },
+  ghosts: 0,                 // scenes opt in only where verified clean
   dirt: 0.5,
   halation: 0.06,
-  ca: 0.006,
+  ca: 0.0015,                // px shift in the corners = ca * min(W,H) (about 1.6 px); scenes may go to 0.003 (0.004 at the flash)
   vignette: 0.6,
   grade: {
     slope: [1.03, 1.00, 0.95], offset: [0.004, 0, 0.012], power: [1, 1, 1.03], sat: 0.95,
@@ -63,9 +71,11 @@ export const DEFAULTS = {
 export const LOOKS = {
   winter_gold: {},
   night_sea: { grade: { slope: [0.95, 1.0, 1.08], sat: 0.85 } },
-  photo: { grade: { splitAmt: 0.5 }, faceProtect: 1 },
+  photo: { grade: { splitAmt: 0.5 }, faceProtect: 1, ca: 0.0012 },
 };
 const LEVEL_W = [0.6, 0.8, 0.9, 1.0, 1.2, 1.4];
+// streak pyramid level weights (W/4 .. W/256): heavier on the wide levels so the streak is long but soft-ended
+const STREAK_W = [0.0, 0.02, 0.05, 0.10, 0.18, 0.30, 0.35];
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function merge(dst, src) {
@@ -134,22 +144,33 @@ void main(){
 const SRC_STREAK_PRE = frag(`
 uniform sampler2D uSrc; uniform vec2 uSrcTexel; uniform float uThr;
 out vec4 o;
+vec3 tap(vec2 uv){ vec3 c = texture(uSrc, uv).rgb; float br = max(c.r, max(c.g, c.b)); return c * max(br - uThr, 0.0) / max(br, 1e-5); }
 void main(){
-  vec2 uv = screenUV(); vec2 h = uSrcTexel;
-  vec3 c = (texture(uSrc, uv + vec2(-h.x, -h.y)).rgb + texture(uSrc, uv + vec2(h.x, -h.y)).rgb
-          + texture(uSrc, uv + vec2(-h.x, h.y)).rgb + texture(uSrc, uv + vec2(h.x, h.y)).rgb) * 0.25;
-  float br = max(c.r, max(c.g, c.b));
-  c *= max(br - uThr, 0.0) / max(br, 1e-5);
+  // 2x2 source texels per tap (bilinear), three rows: a 1-2-1 vertical soften so the streak has no blocky edge
+  vec2 uv = screenUV(); vec2 h = uSrcTexel; float dy = 1.0 / uRes.y;
+  vec3 c = (tap(uv - vec2(0.0, dy)) + 2.0 * tap(uv) + tap(uv + vec2(0.0, dy))) * 0.25;
   o = vec4(c, 1.0);
 }`);
 
-const SRC_STREAK = frag(`
-uniform sampler2D uSrc; uniform float uOff;
+// horizontal 2x downsample, 1-3-3-1 over four source texels (taps on texel centres)
+const SRC_STREAK_DOWN = frag(`
+uniform sampler2D uSrc; uniform float uSrcW;
 out vec4 o;
 void main(){
-  vec2 uv = screenUV(); float dx = uOff / uRes.x;
-  vec3 c = texture(uSrc, uv).rgb * 0.40 + (texture(uSrc, uv - vec2(dx, 0.0)).rgb + texture(uSrc, uv + vec2(dx, 0.0)).rgb) * 0.30;
+  vec2 uv = screenUV(); float dx = 1.0 / uSrcW;
+  vec3 c = (texture(uSrc, uv + vec2(-1.5 * dx, 0.0)).rgb + texture(uSrc, uv + vec2(1.5 * dx, 0.0)).rgb) * 0.125
+         + (texture(uSrc, uv + vec2(-0.5 * dx, 0.0)).rgb + texture(uSrc, uv + vec2(0.5 * dx, 0.0)).rgb) * 0.375;
   o = vec4(c, 1.0);
+}`);
+
+// horizontal tent upsample of the coarser sum, plus this level times its weight
+const SRC_STREAK_UP = frag(`
+uniform sampler2D uLow, uCur; uniform float uLowW, uLowK, uCurK;
+out vec4 o;
+void main(){
+  vec2 uv = screenUV(); float dx = 0.5 / uLowW;
+  vec3 up = texture(uLow, uv).rgb * 0.5 + (texture(uLow, uv - vec2(dx, 0.0)).rgb + texture(uLow, uv + vec2(dx, 0.0)).rgb) * 0.25;
+  o = vec4(up * uLowK + texture(uCur, uv).rgb * uCurK, 1.0);
 }`);
 
 const SRC_GHOST = frag(`
@@ -181,7 +202,7 @@ void main(){
 }`);
 
 const SRC_GLOW = frag(`
-uniform sampler2D uU2, uD1, uStreak, uGhost, uDirt, uMip4, uMip5;
+uniform sampler2D uU2, uD1, uStreak, uGhost, uDirt, uMip4, uMip5, uMip6;
 uniform vec2 uLowTexel; uniform float uW1, uBloomAdd, uStreakK, uGhostK, uDirtK, uHalK;
 uniform vec3 uStreakTint;
 out vec4 o;
@@ -193,7 +214,12 @@ void main(){
   vec3 m1 = texture(uD1, uv).rgb;
   vec3 c = (up + m1 * uW1) * uBloomAdd;
   c += texture(uStreak, uv).rgb * uStreakTint * uStreakK;
-  if (uGhostK > 0.0) c += texture(uGhost, uv).rgb * uGhostK;
+  if (uGhostK > 0.0){
+    // ghosts only on frames with some light in them: on a near-black frame they read as dust on the lens
+    float mean = luma(texture(uMip6, vec2(0.5)).rgb + texture(uMip6, vec2(0.2, 0.25)).rgb + texture(uMip6, vec2(0.8, 0.25)).rgb
+                    + texture(uMip6, vec2(0.2, 0.75)).rgb + texture(uMip6, vec2(0.8, 0.75)).rgb) * 0.2;
+    c += texture(uGhost, uv).rgb * uGhostK * smoothstep(0.02, 0.06, mean);
+  }
   vec3 m45 = (texture(uMip4, uv).rgb + texture(uMip5, uv).rgb) * 0.5;
   c += texture(uDirt, vec2(uv.x, 1.0 - uv.y)).rgb * m45 * uDirtK * smoothstep(0.15, 1.2, luma(m45));   // dirt shows only under bright light
   c += m1 * vec3(1.0, 0.28, 0.08) * uHalK * smoothstep(0.6, 2.0, luma(m1));
@@ -201,7 +227,7 @@ void main(){
 }`);
 
 const SRC_COMPOSITE = frag(`
-uniform sampler2D uScene, uGlow;
+uniform sampler2D uScene, uGlow, uNoCA; uniform int uHasNoCA;
 uniform highp sampler3D uLut, uLutBase; uniform float uLutA, uLutB;
 uniform float uExpo, uBloomBase, uCA, uVig, uFaceProtect;
 uniform uint uFrameIdx;
@@ -211,16 +237,27 @@ void main(){
   vec2 uv = screenUV();
   vec2 d = uv - 0.5;
   vec3 c;
-  vec2 da = d * vec2(uFrame.x / uFrame.y, 1.0), dc = vec2(0.5 * uFrame.x / uFrame.y, 0.5);
-  float k2 = dot(da, da) / dot(dc, dc);                     // radial falloff: 0 at the centre, 1 in the corners
-  c.r = texture(uScene, 0.5 + d * (1.0 + uCA * k2)).r;
-  c.g = texture(uScene, uv).g;
-  c.b = texture(uScene, 0.5 + d * (1.0 - uCA * k2)).b;
+  // chromatic aberration, isotropic in frame px: shift = uCA * min(W,H) * r^3 (r = 1 in the corners)
+  vec2 dp = d * uFrame;
+  float r = length(dp) / length(0.5 * uFrame);
+  float sh = uCA * min(uFrame.x, uFrame.y) * r * r * r;
+  vec3 c0 = texture(uScene, uv).rgb;
+  c = c0;
+  if (sh > 0.05){
+    vec2 du = dp / max(length(dp), 1e-3) * sh / uFrame;     // the full shift in uv
+    vec2 uR = uv + du, uB = uv - du;
+    float cr = (texture(uScene, uv + du * 0.5).r + texture(uScene, uR).r) * 0.5;
+    float cb = (texture(uScene, uv - du * 0.5).b + texture(uScene, uB).b) * 0.5;
+    float keep = 0.0;
+    if (uHasNoCA == 1) keep = clamp(max(texture(uNoCA, uv).a, max(texture(uNoCA, uR).a, texture(uNoCA, uB).a)), 0.0, 1.0);
+    c.r = mix(cr, c0.r, keep);
+    c.b = mix(cb, c0.b, keep);
+  }
   c = c * uExpo * uBloomBase + texture(uGlow, uv).rgb;
   // vignette (aspect-aware: distance normalised so the corners are 1)
   vec2 q = d * vec2(uFrame.x / uFrame.y, 1.0);
-  float r = length(q) / length(vec2(0.5 * uFrame.x / uFrame.y, 0.5));
-  float vg = smoothstep(0.25, 1.05, r);
+  float rv = length(q) / length(vec2(0.5 * uFrame.x / uFrame.y, 0.5));
+  float vg = smoothstep(0.25, 1.05, rv);
   c *= 1.0 - uVig * vg * vg;
   // AgX + look via the per-frame 3D LUT (log2 shaper over AgX's range), face-ellipse hue protection
   vec3 enc = clamp((log2(max(c, vec3(1e-10))) + 12.47393) / 16.4999, 0.0, 1.0) * uLutA + uLutB;
@@ -341,7 +378,7 @@ export function createPost(G) {
   const { gl, W, H } = G;
   const P = {
     down: G.program('post.down', SRC_DOWN), up: G.program('post.up', SRC_UP),
-    spre: G.program('post.streakpre', SRC_STREAK_PRE), streak: G.program('post.streak', SRC_STREAK),
+    spre: G.program('post.streakpre', SRC_STREAK_PRE), sdown: G.program('post.streakdown', SRC_STREAK_DOWN), sup: G.program('post.streakup', SRC_STREAK_UP),
     ghost: G.program('post.ghost', SRC_GHOST), glow: G.program('post.glow', SRC_GLOW), comp: G.program('post.comp', SRC_COMPOSITE), lut: G.program('post.lut', SRC_LUT),
   };
   const dirt = G.texture(makeDirt(960, Math.round(960 * H / W)), { mips: false });
@@ -349,8 +386,13 @@ export function createPost(G) {
   const d = []; for (let i = 1; i <= 6; i++) d[i] = G.target('post.d' + i, W / (1 << i), H / (1 << i));
   const u = []; for (let i = 2; i <= 5; i++) u[i] = G.target('post.u' + i, W / (1 << i), H / (1 << i));
   const glow = G.target('post.glow', W / 2, H / 2);
-  // the anamorphic streak only needs horizontal resolution: quarter width, eighth height
-  const sq = [G.target('post.sq0', W / 4, H / 8), G.target('post.sq1', W / 4, H / 8)];
+  // the anamorphic streak: quarter height throughout, a horizontal pyramid from quarter width down to W/256
+  const SQ = STREAK_W.length;
+  const sq = [], su = [];
+  for (let i = 0; i < SQ; i++) {
+    sq[i] = G.target('post.sq' + i, Math.max(2, Math.round(W / (4 << i))), H / 4);
+    if (i < SQ - 1) su[i] = G.target('post.su' + i, Math.max(2, Math.round(W / (4 << i))), H / 4);
+  }
   const gh = G.target('post.ghost', W / 8, H / 8);
   const wsum = LEVEL_W.reduce((a, b) => a + b, 0);
 
@@ -398,7 +440,7 @@ export function createPost(G) {
   api.lerp = (a, b, w) => lerpAny(a, b, w);
 
   // Runs the whole chain from the HDR frame to the canvas (dithered). Captions are drawn on the canvas afterwards.
-  api.run = function (hdr, p, frameIndex = 0) {
+  api.run = function (hdr, p, frameIndex = 0, opts = {}) {
     const expo = Math.pow(2, p.exposure || 0);
     // 2 bloom pyramid
     let src = hdr;
@@ -414,10 +456,14 @@ export function createPost(G) {
     const sk = p.streak.strength || 0;
     let streak = black;
     if (sk > 0) {
-      G.draw(P.spre, { uSrc: d[1], uSrcTexel: [0.5 / d[1].w, 1.0 / d[1].h], uThr: p.streak.threshold }, sq[0]);
-      let a = 0;
-      for (let i = 0; i < 5; i++) { G.draw(P.streak, { uSrc: sq[a], uOff: Math.pow(3, i) }, sq[1 - a]); a = 1 - a; }
-      streak = sq[a];
+      G.draw(P.spre, { uSrc: d[1], uSrcTexel: [1 / d[1].w, 1 / d[1].h], uThr: p.streak.threshold }, sq[0]);
+      for (let i = 1; i < SQ; i++) G.draw(P.sdown, { uSrc: sq[i - 1], uSrcW: sq[i - 1].w }, sq[i]);
+      // sum = sum_i STREAK_W[i] * level i (the coarsest level is the start of the sum, weighted in the first up pass)
+      for (let i = SQ - 2; i >= 0; i--) {
+        const low = i === SQ - 2 ? sq[SQ - 1] : su[i + 1];
+        G.draw(P.sup, { uLow: low, uCur: sq[i], uLowW: low.w, uLowK: i === SQ - 2 ? STREAK_W[SQ - 1] : 1, uCurK: STREAK_W[i] }, su[i]);
+      }
+      streak = su[0];
     }
     // 4 ghosts
     const gk = p.ghosts || 0;
@@ -430,12 +476,12 @@ export function createPost(G) {
     // 5-11 composite, grade, dither -> canvas
     const bloomBase = 1 - (p.bloom.threshold > 0 ? 0 : p.bloom.mix);
     // half-res glow: the last bloom upsample (level 1), streak, ghosts, lens dirt, halation
-    G.draw(P.glow, { uU2: u[2], uD1: d[1], uStreak: streak, uGhost: gk > 0 ? gh : black, uDirt: dirt, uMip4: d[4], uMip5: d[5],
+    G.draw(P.glow, { uU2: u[2], uD1: d[1], uStreak: streak, uGhost: gk > 0 ? gh : black, uDirt: dirt, uMip4: d[4], uMip5: d[5], uMip6: d[6],
       uLowTexel: [1 / u[2].w, 1 / u[2].h], uW1: LEVEL_W[0], uBloomAdd: (p.bloom.mix + (p.bloom.add || 0)) / wsum,
       uStreakK: sk, uStreakTint: p.streak.tint, uGhostK: gk, uDirtK: p.dirt, uHalK: p.halation }, glow);
     const faceArr = new Float32Array(8); faces.forEach((f, i) => faceArr.set(f, i * 4));
     G.draw(P.comp, {
-      uScene: hdr, uGlow: glow,
+      uScene: hdr, uGlow: glow, uNoCA: opts.noCA || black, uHasNoCA: opts.noCA ? 1 : 0,
       uExpo: expo, uBloomBase: bloomBase, uCA: p.ca, uVig: p.vignette, uFaceProtect: useFaces ? p.faceProtect : 0,
       uFace: faceArr, uFaceN: useFaces ? faces.length : 0, uFrameIdx: frameIndex >>> 0,
       uLutA: (N - 1) / N, uLutB: 0.5 / N, uLut: lut.tex, uLutBase: lutBase.tex,

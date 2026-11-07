@@ -23,11 +23,11 @@ const T0 = 30.0;
 export function shoresLayout(ctx) {
   if (ctx.portrait) return {
     hz: 820, hz0: 960, west: [150, 820], east: [930, 820], ctrl: [540, 300], merX: k => 930 - 156 * k,
-    textY: 1500, capY: 742, textSize: 52 * 0.9, clamp: [54, 1026], breaks: { L4: [4], L5: [6] },
+    textY: 1500, capY: 520, textSize: 52 * 0.9, clamp: [54, 1026], breaks: { L4: [4], L5: [6] },
   };
   return {
     hz: 430, hz0: 540, west: [230, 430], east: [1690, 430], ctrl: [960, 70], merX: k => 1690 - 292 * k,
-    textY: 880, capY: 352, textSize: 52, clamp: [96, 1824], breaks: {},
+    textY: 880, capY: 340, textSize: 52, clamp: [96, 1824], breaks: {},
   };
 }
 export function shoresHz(ctx, t) {
@@ -38,17 +38,18 @@ export function shoresCam(ctx, t) {
   const e = t - T0;
   return { h: 40, x: 0.5 * e, z: 3 * e, pitch: ctx.horizonPitch(shoresHz(ctx, t), ctx.H, 0.6), fovY: 0.6 };
 }
-// light intensity envelope (both lights), the west light's arrival boost, and the 53.2-54.0 dusk dim is applied by post
+// light intensity envelope (both lights), the west light's arrival boost, and the 53.2-54.0 dusk dim is applied by post.
+// Scene 3 brings both lights up to full over 29.3-30.0 (it reads this function at 30.0), so they are simply on here.
 function lightsAt(ctx, t) {
   const tl = ctx.tl;
-  const on = tl.seg(t, 30.0, 31.4, tl.E.inOutSine);
+  const on = t >= 30.0 ? 1 : tl.seg(t, 29.3, 30.0, tl.E.inOutSine);
   const westBoost = 1 + 0.5 * tl.seg(t, 40.4, 40.9, tl.E.outCubic);
   return { west: on * westBoost, east: on };
 }
 export function shoresSea(ctx, t) {
   const L = shoresLayout(ctx), li = lightsAt(ctx, t);
   return {
-    tau: t - T0, cam: shoresCam(ctx, t), stars: 0.35, look: 'night_sea',
+    tau: t - T0, cam: shoresCam(ctx, t), stars: 0.35, look: 'night_sea',     // the same sky scene 3 ends on
     lights: [[L.west[0], 1.0 * li.west, 1, 18], [L.east[0], 1.0 * li.east, 1, 18]],
   };
 }
@@ -86,6 +87,7 @@ uniform vec4 uLt[2];     // lights: x, y, I, halo px
 uniform vec4 uLtS;       // streak length px, streak I, core radius px, flare
 uniform vec4 uMer[5];    // meridian x, top y, front y, I
 uniform vec4 uMerF[5];   // top glint I, landing flash I, head I, horizon y
+uniform float uGlS[5];   // top glint size (px)
 uniform vec4 uLead[2];   // leader x, y0, y1, alpha
 uniform vec4 uRule;      // horizon rule: y at the frame centre, I, angle (rad), unused
 uniform float uRoll;     // horizon roll (rad): the lights' streaks follow it
@@ -141,6 +143,8 @@ vec3 shade(vec2 p){
   // the arc: gold line, the warm band and its lit trail, the cooled right end
 #if PART == 1
   if (uArcOn > 0.0){
+    // while smeared over the shutter (scene 9's pitch-up), nothing of the arc is drawn below the horizon rule
+    if (length(uSmear) > 0.5 && dot(p - vec2(uFrame.x * 0.5, uRule.x), vec2(-sin(uRule.z), cos(uRule.z))) > 0.0) return c + cf;
     vec2 pm = p - 0.5 * uSmear;                       // the arc at mid-shutter
     vec2 bz = sdBez(pm, uA, uB, uC);
     float d = bz.x;
@@ -210,12 +214,16 @@ vec3 shade(vec2 p){
     if (M.w > 0.0){
       float inside = clamp(p.y - M.y + 0.5, 0.0, 1.0) * clamp(M.z - p.y + 0.5, 0.0, 1.0);
       float core = clamp(1.25 - dx, 0.0, 1.0);
-      float glow = 0.26 * exp(-dx / 2.0) + 0.07 * exp(-dx / 6.0);
-      c += uMerC * (core + glow) * inside * M.w;
+      // the glow wraps round the line's ends (distance to the segment), so its top is not cut square
+      float dyo = max(M.y - p.y, 0.0) + max(p.y - M.z, 0.0);
+      float rg = length(vec2(dx, dyo));
+      float glow = 0.26 * exp(-rg / 2.0) + 0.07 * exp(-rg / 6.0);
+      c += uMerC * (core * inside + glow) * M.w;
       if (F.z > 0.0){ vec2 hq = p - vec2(M.x, M.z); c += (uWhite * 2.2 * exp(-dot(hq, hq) / 3.0) + uHotC * 0.35 * exp(-length(hq) / 7.0)) * F.z; }
     }
-    if (F.x > 0.0) c += uHotC * star4(p - vec2(M.x, M.y), 9.0) * F.x;
-    if (F.y > 0.0){ vec2 fq = p - vec2(M.x, F.w); c += uLitC * (exp(-length(fq) / 5.0) * 1.2 + 0.25 * exp(-length(fq * vec2(0.25, 1.0)) / 6.0)) * F.y; }
+    if (F.x > 0.0) c += uHotC * star4(p - vec2(M.x, M.y), uGlS[uIdx]) * F.x;
+    // the landing flash, windowed well inside its draw box (no box edge)
+    if (F.y > 0.0){ vec2 fq = p - vec2(M.x, F.w); c += uLitC * (exp(-length(fq) / 5.0) * 1.2 + 0.25 * exp(-length(fq * vec2(0.25, 1.0)) / 6.0)) * F.y * (1.0 - smoothstep(90.0, 130.0, abs(fq.x))) * (1.0 - smoothstep(40.0, 70.0, abs(fq.y))); }
   }
 #endif
 #if PART == 4
@@ -272,7 +280,7 @@ export function createShoreFx(ctx, look = 'night_sea') {
   }
   const empty = {
     uArcOn: 0, uProg: 0, uTip: [0, 0, 0], uLt: new Float32Array(8), uLtS: [120, 0.5, 2, 0], uMer: new Float32Array(20), uMerF: new Float32Array(20),
-    uLead: new Float32Array(8), uRule: [0, 0, 0, 0], uBand: [0, 110, 0, 0], uPark: [0, 0, 0, 0], uArcK: [1, 1, 1, 0.25], uK: 1, uSmear: [0, 0], uSmearN: 1,
+    uLead: new Float32Array(8), uRule: [0, 0, 0, 0], uGlS: [9, 9, 9, 9, 9], uBand: [0, 110, 0, 0], uPark: [0, 0, 0, 0], uArcK: [1, 1, 1, 0.25], uK: 1, uSmear: [0, 0], uSmearN: 1,
     uKnock: null, uHasKnock: 0, uRoll: 0, uPart: 0, uIdx: 0, uBoxR: [1, 1],
   };
   return {
@@ -287,7 +295,9 @@ export function createShoreFx(ctx, look = 'night_sea') {
       const box = (x0, y0, x1, y1, part, idx, exX = true) => {
         const gx = exX ? ax : 0;
         x0 = Math.max(x0 - gx, lim[0]); y0 = Math.max(y0 - ay, lim[1]); x1 = Math.min(x1 + gx, lim[0] + lim[2]); y1 = Math.min(y1 + ay, lim[1] + lim[3]);
-        const gx0 = Math.max(0, Math.floor(x0 * s)), gx1 = Math.min(target.w, Math.ceil(x1 * s));
+        // boxes that tile in x (the arc's columns, a light's halo and its streak boxes) share rounded pixel edges, so
+        // no pixel column is drawn twice (an additive seam)
+        const gx0 = Math.max(0, exX ? Math.floor(x0 * s) : Math.round(x0 * s)), gx1 = Math.min(target.w, exX ? Math.ceil(x1 * s) : Math.round(x1 * s));
         const gy0 = Math.max(0, Math.floor((ctx.H - y1) * s)), gy1 = Math.min(target.h, Math.ceil((ctx.H - y0) * s));
         if (gx1 <= gx0 || gy1 <= gy0) return;
         u.uPart = part; u.uIdx = idx;
@@ -319,7 +329,7 @@ export function createShoreFx(ctx, look = 'night_sea') {
       }
       for (let k = 0; k < 5; k++) {
         const M = [u.uMer[k * 4], u.uMer[k * 4 + 1], u.uMer[k * 4 + 2], u.uMer[k * 4 + 3]], F = [u.uMerF[k * 4], u.uMerF[k * 4 + 1], u.uMerF[k * 4 + 2], u.uMerF[k * 4 + 3]];
-        if (M[3] > 0 || F[0] > 0 || F[1] > 0) box(M[0] - 72, M[1] - 40, M[0] + 72, Math.max(M[2], F[3]) + 40, 3, k);
+        if (M[3] > 0 || F[0] > 0 || F[1] > 0) box(M[0] - 150, M[1] - 60, M[0] + 150, Math.max(M[2], F[3]) + 80, 3, k);
       }
       for (let i = 0; i < 2; i++) {
         const L = [u.uLead[i * 4], u.uLead[i * 4 + 1], u.uLead[i * 4 + 2], u.uLead[i * 4 + 3]];
@@ -333,44 +343,73 @@ export function createShoreFx(ctx, look = 'night_sea') {
   };
 }
 
-// ------------------------------------------------------------------ caption shield: blurred caption mask (half res)
-const SHIELD_FS = `
-uniform sampler2D uMask; uniform vec4 uRect; uniform float uOp;
+// ------------------------------------------------------------------ caption shield and caption band
+// Both are a feathered stadium (a rounded band) around each row of a line, never the glyph shape: a calm lane with no
+// hatch or line art through the letters. The shield is a half-res alpha mask (core/sea.js removes the hatch under it
+// and darkens the water; the shore fx knocks its lines out under it); the band darkens what is already in a target
+// (blend 'mul') under lines set over the sky.
+const SHAPE_FS = `
+uniform vec4 uBox;       // padded core box: x0, y0, x1, y1 (frame px)
+uniform vec4 uF;         // feather px (vertical), opacity, darkening (band only), horizontal / vertical feather
+uniform int uMul;
 out vec4 o;
 void main(){
-  vec2 px = framePx();
-  vec2 q = (px - uRect.xy) / uRect.zw;
-  vec2 uv = vec2(q.x, 1.0 - q.y);
-  float a2 = textureLod(uMask, uv, 2.0).a, a4 = textureLod(uMask, uv, 4.0).a;
-  float s = clamp(a2 * 2.4 + a4 * 1.7, 0.0, 1.0) * uOp;
-  o = vec4(s, s, s, s);
+  // an anisotropic stadium: the band tapers out over a longer run at its ends than above and below the letters
+  vec2 sx = vec2(1.0 / uF.w, 1.0);
+  vec2 p = framePx() * sx;
+  vec2 c = 0.5 * (uBox.xy + uBox.zw) * sx, h = 0.5 * (uBox.zw - uBox.xy) * sx;
+  float r = min(h.x, h.y);
+  vec2 q = abs(p - c) - h + r;
+  float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+  // full strength inside the core, a long Gaussian tail outside it (no visible edge)
+  float dd = max(d, 0.0) / uF.x;
+  float a = exp(-2.2 * dd * dd) * uF.y;
+  if (uMul == 1) o = vec4(vec3(1.0 - uF.z * a), 1.0);
+  else o = vec4(a);
 }`;
-export function createShield(ctx, key) {
-  const { G, glsl, text } = ctx;
-  const prog = G.program('p6.shield', glsl.frag(SHIELD_FS));
+// the padded box of each visible row of a caption entry, with the line's current opacity (frame px)
+export function captionBoxes(ctx, e, padX, padY) {
+  const lay = ctx.text.layout(e);
+  if (!lay.anim.shown) return [];
+  const size = lay.line.size, out = [];
+  lay.rows.forEach((R, ri) => {
+    let op = 0;
+    for (const s of lay.inst) if (s.row === ri) op = Math.max(op, s.op);
+    if (op <= 0) return;
+    const x0 = R.ox + R.x0, x1 = x0 + R.adv;
+    out.push({ box: [x0 - padX, R.y - 0.72 * size - padY, x1 + padX, R.y + 0.22 * size + padY], op });
+  });
+  return out;
+}
+function createShape(ctx) { return ctx.G.program('p6.shape', ctx.glsl.frag(SHAPE_FS)); }
+const ANISO = 2.6;
+function shapeDraw(ctx, prog, target, b, F, op, k, mul) {
+  const s = target.scale == null ? 1 : target.scale;
+  const x0 = Math.max(0, Math.floor((b[0] - 1.6 * F * ANISO) * s)), x1 = Math.min(target.w, Math.ceil((b[2] + 1.6 * F * ANISO) * s));
+  const y0 = Math.max(0, Math.floor((ctx.H - (b[3] + 1.6 * F)) * s)), y1 = Math.min(target.h, Math.ceil((ctx.H - (b[1] - 1.6 * F)) * s));
+  if (x1 <= x0 || y1 <= y0) return false;
+  ctx.G.draw(prog, { uBox: b, uF: [F, op, k, ANISO], uMul: mul ? 1 : 0 }, target, { blend: mul ? 'mul' : 'max', viewport: [x0, y0, x1 - x0, y1 - y0] });
+  return true;
+}
+// o: {padX = 24, padY = 10, feather = 60} (the full-strength core is the row's ink box plus the pad)
+export function createShield(ctx, key, o = {}) {
+  const prog = createShape(ctx);
+  const padX = o.padX == null ? 24 : o.padX, padY = o.padY == null ? 8 : o.padY, F = o.feather == null ? 110 : o.feather;
   return {
     build(entries) {
-      const rt = G.target('p6.shield.' + key, ctx.W / 2, ctx.H / 2, { scale: 0.5 });
-      G.clear(rt, [0, 0, 0, 0]);
+      const rt = ctx.G.target('p6.shield.' + key, ctx.W / 2, ctx.H / 2, { scale: 0.5 });
+      ctx.G.clear(rt, [0, 0, 0, 0]);
       let any = false;
-      for (const e of entries) {
-        const lay = text.layout(e);
-        if (!lay.anim.shown) continue;
-        const m = text.drawMask(e);
-        if (m.lineOpacity > 0) {
-          const r = m.rect, pad = 44;
-          const x0 = Math.max(0, Math.floor((r[0] - pad) / 2)), x1 = Math.min(rt.w, Math.ceil((r[0] + r[2] + pad) / 2));
-          const y0 = Math.max(0, Math.floor((ctx.H - (r[1] + r[3] + pad)) / 2)), y1 = Math.min(rt.h, Math.ceil((ctx.H - (r[1] - pad)) / 2));
-          if (x1 > x0 && y1 > y0) {
-            G.draw(prog, { uMask: m.rt, uRect: r, uOp: m.lineOpacity }, rt, { blend: 'max', viewport: [x0, y0, x1 - x0, y1 - y0] });
-            any = true;
-          }
-        }
-        text.releaseMask(m);
-      }
+      for (const e of entries) for (const r of captionBoxes(ctx, e, padX * ctx.U, padY * ctx.U)) any = shapeDraw(ctx, prog, rt, r.box, F * ctx.U, r.op, 0, false) || any;
       return any ? rt : null;
     },
   };
+}
+// darkens the target under each caption row by k (0.35-0.45) with a feathered band; o as createShield
+export function drawCaptionBands(ctx, target, entries, k = 0.4, o = {}) {
+  const prog = createShape(ctx);
+  const padX = o.padX == null ? 24 : o.padX, padY = o.padY == null ? 8 : o.padY, F = o.feather == null ? 110 : o.feather;
+  for (const e of entries) for (const r of captionBoxes(ctx, e, padX * ctx.U, padY * ctx.U)) shapeDraw(ctx, prog, target, r.box, F * ctx.U, r.op, k, true);
 }
 
 // ------------------------------------------------------------------ the scene
@@ -380,7 +419,7 @@ const scene = {
     this.L = shoresLayout(ctx);
     this.fx = createShoreFx(ctx);
     this.shield = createShield(ctx, 's04');
-    this.knock = createShield(ctx, 's04caps');
+    this.knock = createShield(ctx, 's04caps', { padX: 16, padY: 12, feather: 26 });
     const L = this.L;
     this.arc = this.fx.arc(L.east, L.ctrl, L.west);
     this.merTop = [1, 2, 3, 4, 5].map(k => this.arc.yAtX(L.merX(k)));
@@ -395,14 +434,20 @@ const scene = {
       L.breaks[id] ? { breaks: L.breaks[id] } : {}, extra);
     return [
       mk('L3', 30.0),
-      mk('L4', 36.0, { tints: [{ part: this.hereRange, color: '#E3B341', at: 4.4, dur: 0.6 }] }),
+      // the last word turns gold as the band lands on the west light (40.4), brightens with the light's boost, then
+      // holds before the line leaves (41.0-41.9, clear of L5 at 42.0)
+      mk('L4', 36.0, { tints: [{ part: this.hereRange, color: '#FFD98A', at: 3.9, dur: 0.5 }, { part: this.hereRange, color: '#E3B341', at: 4.5, dur: 0.5 }],
+        exit: { at: 5.0, kind: 'mist', dur: 0.9 } }),
       mk('L5', 42.0),
     ].filter(e => e.tau > -0.01 && e.tau < 6.0);
   },
   render(ctx, tau, p, target) {
     const t = T0 + tau;
     const shield = this.shield.build(this.narrative(ctx, t));
-    const o = Object.assign(shoresSea(ctx, t), { shield, shieldK: 0.94 });
+    const o = Object.assign(shoresSea(ctx, t), { shield, shieldK: 0.82 });
+    // the fifth chime: the west light blooms and its reflection column flares
+    const b5 = this.bloom5(ctx, t);
+    o.lights[0][1] *= b5.column;
     for (let k = 0; k < 5; k++) {
       const tk = this.chimes[k];
       const reach = ctx.tl.seg(t, tk + 0.45, tk + 2.4, ctx.tl.E.inOutSine);
@@ -412,6 +457,21 @@ const scene = {
     // the arc, lights and meridians are drawn into the scene target (not the overlay) so the ink-bleed into scene 5
     // dissolves them with the sea
     this.drawFx(ctx, tau, target);
+    // the leader captions sit on the night sky: a soft darker band under them (stars, halos and haze kept out of the
+    // letters)
+    const caps = this.captions(ctx, tau).filter(e => e.lineId === 'L6a' || e.lineId === 'L6b');
+    if (caps.length) drawCaptionBands(ctx, target, caps, 0.42);
+  },
+  // chime 5 lands on the west light itself (its meridian has no length): the light blooms 1.0 -> 1.9 -> 1.4, its
+  // column flares 1.6x for 0.8 s, and one pulse runs down the lit left part of the arc into it
+  bloom5(ctx, t) {
+    const tl = ctx.tl, E = tl.E, c5 = this.chimes[4];
+    if (t < c5) return { light: 1, column: 1, pulse: 0, pos: 0 };
+    const light = 1 + 0.9 * tl.seg(t, c5, c5 + 0.25, E.outCubic) - 0.5 * tl.seg(t, c5 + 0.25, c5 + 0.8, E.inOutSine);
+    const column = 1 + 0.6 * tl.seg(t, c5, c5 + 0.2, E.outCubic) * (1 - tl.seg(t, c5 + 0.6, c5 + 1.2, E.inOutSine));
+    const pos = tl.seg(t, c5 - 0.05, c5 + 0.5, E.inOutSine);
+    const pulse = tl.seg(t, c5 - 0.05, c5 + 0.1) * (1 - tl.seg(t, c5 + 0.4, c5 + 0.7, E.inOutSine));
+    return { light, column, pulse, pos };
   },
   breath(t, k) {
     const tk = this.chimes[k];
@@ -440,7 +500,15 @@ const scene = {
     u.uArcK = [0.85, 1.35, 1.0, 0.22];
     // lights
     const sc = ctx.U;
-    u.uLt = new Float32Array([L.west[0], hz, li.west, 40 * sc, L.east[0], hz, li.east, 40 * sc]);
+    const b5 = this.bloom5(ctx, t);
+    u.uLt = new Float32Array([L.west[0], hz, li.west * b5.light, 40 * sc * (1 + 0.25 * (b5.light - 1)), L.east[0], hz, li.east, 40 * sc]);
+    if (b5.pulse > 0) {
+      // the pulse runs from the arc's point above x 522 (landscape; 0.2 of the width in portrait) down into the west light
+      if (this.s522 == null) { const xs = ctx.portrait ? 0.2 * ctx.W : 522; let best = 0, bd = 1e9; for (let i = 0; i <= 200; i++) { const q = A.at(A.len * i / 200); const d = Math.abs(q[0] - xs); if (d < bd) { bd = d; best = A.len * i / 200; } } this.s522 = best; }
+      const pc = this.s522 + (A.len - this.s522) * b5.pos;
+      const ex = u.uBand[2] * Math.exp(-0.5 * Math.pow((pc - u.uBand[0]) / 60, 2));
+      if (1.4 * b5.pulse > ex) u.uBand = [pc, 60, 1.4 * b5.pulse, 0.30];
+    }
     u.uLtS = [120 * sc, 0.45, 2.0, 0.0];
     // meridians
     const mer = new Float32Array(20), merF = new Float32Array(20);
@@ -455,10 +523,10 @@ const scene = {
       const flash = t > tk + 0.42 ? Math.exp(-(t - tk - 0.42) / 0.35) : 0;
       merF.set([1.3 * Math.exp(-(t - tk) / 0.45), 0.6 * flash, 1.2 * head, hz], k * 4);
     }
-    u.uMer = mer; u.uMerF = merF;
+    u.uMer = mer; u.uMerF = merF; u.uGlS = [9, 9, 9, 9, 26];
     // leaders (grow 0.6 s from each caption's start; fade with the captions)
     const lead = new Float32Array(8);
-    const fadeC = 1 - tl.seg(t, 53.2, 54.0, E.inOutSine);
+    const fadeC = 1 - tl.seg(t, 53.8, 54.5, E.inOutSine);       // with the captions, into the dissolve
     [[L.east[0], 48.0], [L.west[0], 52.0]].forEach(([x, ta], i) => {
       if (t < ta) return;
       const g = tl.seg(t, ta, ta + 0.6, E.outCubic);
@@ -484,15 +552,19 @@ const scene = {
   captions(ctx, tau) {
     const t = T0 + tau, L = this.L;
     const out = this.narrative(ctx, t);
-    const cap = { base: 'caps', size: 22, tracking: 0.34 };
-    if (t >= 47.9) out.push({ lineId: 'L6a', tau: t - 48.0, x: L.east[0], y: L.capY, style: cap, clampX: L.clamp, exit: { at: 5.2, kind: 'default' } });
-    if (t >= 51.9) out.push({ lineId: 'L6b', tau: t - 52.0, x: L.west[0], y: L.capY, style: cap, clampX: L.clamp, exit: { at: 1.2, kind: 'default' } });
+    // the house small caps (lining figures, 30 px landscape / 34 portrait, #E3C27A at 95 %), a quick 8 ms letter
+    // stagger; both stay until 53.8 and leave with the dissolve into scene 5
+    const cap = { base: 'caps', size: ctx.portrait ? 34 : 30, tracking: 0.2 };
+    const en = { base: 'caps', stagger: 0.008 };
+    if (t >= 47.9) out.push({ lineId: 'L6a', tau: t - 48.0, x: L.east[0], y: L.capY, style: cap, enter: en, clampX: L.clamp, exit: { at: 5.8, kind: 'default', dur: 0.7 } });
+    if (t >= 51.9) out.push({ lineId: 'L6b', tau: t - 52.0, x: L.west[0], y: L.capY, style: cap, enter: en, clampX: L.clamp, exit: { at: 1.8, kind: 'default', dur: 0.7 } });
     return out;
   },
   post(ctx, tau) {
     const t = T0 + tau;
     const dim = 1 - 0.3 * ctx.tl.seg(t, 53.2, 54.0, ctx.tl.E.inOutSine);
-    return { ghosts: 0.012, exposure: Math.log2(dim) };
+    // chromatic aberration at the house minimum over the 1-2 px engraving (no split hatch or star doublets), no ghosts
+    return { ghosts: 0, ca: 0.0015, exposure: Math.log2(dim) };
   },
 };
 export default scene;

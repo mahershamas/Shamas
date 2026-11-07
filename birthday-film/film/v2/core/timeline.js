@@ -17,7 +17,8 @@
     class Timeline(scenes, transitions)
       .active(t) -> { layers: [{scene, tau, p, scale, weight, role}], transition: null | {kind, w, from, to, opts} }
            role 'single' | 'out' | 'in'.  weight: 1 single; 1-w for 'out', w for 'in'.
-           The outgoing scene of an overlapping transition runs at min(internalScale, 0.5).
+           Both scenes of an overlapping transition run at their own internalScale (the outgoing one is not halved:
+           half-resolution engraved line art turned to moire); a record may still set opts.outScale (e.g. 0.5).
            A scene is rendered on [t0, t1) and additionally during any transition window that names it, so
            scenes may receive tau < 0 or tau > (t1 - t0) there (clamp as needed).
       .sceneAt(t) -> scene that "owns" t (the incoming one during a transition)
@@ -26,7 +27,11 @@
     kind 'cut'        no overlap; `to` starts at t0 (t1 ignored)
     kind 'crossfade'  linear mix in linear HDR
     kind 'over'       incoming target is premultiplied (alpha = coverage) and composited over the outgoing one
-    kind 'inkbleed'   fbm-threshold dissolve: opts {scale=3, oct=5, edge=0.03, gold=0|1 (gold HDR edge), lumaKey=0}
+    kind 'inkbleed'   the gold-dust dissolve (main.js): opts {scale=14 (fbm cycles per short side), oct=3, warp=0.9,
+                      feather=48 (min px across the front), lumaKey=0 (incoming highlights first), grain=0.35,
+                      gold=0..1 (sparse HDR glints along the front, gold ramp of goldLook or the incoming look),
+                      radial=0 (mix toward a radial field: edges first), center=[fx,fy] / centerPortrait (frame
+                      fractions, the point that goes last), seed=0, outScale}
     kind 'custom'     the incoming scene's transition(ctx, w, outRT, inRT, dst) composes the frame itself
     w = ease(seg(t, t0, t1)), ease defaults to E.inOutSine (linear for inkbleed, so the edge speed is even).
 */
@@ -130,7 +135,7 @@ export class Timeline {
         const a = tr.fromS, b = tr.toS;
         return {
           layers: [
-            { scene: a, tau: t - a.t0, p: (t - a.t0) / (a.t1 - a.t0), scale: Math.min(a.internalScale || 1, 0.5), weight: 1 - w, role: 'out' },
+            { scene: a, tau: t - a.t0, p: (t - a.t0) / (a.t1 - a.t0), scale: tr.opts && tr.opts.outScale ? Math.min(a.internalScale || 1, tr.opts.outScale) : (a.internalScale || 1), weight: 1 - w, role: 'out' },
             { scene: b, tau: t - b.t0, p: (t - b.t0) / (b.t1 - b.t0), scale: b.internalScale || 1, weight: w, role: 'in' },
           ],
           transition: { kind: tr.kind, w, from: a.id, to: b.id, opts: tr.opts || {}, t0: tr.t0, t1: tr.t1 },

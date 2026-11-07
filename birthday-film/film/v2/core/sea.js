@@ -70,7 +70,8 @@
                    lights: [[x, I, reach = 1, width = 18], ...] (frame x of lights on the horizon),
                    columns: [[x, I, reach, width = 10], ...] (vertical sources, e.g. meridians: their column unrolls
                    toward the camera as reach goes 0 -> 1) -- lights + columns up to 8 in all,
-                   shield: Tex|null (blurred caption mask, frame-aligned alpha), shieldK = 0.7, alpha = 1, blend, look})
+                   shield: Tex|null (blurred caption mask, frame-aligned alpha; under it the hatch ink is removed
+                   and the water darkened by half, both scaled by shieldK), shieldK = 0.7, alpha = 1, blend, look})
     S.rendered(target, {tau, cam, amp = 0.15 (0 = mirror), k0 = 0.35, drag = 0.28, sky: RT|null, mirror: RT|null,
                    region: 'all'|'sea', deep = [0.004,0.009,0.018], stars = 1, sun: SUN|null,
                    haze: {color, I, width}, fog = 0.0012, glints: {I, width = 0.06 (of W), rate = 10, exp = 400}|null,
@@ -80,7 +81,7 @@
     S.godRays(target, {tau, cam, sun: SUN, I = 1, color = '#FFC88A', mist = 1, density = 0.9, decay = 0.965,
                    spread = 0.07})
     S.glitter(target, {tau, cam, sun: SUN, amp = 0.15 (match rendered), count = 5000, open = 1, I = 1,
-                   color = '#FFE7A3', width = 0.05 (half width at the horizon, of W), widen = 0.32 (px per px below
+                   color = '#FFE7A3', width = 0.011 (half width at the horizon, of W), widen = 0.6 (px per px below
                    the horizon), exp = 600, bursts: [{tau, vel}] (each spawns 40 bright glints for 0.15 s; 8 live)})
     S.flare(target, {x, y, I = 0.15, rays = 8, len = 300, angle = 0, color = '#FFF4D6', streak = 0, streakLen = 1200,
                    streakColor = '#FFD27A'})
@@ -348,6 +349,8 @@ void main(){
   float sheen = clamp(0.45 + 3.0 * (R.y + rd.y), 0.0, 1.0);          // slopes tilted toward the viewer catch the sky
   float fd = clamp(d / (uCamP.y * 28.0), 0.0, 1.0);                // aerial perspective, relative to the camera height
   float nearK = 1.0 - fd;
+  // the burin is never a ruler: about 0.7 px of slow wobble along each line (world-anchored, phase differs line to line)
+  z += (0.6 + 0.4 * (1.0 - nearS)) * fw * sin(xz.x / (uSpacing * s0) * 0.33 + z * 1.7 / s0);
   float u0 = z / s0 + 0.5;
   float lineId = floor(u0) * s0;                                   // world-stable id of the nearest line
 
@@ -374,17 +377,26 @@ void main(){
   float ink0 = hatch(u0, clamp(wpx / spx, 0.015, 0.3), b / s0);
   float ink1 = hatch(u0 * 0.5 + 0.25, clamp(wpx / (2.0 * spx), 0.015, 0.3), b / (2.0 * s0));
   float ink = mix(ink0, ink1, fr);
+  // where the visible lines would crowd under about 3 px (toward the horizon) they cross-fade to a quiet, darker mean
+  // tone instead of packing into ruled scanlines
+  float spVis = spx * (1.0 + fr);
+  float lineK = smoothstep(2.2, 4.6, spVis);
+  ink = mix(clamp(2.0 * wpx / spx, 0.0, 0.5) * 0.45, ink, lineK);
   // a burin's pressure: a slow variation along each line (world x), different per line
   ink *= 0.86 + 0.14 * sin(xz.x * 0.21 / s0 + h11(lineId * 0.71) * 6.283);
   ink *= 1.0 - smoothstep(0.5, 1.2, b / (s0 * 2.0));               // when motion smears lines together, become tone
 
   float tone = (0.38 + 0.42 * sheen + 0.12 * crest) * mix(0.5, 1.0, pow(nearK, 1.2)) + 0.55 * colI;
   vec3 line = rampCol(tone) * (1.0 + 1.6 * max(colI - 0.4, 0.0) * (0.4 + 0.6 * nearS));
-  vec3 mist = uMist * (0.85 + 0.25 * fd);
+  // the water under the lines stays deep toward the horizon (never a lifted grey band); a dark haze softens the far field
+  vec3 mist = uMist * (0.85 - 0.25 * fd);
+  // caption shield: the hatch drops out under the line (ink removed) and the water darkens by about half
+  float shA = uHasShield == 1 ? clamp(uShieldK * texture(uShield, pxToUV(px)).a * 1.06, 0.0, 1.0) : 0.0;
+  ink *= 1.0 - shA;
   vec3 c = mix(mist, line, ink);
-  c = mix(c, uMist, smoothstep(0.55, 1.0, fd) * 0.4);
-  c = mix(c, uMist * 1.15, hzBand * 0.5 * uHazeI);
-  if (uHasShield == 1) c *= 1.0 - uShieldK * texture(uShield, pxToUV(px)).a;
+  c = mix(c, uMist * 0.55, smoothstep(0.55, 1.0, fd) * 0.55);
+  c = mix(c, uMist * 0.75, hzBand * 0.5 * uHazeI);
+  c *= 1.0 - 0.5 * shA;
   c = mix(sky, c, hzCov);
   o = vec4(c * uAlpha, uAlpha);
 }`);
@@ -459,6 +471,7 @@ void main(){
   vec2 xzx = seaHit(rdx), xzy = seaHit(rdy);
   float d = uCamP.y / max(-rd.y, 1e-5);
   float fp = max(length(xzx - xz), length(xzy - xz));
+  fp *= 1.0 + smoothstep(120.0, 300.0, d);                         // far field: one more level of wave filtering (no striping)
   float var, curv;
   vec2 g = seaGrad(xz, uTau, uAmp, fp, var, curv);
   vec3 N = normalize(vec3(-g.x, 1.0, -g.y));
@@ -499,14 +512,36 @@ void main(){
       spec += uSunCol * (uGlint.x * 0.02) * colm * step(0.86, fract(hv.x * 7.31 + hv.y)) * pt * (0.25 + gate * 4.0);
     }
   }
-  refl = refl * uReflect + spec;
+  refl = refl * uReflect;
   vec3 body = uDeep * (1.0 + 0.6 * max(N.x * 0.3 + 0.7, 0.0));
-  vec3 c = mix(body, refl, F) + spec * (1.0 - F);
+  vec3 c = mix(body, refl, F);
   // horizon haze: distance fog toward the mirrored horizon sky
   float fogK = 1.0 - exp(-d * uFog);
   vec3 fogC = (uHasMirror == 1 || uHasSky == 0 ? refl : texture(uSky, pxToUV(vec2(px.x, hzY(px.x) + 2.0))).rgb) + uHazeCol * uHazeI;
   c = mix(c, fogC, fogK * 0.85);
+  // the sun's light on the water survives the haze, so its path reaches all the way up to the horizon under the sun
+  c += spec * (1.0 - 0.3 * fogK);
   c += uHazeCol * haze * 0.6;
+  // the sun's glow does not stop at the horizon: its halo carries on over the water for a few tens of px, and the
+  // sky's horizon haze blends across the seam (no hard cut line under a low sun)
+  if (uSunOn > 0.0){
+    float below = max(px.y - hzY(px.x), 0.0);
+    if (below < 60.0){
+      vec3 rm = normalize(vec3(rd.x, -rd.y, rd.z));
+      float ca = dot(rm, uSun.xyz);
+      float ang = sqrt(max(2.0 * (1.0 - ca), 0.0));
+      float oo = max(ang - uSun.w, 0.0);
+      vec3 halo = uSunHaloCol * uSunHalo * (0.3 * exp(-oo / (uSun.w * 1.6)) + 0.08 * exp(-oo / (uSun.w * 6.0)) + 0.5 * pow(max(ca, 0.0), 800.0));
+      float sunUp = smoothstep(-0.02, 0.01, uSun.y + uSun.w);
+      c += halo * exp(-below / 12.0) * sunUp;
+      // the reflected sun meets its own disc: a short soft pillar straight under it, fading into the GGX path
+      vec2 spx_ = camProject(uSun.xyz);
+      float rpx = max(uSun.w * uF, 2.0);
+      c += uSunCol * 0.22 * exp(-pow((px.x - spx_.x) / (rpx * 0.40), 2.0)) * exp(-below / 30.0) * sunUp * smoothstep(-0.01, 0.02, uSun.y + uSun.w * 0.5);
+      vec3 skyH = (uHasSky == 1 ? texture(uSky, pxToUV(vec2(px.x, hzY(px.x) - 2.0))).rgb : uHz) + uHazeCol * uHazeI;
+      c = mix(c, max(c, skyH), 0.55 * exp(-below / 6.0));
+    }
+  }
   c = mix(sky, c, hzCov);
   o = vec4(c * uAlpha, uAlpha);
 }`);
@@ -716,8 +751,8 @@ void main(){
   float span = uFrame.y - hzv;
   float yv = pow(u1, 1.35);
   float y = hzv + 1.5 + span * yv;
-  float hw = uHW0 * uFrame.x + uHWK * (y - hzv);
-  float x = sp.x + hw * (u2 + u3 - 1.0) * 1.2;
+  float hw = uHW0 * uFrame.x + uHWK * (y - hzv) * (uFrame.x / 1920.0);
+  float x = sp.x + hw * (u2 + u3 - 1.0) * 1.35;
   float openK = 1.0 - smoothstep(uOpen - 0.08, uOpen, yv);
   vec3 rd = camRayL(vec2(x, y));
   vec2 xz = seaHit(rd);
@@ -727,7 +762,9 @@ void main(){
   vec2 g = seaGrad(xz, uTau, uAmp, max(fp, 1e-4) * 0.6, var, curv);
   vec3 N = normalize(vec3(-g.x, 1.0, -g.y));
   vec3 Hh = normalize(uSun.xyz - rd);
-  float gate = pow(max(dot(N, Hh), 0.0), uExp);
+  // the gate's lobe is widened (0.16 x the exponent): the path fans out toward the camera as a real sun path does
+  // (about 20 px wide at the horizon, a quarter of the frame wide at the bottom)
+  float gate = pow(max(dot(N, Hh), 0.0), uExp * 0.16);
   gate = smoothstep(0.02, 0.6, gate);
   float a = env * bright * gate * openK * smoothstep(-0.02, 0.01, uSun.y);
   float sz = (1.2 + 2.6 * yv) * (bright > 1.5 ? 1.4 : 1.0);
@@ -1066,7 +1103,7 @@ export function createSea(G) {
     const count = o.count == null ? 5000 : o.count;
     G.draw(P.glitter, Object.assign(u, waveTables(o.k0 || 0.35), sunUniforms(o.cam, o.sun, look), {
       uTau: tau, uAmp: o.amp == null ? 0.15 : o.amp, uDrag: o.drag == null ? 0.28 : o.drag,
-      uCount: count, uOpen: o.open == null ? 1 : o.open, uI: I, uHW0: o.width == null ? 0.05 : o.width, uHWK: o.widen == null ? 0.32 : o.widen,
+      uCount: count, uOpen: o.open == null ? 1 : o.open, uI: I, uHW0: o.width == null ? 0.011 : o.width, uHWK: o.widen == null ? 0.6 : o.widen,
       uExp: o.exp || 600, uBurst: bu, uGCol: col(o.color || '#FFE7A3', look),
     }), target, { blend: 'add', mode: G.gl.POINTS, count: count + 40 * 8 });
   };

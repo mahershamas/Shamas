@@ -1,32 +1,38 @@
 /*
   Scene 3: credit-horizon (22.5-30.0), package P5.
-  22.5-23.2 the title name burns away into dust: a noise front (biased to rise from the bottom) eats the gold leaf
-  with a hot ember rim, and every one of 6,000 grains sampled from the name leaves its own pixel the moment the front
-  reaches it, drifting up at 30 px/s and fading; the red dots and the line L1a fade with it. The brightest 600 grains
-  fall to the centre of the rule (y = 540) and become two pen tips that draw a 1.5 px gold hairline outward at about
-  600 px/s each way (520 px by 24.0). 24.0 the dateline L2a is set 18 px above the rule; 25.0 the line L2b below it.
-  28.0-29.2 the rule runs out to the full width (pen tips again); both lines leave 28.3-29.1. 28.8-30.0 the engraved
-  sea fades in under the rule (weight smoothstep(28.8, 30.0, t)); 29.0-30.0 the camera tilts down: the rule, the
-  stars and the sea's horizon slide together from y = 540 to y = 430 (portrait 960 -> 820), so the cut to scene 4 at
-  30.0 lands on its horizon. The grade blends winter-gold -> night-sea over the same window.
+  22.5-23.9 the title name burns away into dust (about 1.3 s): a soft noise front (biased to rise from the bottom)
+  eats the gold leaf with a hot ember rim, and every one of 6,000 grains sampled from the name leaves its own pixel
+  the moment the front reaches it, drifting up at 30 px/s and fading; the red dots go first (22.5-22.95) and the line
+  L1a fades with the name. The brightest 600 grains fall to the centre of the rule (y = 540) and become two pen tips
+  that draw a 1.5 px gold hairline outward at about 600 px/s each way (it frames the dateline by 24.0). 24.0 the
+  dateline L2a is set above the rule; 25.0 the line L2b below it. 23.5-29.0 the sky pushes in slowly and lifts (the
+  rule and the type stay locked). Both lines leave 27.8-28.6; 28.0-29.2 the rule runs out to the full width (pen tips
+  again). 28.8-30.0 the engraved sea fades in under the rule (weight smoothstep(28.8, 30.0, t)) and from 29.0 the
+  camera tilts down with scene 4's own horizon function, so the cut to scene 4 at 30.0 continues the same move.
+  29.3-30.0 the hairline hands over to scene 4's horizon rule and lights (drawn with scene 4's own fx and values), and
+  the post settings blend into scene 4's, so nothing pops at the cut. The grade blends winter-gold -> night-sea.
 
-  Hand-over contract with scene 4 (package P6): the sea at 30.0 is S.engraved with cam {h: 40, x: 0.5 tau4, z: 3 tau4,
-  pitch: horizonPitch(430 | 820), fovY: 0.6} (tau4 = t - 30), lights at x 230 / 1690 (portrait 150 / 930) at I 1,
-  stars 0.35, look night_sea. If scene 4 differs, change seaParams() below.
+  Hand-over contract with scene 4 (package P6): this scene reads scene 4's exported shoresHz / shoresCam / shoresSea
+  and its fxUniforms(ctx, t) and post(ctx, 0), so it always matches whatever scene 4 does at 30.0.
 */
 import S02, { layoutOf, nameEntry, GRAIN_GLSL, GRAIN_FS, DOTS_GLSL, DOTS_FS } from './s02_forge_name.js';
+import S04, { shoresHz, shoresCam, shoresSea, createShoreFx } from './s04_two_shores.js';
 import { SKY_GLSL, NEB_FS, skyColours, camAt } from './s01_forge_orbit.js';
 
 const T0 = 22.5;
 const N_DIS = 6000, N_PEN = 600;
 const Q_LEAD = 0.06;
+const Q_DUR = 1.3;          // the burn takes about 1.3 s (it held for 4.5 s: it must not vanish in a blink)
+const TL = 23.7;            // the pen grains arrive on the rule (the burn is mostly done: no rule through the letters)
+const HO0 = 29.3, HO1 = 30.0;   // hand-over window to scene 4's rule, lights and post
 
 // the dissolve field shared by the gold-leaf mask pass and the grains (frame px -> release order 0..1)
 const FIELD = `
 uniform vec4 uNameBox;      // x0, y0 (top), x1, y1 (bottom) of the ink
 uniform float uFU;
 float dissolveField(vec2 px){
-  float n = fbm(px * 0.021 / uFU + 3.3, 4);
+  // broad noise for the shape of the front plus a fine grain so its edge is ragged dust, never a clean cut shard
+  float n = fbm(px * 0.021 / uFU + 3.3, 4) + 0.16 * (vn(px * 0.22 / uFU + 7.7) - 0.5) + 0.08 * (vn(px * 0.6 / uFU + 1.9) - 0.5);
   float up = clamp((uNameBox.w - px.y) / max(uNameBox.w - uNameBox.y, 1.0), 0.0, 1.0);   // 0 at the bottom, 1 at the top
   return clamp(((n - 0.25) / 0.5) * 0.7 + up * 0.3, 0.0, 1.0);
 }`;
@@ -39,7 +45,9 @@ void main(){
   vec4 m = texture(uSrc, uv);
   vec2 px = uRect.xy + vec2(uv.x, 1.0 - uv.y) * uRect.zw;       // mask rows are bottom-up
   float n = dissolveField(px);
-  float keep = smoothstep(uQ, uQ + 0.035, n);
+  float keep = smoothstep(uQ, uQ + 0.09, n);
+  // the leaf just ahead of the front thins (it lights to embers and loses body) instead of standing as solid metal
+  keep *= mix(0.45, 1.0, smoothstep(uQ + 0.04, uQ + 0.28, n));
   o = vec4(m.r * keep, 0.0, 0.0, m.a);
 }`;
 
@@ -134,15 +142,7 @@ void main(){
 const RULE = `
 uniform vec2 uLC; uniform float uHalf, uY, uI, uTipI, uU;
 uniform vec3 uCore, uGlow;
-uniform vec2 uLx; uniform float uLI;
 out vec4 o;
-vec3 hzLight(vec2 px, vec2 p){
-  vec2 d = px - p;
-  float core = exp(-dot(d, d) / (2.0 * 2.0 * 2.0 * uU * uU));
-  float halo = exp(-length(d) / (14.0 * uU)) * 0.35;
-  float streak = exp(-abs(d.y) / (1.2 * uU)) * exp(-abs(d.x) / (45.0 * uU)) * 0.5;
-  return uCore * (core * 3.0 + streak) + uGlow * halo;
-}
 void main(){
   vec2 px = framePx();
   float dx = max(abs(px.x - uLC.x) - uHalf, 0.0);
@@ -160,7 +160,6 @@ void main(){
   float tp = exp(-pow(length(px - t1) / (12.0 * uU), 2.0)) + exp(-pow(length(px - t2) / (12.0 * uU), 2.0));
   float tc = exp(-pow(length(px - t1) / (2.5 * uU), 2.0)) + exp(-pow(length(px - t2) / (2.5 * uU), 2.0));
   vec3 c = (uCore * core + uGlow * glow * 0.10) * uI * taper + (uGlow * tp * 0.5 + uCore * tc * 2.2) * uTipI;
-  if (uLI > 0.0) c += (hzLight(px, vec2(uLx.x, uY)) + hzLight(px, vec2(uLx.y, uY))) * uLI;
   o = vec4(c, 0.0);
 }`;
 
@@ -183,18 +182,18 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
   vGlint = 0.0;
   int j = id;
   int gid = id + uNName;
+  vStr = vec4(0.0);
   vec3 c = grainCol(gid);
   float spark = step(hh(gid, 5.0), 0.03);
-  float bri = 0.35 + 1.5 * pow(hh(gid, 8.0), 3.0);
-  vec2 B = burstPos(gid, e, true);
-  B += swirl(B, e) * 0.8;
+  float bri = grainBri(gid);
+  vec2 B = dustPos(gid, e);
   float da = hh(gid, 12.0) * TAU;
   B += normalize(vec2(cos(da), sin(da) * 0.6 - 0.7)) * 4.0 * uU * max(e - 8.0, 0.0);
   px = uC + (B - uC) * uPush;
-  size = mix(1.1, 2.2, hh(gid, 13.0)) * uU;
+  size = mix(1.0, 2.0, hh(gid, 13.0)) * grainSize(gid) * uU;
   float tw = 0.55 + 0.45 * sin(t * (1.3 + 3.0 * hh(gid, 14.0)) + hh(gid, 15.0) * TAU);
   float I = 0.45 * (0.4 + 0.6 * exp(-0.3 * e)) * tw * (1.0 + 3.0 * spark) * bri;
-  col = vec4(min(c * I, vec3(6.0)), uDustI);
+  col = vec4(min(c * I, vec3(6.0)), uDustI * cloudFeather(px - uShake) * grainShield(px));
 }`, { fs: GRAIN_FS }),
       dots: particles.program('s02.dots', DOTS_GLSL, { fs: DOTS_FS }),
     };
@@ -206,49 +205,69 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
     const P = ctx.portrait;
     this.geo = {
       LC: P ? [540, 960] : [960, 540],          // rule centre
-      half0: 260,                               // 520 px by 24.0
-      halfMid: P ? 450 : null,                  // portrait: 520 -> 900, then the full width as it becomes the horizon
-      hzEnd: P ? 820 : 430,
-      capsY: P ? 932 : 512, fromY: P ? 1010 : 590, x: P ? 540 : 960,
-      lights: P ? [150, 930] : [230, 1690],
+      // small caps at the house minimum (30 px landscape, 34 portrait), the from-line at a readable italic size
+      capsY: P ? 922 : 506, fromY: P ? 1024 : 598, x: P ? 540 : 960,
+      capsSize: P ? 34 : 30, fromSize: P ? 50 : 48,
     };
+    const g = this.geo;
+    // the opening rule frames the dateline (its ink plus 40 px a side, at least 600 px in all)
+    const dm = ctx.text.measure(this.dateEntry(0)), fm = ctx.text.measure(this.fromEntry(0));
+    const dHalf = (dm.inkR - dm.inkL) / 2, fHalf = (fm.inkR - fm.inkL) / 2;
+    g.half0 = Math.round(Math.min(ctx.W / 2 - 60, Math.max(300, dHalf + 40)));
+    // portrait: the rule widens once more as the lines leave, then runs out to the full width
+    g.halfMid = P ? Math.min(ctx.W / 2 - 30, g.half0 + 60) : null;
+    // star and grain shield of the two lines (frame px)
+    const hw = Math.max(dHalf, fHalf) + 30;
+    g.textBox = [g.x - hw, g.capsY - dm.asc - 14, g.x + hw, g.fromY + fm.desc + 14];
+    this.fx = createShoreFx(ctx);
   },
-  // continuous act-I camera: the scene-2 rest pose (push held at 1.03)
-  skyCam(ctx) { const c = camAt(12, ctx.W); return { s: c.s * 1.03, rot: c.rot }; },
-  tilt(ctx, t) { return ctx.tl.seg(t, 29.0, 30.0, ctx.tl.E.inOutSine); },
-  seaCam(ctx, t) {
-    const tau4 = t - 30.0;
-    const y0 = this.geo.LC[1], y1 = this.geo.hzEnd;
-    const hz = y0 + (y1 - y0) * this.tilt(ctx, t);
-    return { h: 40, x: 0.5 * tau4, z: 3 * tau4, pitch: ctx.horizonPitch(hz, ctx.H, 0.6), fovY: 0.6 };
+  dateEntry(tau) {
+    const g = this.geo;
+    return { lineId: 'L2a', tau, x: g.x, y: g.capsY, style: { base: 'caps', size: g.capsSize, tracking: 0.30 },
+      enter: { base: 'caps', dur: 0.6, stagger: 0.015 }, exit: { at: 27.8 - 24.0, kind: 'default' } };
   },
-  ruleY(ctx, t) { return ctx.sea.horizonY(this.seaCam(ctx, t), this.geo.LC[0]); },
+  fromEntry(tau) {
+    const g = this.geo;
+    return { lineId: 'L2b', tau, x: g.x, y: g.fromY, style: { base: 'narrative', size: g.fromSize }, exit: { at: 27.8 - 25.0, kind: 'default' } };
+  },
+  // continuous act-I camera: the scene-2 rest pose (push held at 1.03), then a slow push and lift while the credit
+  // holds (the sky only; the rule and the type stay locked)
+  skyCam(ctx, t) {
+    const c = camAt(12, ctx.W), tl = ctx.tl;
+    const k = tl.seg(t, 23.5, 29.0, tl.E.inOutSine);
+    return { s: c.s * 1.03 * (1 + 0.015 * k), rot: c.rot, lift: -6 * ctx.U * k, push: 1.03 * (1 + 0.015 * k) };
+  },
+  // the sea camera and horizon are scene 4's own functions (valid before 30.0): one move across the cut
+  seaCam(ctx, t) { return shoresCam(ctx, t); },
+  ruleY(ctx, t) { return shoresHz(ctx, t); },
+  // hand-over weight to scene 4's rule, lights and post
+  handover(ctx, t) { return ctx.tl.seg(t, HO0, HO1, ctx.tl.E.inOutSine); },
   // half-length of the rule
   ruleHalf(ctx, t) {
     const g = this.geo, tl = ctx.tl;
-    const TL = 23.15;
     let h = 0;
     if (t > TL) {
-      // 600 px/s each way, easing into its 260 px half-length (reached at about 23.65)
-      const lin = 600 * (t - TL);
-      h = lin < 180 ? lin : 180 + 80 * tl.E.outCubic(tl.clamp01((lin - 180) / 160));
+      // 700 px/s each way, easing into its half-length (complete by about 24.25, while the dateline sets)
+      const lin = 700 * (t - TL), a = Math.min(180, g.half0 * 0.6);
+      h = lin < a ? lin : a + (g.half0 - a) * tl.E.outCubic(tl.clamp01((lin - a) / (1.5 * (g.half0 - a))));
     }
     const full = ctx.W / 2 + 40;
     if (g.halfMid) {
-      h += (g.halfMid - g.half0) * tl.seg(t, 28.0, 29.2, tl.E.inOutCubic);
-      h += (full - g.halfMid) * tl.seg(t, 29.2, 30.0, tl.E.inOutSine);
+      // portrait: full width by 29.3, before the hand-over to scene 4's full-width rule begins
+      h += (g.halfMid - g.half0) * tl.seg(t, 28.0, 28.7, tl.E.inOutCubic);
+      h += (full - g.halfMid) * tl.seg(t, 28.7, 29.3, tl.E.inOutSine);
     } else h += (full - g.half0) * tl.seg(t, 28.0, 29.2, tl.E.inOutCubic);
     return h;
   },
   render(ctx, tau, p, target) {
     const { G, tl, sea } = ctx;
     const t = T0 + tau;
-    const cam = this.skyCam(ctx);
+    const cam = this.skyCam(ctx, t);
     const C = this.L.C;
     const w = tl.smoothstep(28.8, 30.0, t);
     const hz = this.ruleY(ctx, t);
-    const dy = hz - this.geo.LC[1];                    // the sky slides with the tilt
-    const drift = [0, dy / cam.s];
+    const dy = hz - this.geo.LC[1];                    // the sky slides with the tilt (and lifts during the hold)
+    const drift = [0, (dy + cam.lift) / cam.s];
     const dim = 0.5 - 0.15 * tl.seg(t, 28.5, 30.0, tl.E.inOutSine);
     const neb = G.target('s03.neb', ctx.W * 0.5 * target.scale, ctx.H * 0.5 * target.scale, { scale: 0.5 * target.scale });
     G.draw(this.P.neb, { uC: C, uDrift: drift, uCamS: cam.s, uCamRot: cam.rot, uVis: 1,
@@ -259,42 +278,59 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
       const sp = this.seaParams(ctx, t);
       sea.engraved(target, Object.assign(sp, { alpha: w, blend: 'premul' }));
     }
-    // the rule (fades into the sea's own horizon at the hand-over)
+    // the rule: scene 3's drawn hairline, crossfading 29.3-30.0 into scene 4's own horizon rule and lights (scene 4's
+    // fx with scene 4's values at 30.0), so the cut is seamless
     const half = this.ruleHalf(ctx, t);
-    const li = tl.seg(t, 29.3, 30.0, tl.E.inOutSine);
-    if (half > 0.5 || li > 0) {
-      const tipDraw = tl.seg(t, 23.15, 23.3) * (1 - tl.seg(t, 23.6, 24.3, tl.E.inOutSine));
+    const ho = this.handover(ctx, t);
+    if (half > 0.5 && ho < 1) {
+      const tipDraw = tl.seg(t, TL, TL + 0.15) * (1 - tl.seg(t, TL + 0.5, 24.3, tl.E.inOutSine));
       const tipExt = tl.smoothstep(27.9, 28.3, t) * (1 - tl.smoothstep(29.0, 29.4, t));
-      const I = (1 - tl.seg(t, 29.3, 30.0, tl.E.inOutSine)) * (0.75 + 0.25 * tl.smoothstep(23.15, 23.5, t));
-      G.draw(this.P.rule, { uLC: this.geo.LC, uHalf: half, uY: hz, uI: I, uTipI: 0.9 * tipDraw + 0.6 * tipExt, uU: ctx.U,
-        uCore: this.col.ruleCore, uGlow: this.col.ruleGlow, uLx: this.geo.lights, uLI: li }, target, { blend: 'add' });
+      const I = (1 - ho) * (0.75 + 0.25 * tl.smoothstep(TL, TL + 0.35, t));
+      G.draw(this.P.rule, { uLC: this.geo.LC, uHalf: half, uY: hz, uI: I, uTipI: (0.9 * tipDraw + 0.6 * tipExt) * (1 - ho), uU: ctx.U,
+        uCore: this.col.ruleCore, uGlow: this.col.ruleGlow }, target, { blend: 'add' });
     }
+    if (ho > 0) this.fx.draw(target, this.handoverFx(ctx, t, ho));
+  },
+  // scene 4's horizon rule and lights, weighted by the hand-over: its values at 30.0 times ho (positions at t)
+  handoverFx(ctx, t, ho) {
+    const has = typeof S04.fxUniforms === 'function' && S04.arc;
+    const u = has ? S04.fxUniforms(ctx, t) : null, u30 = has ? S04.fxUniforms(ctx, HO1) : null;
+    const hz = this.ruleY(ctx, t);
+    if (!u) return { uRule: [hz, ho, 0, 0] };
+    const lt = Float32Array.from(u.uLt);
+    lt[2] = u30.uLt[2] * ho; lt[6] = u30.uLt[6] * ho;
+    return { uRule: [u.uRule[0], u30.uRule[1] * ho, u.uRule[2], u.uRule[3]], uLt: lt, uLtS: u.uLtS, uRoll: u.uRoll || 0 };
   },
   shields(ctx, t) {
-    const g = this.geo, s2 = S02;
+    const s2 = S02;
     const r = new Float32Array(12);
     if (t < 23.6) r.set(s2.shields().subarray(0, 8));
-    else r.set([g.x - 290, g.capsY - 26, g.x + 290, g.fromY + 14]);
+    else r.set(this.geo.textBox);
     return r;
   },
+  // scene 4's sea at t, its lights at their 30.0 level times the hand-over weight
   seaParams(ctx, t) {
-    const tau4 = t - 30.0;
-    const li = ctx.tl.seg(t, 29.3, 30.0, ctx.tl.E.inOutSine);
-    return { tau: tau4, cam: this.seaCam(ctx, t), stars: 0.35, lights: this.geo.lights.map(x => [x, li]) };
+    const sp = shoresSea(ctx, t), s30 = shoresSea(ctx, HO1), ho = this.handover(ctx, t);
+    sp.lights = sp.lights.map((l, i) => { const o = l.slice(); o[1] = (s30.lights[i] ? s30.lights[i][1] : 0) * ho; return o; });
+    return sp;
   },
   overlay(ctx, tau, p, target) {
     const { G, tl, particles, text, gold } = ctx;
     const t = T0 + tau;
     const s2 = S02;
-    // ejecta dust of scene 2 continues, then fades
-    const dustI = 1 - tl.seg(t, 24.0, 29.0, tl.E.inOutSine);
+    // ejecta dust of scene 2 keeps drifting at 4 px/s with the sky, then fades before the sea arrives
+    const dustI = 1 - tl.seg(t, 27.0, 28.6, tl.E.inOutSine);
     if (dustI > 0) {
+      const cam = this.skyCam(ctx, t);
       const u = s2.grainUniforms(ctx, t, { uDustI: dustI, uNName: 18000 });
-      u.uPush = 1.03; u.uShake = [0, this.ruleY(ctx, t) - this.geo.LC[1]];
+      u.uPush = cam.push; u.uShake = [0, this.ruleY(ctx, t) - this.geo.LC[1] + cam.lift];
+      // grain shield: the title's caps line while it leaves, then the two credit lines
+      if (t < 23.6) u.uGShieldK = 0.8 * (1 - tl.seg(t, 22.5, 23.3));
+      else { u.uGShield = this.geo.textBox; u.uGShieldK = 0.8 * tl.seg(t, 23.8, 24.6) * (1 - tl.seg(t, 27.8, 28.6)); }
       particles.draw(this.P.dust, 6000, u, target);
     }
-    // the burning name
-    const q = (t - T0) / 0.55 - Q_LEAD;          // nothing has burned yet at 22.5 (continuity with scene 2)                                   // front progress (field units)
+    // the burning name: front progress in field units; nothing has burned yet at 22.5 (continuity with scene 2)
+    const q = (t - T0) / Q_DUR - Q_LEAD;
     const box = [s2._ink[0], s2._ink[2], s2._ink[1], s2._ink[3]];
     const fieldU = { uNameBox: box, uFU: ctx.U };
     if (q < 1.15) {
@@ -305,24 +341,27 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
         const mt = G.acquire(r[2], r[3], { format: 'rgba8', mips: true });
         G.draw(this.P.mask, Object.assign({ uSrc: m.rt, uRect: r, uQ: q }, fieldU), mt);
         G.mipmaps(mt);
-        const size = m.lay.line.size;
-        const lod = Math.min(2.8, Math.max(0.5, Math.log2(size / 40)));
+        const size = m.lay.line.size, U = ctx.U;
+        // the same bevel as gold.drawText gives the title in scene 2 (continuity at 22.5), narrowing to lod 1.5 as the
+        // burn starts so no blocky islands of leaf survive
+        const lod0 = Math.min(2.0, Math.max(0.5, Math.log2(size / 40)));
+        const lod = lod0 + (Math.min(lod0, 1.5) - lod0) * tl.seg(t, 22.5, 22.8, tl.E.inOutSine);
         const g = s2.nameGold(ctx, t);
-        gold.draw(target, { mask: mt, rect: r, maskFlipY: true, textMask: true, lod, blend: 'add', detail: 1,
-          key: g.key, keyZ: size * 2.5 + 120 * ctx.U, keyI: g.keyI });
+        gold.draw(target, { mask: mt, rect: r, maskFlipY: true, textMask: true, lod, bump: size >= 160 * U ? 8.5 : 6, blend: 'add',
+          detail: Math.min(1, Math.max(0, (size - 50 * U) / (60 * U))), key: g.key, keyZ: size * 2.5 + 120 * U, keyI: g.keyI });
         G.draw(this.P.ember, Object.assign({ uSrc: m.rt, uRect: r, uQ: q, uI: 1.0, uHot: this.col.ember }, fieldU), target,
           { blend: 'add', mode: G.gl.TRIANGLE_STRIP, count: 4 });
         G.release(mt);
       }
       text.releaseMask(m);
     }
-    // red dots fade with the name
-    const df = 1 - tl.seg(t, 22.5, 23.2, tl.E.inOutSine);
+    // the red dots go first, before the front reaches the capital
+    const df = 1 - tl.seg(t, 22.5, 22.95, tl.E.inCubic);
     if (df > 0) particles.draw(this.P.dots, 56, { uTau: t, uDots: s2._dots, uT0: 19.0, uFade: df, uU: ctx.U, uRed: s2.col.red, uHi: s2.col.redHi }, target);
     // grains of the name
     if (t < 26.0) {
       particles.draw(this.P.dis, N_DIS, Object.assign({
-        uTau: t, uHome: s2._home, uU: ctx.U, uQ0: T0 + 0.55 * Q_LEAD, uQdur: 0.55, uSeed: 5.1, uLen0: this.geo.half0, uTL: 23.15,
+        uTau: t, uHome: s2._home, uU: ctx.U, uQ0: T0 + Q_DUR * Q_LEAD, uQdur: Q_DUR, uSeed: 5.1, uLen0: this.geo.half0, uTL: TL,
         uHalf: Math.min(this.ruleHalf(ctx, t), this.geo.half0), uLC: [this.geo.LC[0], this.ruleY(ctx, t)],
         uC1: this.col.p1, uC2: this.col.p2, uC3: this.col.p3, uHot: this.col.hot,
       }, fieldU), target);
@@ -333,18 +372,24 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
     const out = [];
     // L1a (set in scene 2) leaves with the name
     if (t < 23.5) out.push({ lineId: 'L1a', tau: t - 15.0, x: this.L.capsX, y: this.L.capsY, style: 'caps', exit: { at: 22.5 - 15.0, kind: 'default' } });
-    out.push({ lineId: 'L2a', tau: t - 24.0, x: g.x, y: g.capsY, style: { base: 'caps', size: 20, tracking: 0.36 },
-      enter: { base: 'caps', dur: 0.6, stagger: 0.015 }, exit: { at: 28.3 - 24.0, kind: 'default' } });
-    out.push({ lineId: 'L2b', tau: t - 25.0, x: g.x, y: g.fromY, style: { base: 'narrative', size: 40 }, exit: { at: 28.3 - 25.0, kind: 'default' } });
+    // both lines are gone by 28.6, before the sea begins to show under the rule
+    out.push(this.dateEntry(t - 24.0));
+    out.push(this.fromEntry(t - 25.0));
     return out;
   },
   lookAt(ctx, tau) {
     const w = ctx.tl.smoothstep(28.8, 30.0, T0 + tau);
     return w <= 0 ? 'winter_gold' : [{ look: 'winter_gold', w: 1 }, { look: 'night_sea', w }];
   },
+  // chromatic aberration stays at about a pixel in the corners over the engraving; 29.3-30.0 every post setting
+  // blends into scene 4's at 30.0 (its look and its post()), so the grade, bloom and lens do not jump at the cut
   post(ctx, tau) {
-    const w = ctx.tl.smoothstep(28.8, 30.0, T0 + tau);
-    return { ghosts: 0, streak: { strength: 0.0 }, ca: 0.0012 + (0.006 - 0.0012) * w };
+    const t = T0 + tau, ho = this.handover(ctx, t);
+    const own = { ghosts: 0, streak: { strength: 0.0 }, ca: 0.0012 };
+    if (ho <= 0 || !ctx.post || !ctx.post.lerp) return own;
+    const a = ctx.post.params(this.lookAt(ctx, tau), own);
+    const b = ctx.post.params(S04.lookAt ? S04.lookAt(ctx, 0) : S04.look, S04.post ? S04.post(ctx, 0) || {} : {});
+    return ctx.post.lerp(a, b, ho);
   },
 };
 export default scene;

@@ -26,7 +26,7 @@
         P(theta + thMax/m) == P(theta) (m > 1 means the parameter range traces one curve m times, i.e. not one clean
         strand); components: 1 for a single closed strand traced once, otherwise m (0 if open).
         minPassGap is the shortest arc between consecutive passages; it must exceed cutLength = gapFactor * ribbon.
-  promiseKnot({cx = 960, cy = 470, R = 170, rotation, samples}) -> Knot     scene 12: lobes 4, turns 3
+  promiseKnot({cx = 960, cy = 470, R = 170, rotation, samples}) -> Knot     scene 12: lobes 4, turns 3, inner 0.68, amp 0.32
   seatKnot({cx = 0, cy = 0, size = 64, rotation, startNear, samples}) -> Knot   scene 7/13: r = R(0.6 + 0.4 cos(2 theta/3)),
         theta in [0, 6 PI), R = size / 2 (about 64 px across)
   roundelKnot({R = 27}) -> Knot                                  the corner-roundel spiral knot (lobes 3, turns 2, swirled)
@@ -221,7 +221,9 @@ export function verifyKnot(k, { ribbon = 0, gapFactor = 2.2 } = {}) {
 }
 
 export function promiseKnot({ cx = 960, cy = 470, R = 170, rotation = 0, samples = 3000 } = {}) {
-  const c = roseCurve({ cx, cy, R, lobes: 4, turns: 3, inner: 0.6, amp: 0.4, rotation });
+  // inner 0.68 / amp 0.32 (spec: 0.6 / 0.4): the inner minima then bend with a curvature radius (~60 px) well above
+  // the ribbon width, so the ribbon's inner edge never folds into a kink
+  const c = roseCurve({ cx, cy, R, lobes: 4, turns: 3, inner: 0.68, amp: 0.32, rotation });
   return closedKnot(c.P, c.thMax, { samples, center: [cx, cy] });
 }
 export function seatKnot({ cx = 0, cy = 0, size = 64, rotation = 0, startNear = null, samples = 900 } = {}) {
@@ -353,12 +355,13 @@ float knotGoldS(vec3 N, vec2 fpx, vec2 opx, float thick, float nvar){
   float crack = (1.0 - smoothstep(0.0, 0.06, edge)) * thick * detail;
   float mott = lf.g;
   float grain = lf.a * thick * detail;
-  float rough = 0.32 + 0.18 * crack;
+  float rough = 0.22 + 0.20 * crack;
   rough = min(sqrt(rough * rough + nvar), 0.9);          // specular anti-aliasing: the lobe widens with the normal's spread over the pixel
-  float up = -N.y;
-  float env = 0.54 + 0.50 * up - 0.06 * N.x;
+  // burnished-leaf environment of gold.js (studio sky, deep floor, dark reflected horizon band), slightly softened
+  // for the ribbons' rounder cushion so the knotwork keeps its polished, even read
+  float env = mix(0.54 + 0.50 * (-N.y) - 0.06 * N.x, goldEnv(N), 0.6);
   float broad = lf.b;
-  env = max(env, 0.16) * (0.76 + 0.48 * broad) * (0.95 + 0.10 * mott);
+  env = max(env, 0.10) * (0.72 + 0.56 * broad) * (0.94 + 0.12 * mott);
   vec3 V = vec3(0.0, 0.0, 1.0);
   vec3 L = normalize(vec3(uKey.xy - fpx, uKey.z));
   float sharp = 0.12 * (0.35 + 0.65 * detail) * uSpecK;
@@ -372,7 +375,7 @@ float knotGoldS(vec3 N, vec2 fpx, vec2 opx, float thick, float nvar){
     float b = exp(-pow((fpx.x - uSweep.x + (fpx.y - uSweepY) * uSweep.w) / max(uSweep.y, 1.0), 2.0));
     s += uSweep.z * b * (0.35 + 0.65 * smoothstep(0.75, 1.0, N.z)) * (1.0 - 0.5 * crack);
   }
-  s *= (1.0 - 0.12 * crack) * (0.96 + 0.08 * grain);
+  s *= (1.0 - 0.18 * crack) * (0.96 + 0.08 * grain);
   return s;
 }
 // ribbon shading. sdf (object px, < 0 inside) with its frame-space gradient g (unit, outward); d = signed offset from
@@ -496,6 +499,20 @@ void main(){
     float bx = clamp(p.x, c0.x, c1.x), by = clamp(p.y, c0.y, c1.y);
     float db = length(p - vec2(bx, c1.y)), dl = length(p - vec2(c0.x, by)), dt = length(p - vec2(bx, c0.y)), dr = length(p - vec2(c1.x, by));
     float m = min(min(db, dl), min(dt, dr));
+#if MITRE
+    // mitred corners: the side is chosen by the diagonal through the nearest corner (also outside the corner, where
+    // the nearest-side rule ties), and each side is clipped on that diagonal so its strands, fillets and keyline end
+    // in a clean picture-frame seam
+    vec2 cc = vec2(p.x < ctr.x ? c0.x : c1.x, p.y < ctr.y ? c0.y : c1.y);
+    vec2 sg = vec2(p.x < ctr.x ? -1.0 : 1.0, p.y < ctr.y ? -1.0 : 1.0);
+    float ma = (p.x - cc.x) * sg.x, mb = (p.y - cc.y) * sg.y;   // > 0 outside the centreline rect, per axis
+    bool horiz = mb > ma;
+    m = horiz ? (p.y < ctr.y ? dt : db) : (p.x < ctr.x ? dl : dr);
+    if (horiz){ db = p.y < ctr.y ? 1e9 : m; dt = p.y < ctr.y ? m : 1e9; dl = 1e9; dr = 1e9; }
+    else { dl = p.x < ctr.x ? m : 1e9; dr = p.x < ctr.x ? 1e9 : m; db = 1e9; dt = 1e9; }
+    clip = (horiz ? (ma - mb) : (mb - ma)) * 0.70710678 + 0.6;
+    gclip = (horiz ? vec2(sg.x, -sg.y) : vec2(-sg.x, sg.y)) * 0.70710678;
+#endif
     float W = uBand.z, H = uBand.w;
     float u;
     if (m == db){ t = vec2(-1.0, 0.0); n = vec2(0.0, 1.0); s = -(p.x - ctr.x); d = p.y - c1.y; u = s; }
@@ -514,7 +531,13 @@ void main(){
 #endif
   }
 #endif
-  float o_ = rd - uReveal;                                      // > 0 beyond the pen
+  // the pen front is a rounded cap centred on the tip (the fillets and keylines end behind it, never as square ticks)
+  // and is feathered over 10 px; both flatten out as the two fronts meet so the closed band has no seam
+  float meet = clamp((uP * 0.5 - uReveal) / (2.0 * (uHalfW + 2.0)), 0.0, 1.0);
+  float capR = uHalfW + 2.0;
+  float back = (capR - sqrt(max(capR * capR - d * d, 0.0))) * meet;
+  float o_ = rd - (uReveal - back);                             // > 0 beyond the pen
+  float frontFade = 1.0 - smoothstep(-10.0 * meet - 1e-3, 0.0, o_) * step(1e-3, meet);
   float wetS = uWet * exp(-max(uReveal - rd, 0.0) / 40.0) * step(uReveal, uP * 0.4999) * step(o_, 0.0);
   vec2 lo = normalize(fpx - uKey.xy) * 2.6;                    // drop-shadow offset, away from the key light
   vec2 nFr = RX * n, gR = RX * grd, gC = RX * gclip;
@@ -593,7 +616,7 @@ void main(){
   col.a += sh * uShadow * (1.0 - col.a);
   // the ribbons never overlap (under strands are cut clear of the over strand): one gold evaluation per fragment
   vec4 r = ribbon(best, bG, bD, bN, bHw, bKl, pw, bGr, bAo, wetS, fpx, opx);
-  o = over(r, col) * uOpacity;
+  o = over(r, col) * uOpacity * frontFade;
 }`;
 const fsBand = defs => frag(defs + COMMON_GLSL + BAND_BODY);
 
@@ -626,7 +649,8 @@ void main(){
   gcen = rot2(uXf.w) * gcen;
   float sdRing = dcen - hw;
   // field (verdigris) and the red-lead rule just inside the ring
-  float fa = smoothstep(0.05, 0.55, pr);
+  // the tincture field and rule come in with the roundel's own knot (never as a flat disc before the knotwork)
+  float fa = pow(clamp((pr - 0.22) / 0.78, 0.0, 1.0), 1.5);
   float rf = rr - hw - 1.0 * S;
   float cf = clamp(0.5 - (r - rf) / pw, 0.0, 1.0) * fa;
   vec2 opx = q / S + 40.0;
@@ -791,11 +815,11 @@ out vec4 o;
 void main(){
   vec2 d = (vPx - uS.xy) / uSz;
   float r = length(d);
-  float core = exp(-r * r / (2.0 * 2.6 * 2.6));
-  float halo = exp(-r / 5.0) * 0.40 + exp(-r / 16.0) * 0.06;
-  float star = (exp(-abs(d.y) / 0.8) * exp(-abs(d.x) / 18.0) + exp(-abs(d.x) / 0.8) * exp(-abs(d.y) / 18.0)) * 0.28;
+  // a small, warm, soft point: no cross spikes (the stars are the only cross-shaped lights)
+  float core = exp(-r * r / (2.0 * 2.2 * 2.2));
+  float halo = exp(-r / 4.5) * 0.45 + exp(-r / 14.0) * 0.07;
   float win = 1.0 - smoothstep(0.45, 1.0, length(vPx - uS.xy) / uS.z);   // falls to 0 inside the quad
-  o = vec4((uHot * (core * 1.6 + star) + uWarm * halo) * uI * win, 0.0);
+  o = vec4((mix(uWarm, uHot, 0.55) * core * 1.3 + uWarm * halo) * uI * win, 0.0);
 }`);
 const FS_RINGL = frag(`
 uniform vec4 uS; uniform float uR, uW, uI; uniform vec3 uC;
@@ -880,7 +904,9 @@ export function createKnot(G, gold) {
 
   K.penTip = function (target, { x, y, I = 5, size = 1 } = {}) {
     const sz = size * U;
-    G.draw(P.tip, { uS: [x, y, 64 * sz, 0], uI: I, uSz: sz, uHot: hot(), uWarm: warm() }, target, { blend: 'add', mode: gl.TRIANGLE_STRIP, count: 4 });
+    // intensity saturates (2.6 max): a nib is a soft working light, never a flare that triggers the anamorphic streak
+    const Ie = 2.6 * (1 - Math.exp(-Math.max(0, I) / 2.6));
+    G.draw(P.tip, { uS: [x, y, 48 * sz, 0], uI: Ie, uSz: sz, uHot: hot(), uWarm: warm() }, target, { blend: 'add', mode: gl.TRIANGLE_STRIP, count: 4 });
   };
   K.ring = function (target, { center, r, width = 10, I = 1, color = null } = {}) {
     const ext = r + width * 6 + 8;
@@ -924,7 +950,7 @@ export function createKnot(G, gold) {
     const tinct = o.tincture ? sceneCol(o.tincture, o.look || 'winter_gold') : [0, 0, 0];
     if (prog > 0) {
       const pr = variantProg('band', { RING: 0, NSTR: strands, TINCT: o.tincture ? 1 : 0, FILLET: o.fillets === false ? 0 : 1, CLIP: roundels ? 1 : 0,
-        FILL: o.fillI ? 1 : 0, GROOVE: o.groove === false ? 0 : 1 });
+        MITRE: !roundels && o.mitre !== false ? 1 : 0, FILL: o.fillI ? 1 : 0, GROOVE: o.groove === false ? 0 : 1 });
       G.draw(pr, Object.assign(common(o, r, hw), {
         uQuads: quads, uBand: r, uRing: [0, 0, 0, 0], uRot: 0, uP: Pm,
         uHalfW: width / 2, uAmp: amp, uOmega: omega, uHw: hw, uGap: gap, uKl: kl, uReveal: reveal,
@@ -934,6 +960,8 @@ export function createKnot(G, gold) {
     }
     // corner roundels draw as a tip passes: loop distance of each corner from the start
     const cornerU = [W / 2, W / 2 + H, W / 2 + H, W / 2];   // bl, tl, tr, br (each reached by one of the two tips)
+    // the band's own pen tips: a roundel's knot shows no second glint while a band tip is within 60 px (one per tip)
+    const bandTips = prog > 0 && prog < 1 && o.tips !== false ? [K.band.rectPoint(o, reveal), K.band.rectPoint(o, -reveal)] : [];
     const corners = [[r[0], r[1] + H], [r[0], r[1]], [r[0] + W, r[1]], [r[0] + W, r[1] + H]];
     const span = o.roundelSpan || 300;
     const rps = [];
@@ -944,7 +972,7 @@ export function createKnot(G, gold) {
         if (rp <= 0) continue;
         // the tip arrives from the side it travelled along: bl/br from the bottom side, tl/tr from the vertical sides
         const entry = [0, Math.PI / 2, Math.PI / 2, Math.PI][i];
-        K.roundel(target, Object.assign({}, o, { center: corners[i], size: rs, progress: rp, rotation: [Math.PI * 1.5, 0, Math.PI * 0.5, Math.PI][i], entry,
+        K.roundel(target, Object.assign({}, o, { center: corners[i], size: rs, progress: rp, rotation: [Math.PI * 1.5, 0, Math.PI * 0.5, Math.PI][i], entry, tipAvoid: bandTips,
           field: (o.roundelTinctures && o.roundelTinctures.field) || '#2F7D6B', rule: (o.roundelTinctures && o.roundelTinctures.rule) || '#C2452D' }));
       }
     }
@@ -974,7 +1002,7 @@ export function createKnot(G, gold) {
     const tinct = o.tincture ? sceneCol(o.tincture, o.look || 'winter_gold') : [0, 0, 0];
     if (prog > 0) {
       const groove = o.groove == null ? (hw >= 4 ? 1 : 0) : (o.groove ? 1 : 0);
-      const pr = variantProg('ring', { RING: 1, NSTR: strands, TINCT: o.tincture ? 1 : 0, FILLET: fil ? 1 : 0, CLIP: 0, FILL: o.fillI ? 1 : 0, GROOVE: groove });
+      const pr = variantProg('ring', { RING: 1, NSTR: strands, TINCT: o.tincture ? 1 : 0, FILLET: fil ? 1 : 0, CLIP: 0, MITRE: 0, FILL: o.fillI ? 1 : 0, GROOVE: groove });
       G.draw(pr, Object.assign(common(o, [cx - r1, cy - r1, 2 * r1, 2 * r1], hw), {
         uRingVS: [C[0], C[1], Math.max(0, (r0 - 6) * X.sc), (r1 + 6) * X.sc], uSegs: segs,
         uBand: [0, 0, 0, 0], uRing: [cx, cy, rm, start], uRot: rot, uP: TAU * rm,
@@ -1035,7 +1063,8 @@ export function createKnot(G, gold) {
     let tip = null;
     if (prog < 1) {
       tip = K.tipAt(kt, prog, { center: ctr, scale: sc, rotation: rot });
-      if (o.tips !== false) K.penTip(target, { x: tip[0], y: tip[1], I: o.tipI == null ? (thread ? 2 : 5) : o.tipI, size: thread ? 0.5 * sc : sc });
+      const near = (o.tipAvoid || []).some(q => Math.hypot(q[0] - tip[0], q[1] - tip[1]) < (o.tipAvoidR || 60) * U);
+      if (o.tips !== false && !near) K.penTip(target, { x: tip[0], y: tip[1], I: o.tipI == null ? (thread ? 2 : 5) : o.tipI, size: thread ? 0.5 * sc : sc });
     }
     return { tip };
   };
@@ -1060,7 +1089,7 @@ export function createKnot(G, gold) {
       const ctr = xfPt(X, c);
       K.draw(target, roundelKT, Object.assign({}, o, {
         center: ctr, scale: S * X.sc, rotation: (o.rotation || 0) + X.rot, progress: kp, tips: o.tips, tipI: (o.tipI == null ? 3 : o.tipI) * 0.6,
-        groove: false, keyline: 0.85, flare: 0, xform: null, rect: null, sweep: o.sweep, wet: o.wet,
+        groove: false, keyline: 0.85, flare: 0, xform: null, rect: null, sweep: o.sweep, wet: o.wet, tipAvoid: o.tipAvoid,
       }));
     }
   };

@@ -933,7 +933,7 @@ def _body_ir(name, seed):
 
 
 BOWED = {
-    'violin': dict(Kcap=64, fmax=14000.0, hp=150.0, pan=-0.22, symp=[55, 62, 69, 76], vib_rate=5.6, vib_dev=0.3,
+    'violin': dict(Kcap=64, fmax=14000.0, hp=150.0, lp_order=4, pan=-0.22, symp=[55, 62, 69, 76], vib_rate=5.6, vib_dev=0.3,
                    attack=0.08, re_attack=0.05, release=0.15, level=0.30),
     'cello': dict(Kcap=90, fmax=8000.0, hp=55.0, pan=-0.30, symp=[36, 43, 50, 57], vib_rate=5.2, vib_dev=0.25,
                   attack=0.12, re_attack=0.07, release=0.25, level=0.34),
@@ -977,7 +977,9 @@ def bowed_phrase(notes, body='violin', beta=0.16, vib_depth=20.0, vib_onset=0.2,
         surge[i0:i1] *= 1.0 + (db2amp(2.5) - 1.0) * bump
         bright[i0:i1] += 0.2 * bump
     gamma = np.clip(0.35 * (1.0 - L.dyn) + C['tilt'] - bright, 0.0, 2.0)
-    src = _bowed_source(L.semis + cents / 100.0, gamma, beta_eff, P['Kcap'], P['fmax'])
+    ph_rng = _rng('bowed_phase', body, seed)                  # fixed random starting phase per partial
+    src = _bowed_source(L.semis + cents / 100.0, gamma, beta_eff, P['Kcap'], P['fmax'],
+                        phases=ph_rng.uniform(0, TWO_PI, P['Kcap']))
     f = hz(L.semis + cents / 100.0)
     # double stops: a second string on the same bow, no vibrato
     dbl = [nt for nt in L.notes if nt.get('double') is not None]
@@ -989,7 +991,8 @@ def bowed_phrase(notes, body='violin', beta=0.16, vib_depth=20.0, vib_onset=0.2,
         semis2 = np.where(mask, semis2, float(dbl[0]['double']))
         m2 = _smooth(mask.astype(float), 10.0)
         j2 = 1.5 * lp_noise(rng, n, 3.0)
-        src += 0.8 * m2 * _bowed_source(semis2 + j2 / 100.0, gamma, beta_eff, P['Kcap'], P['fmax'])
+        src += 0.8 * m2 * _bowed_source(semis2 + j2 / 100.0, gamma, beta_eff, P['Kcap'], P['fmax'],
+                                        phases=ph_rng.uniform(0, TWO_PI, P['Kcap']))
     shimmer = 1.0 + 0.03 * lp_noise(rng, n, 9.0)
     amp_dyn = (0.12 + 0.88 * L.dyn) ** 1.4
     env = g * amp_dyn * shimmer * L.shape * surge
@@ -1023,7 +1026,7 @@ def bowed_phrase(notes, body='violin', beta=0.16, vib_depth=20.0, vib_onset=0.2,
     ir, post, lp = _body_ir(body, body_seed)
     y = signal.oaconvolve(y, ir)[:n]
     y = eq(y, post)
-    y = lowpass(y, lp)
+    y = lowpass(y, lp, order=P.get('lp_order', 2))        # after the body convolution
     if C['lp']:
         y = lowpass(y, C['lp'])
     # sympathetic open strings
@@ -1038,8 +1041,10 @@ def bowed_phrase(notes, body='violin', beta=0.16, vib_depth=20.0, vib_onset=0.2,
     return Clip(L.t0, pan2(y, P['pan'] if pan is None else pan), info)
 
 
-def _bowed_source(semis, gamma, beta, Kcap, fmax=14000.0):
-    """Additive Helmholtz motion: a_k = (1/k)(0.3 + 0.7|sin(pi k beta)|) k^-gamma, band-limited per sample."""
+def _bowed_source(semis, gamma, beta, Kcap, fmax=14000.0, phases=None):
+    """Additive Helmholtz motion: a_k = (1/k)(0.3 + 0.7|sin(pi k beta)|) k^-gamma, band-limited per sample.
+    phases: optional starting phase per partial (radians); random phases keep the spectrum and soften the
+    pulse-like buzz of perfectly aligned partials."""
     f = hz(semis)
     phi = TWO_PI * np.cumsum(f) / SR
     fmin = float(np.min(f))
@@ -1047,7 +1052,12 @@ def _bowed_source(semis, gamma, beta, Kcap, fmax=14000.0):
     y = np.zeros(len(f))
     norm = 0.0
     lg = -gamma
-    for k, sk in _sines(phi, K):
+    gen = _sines(phi, K) if phases is None else _sincos(phi, K)
+    for item in gen:
+        k, sk = item[0], item[1]
+        if phases is not None:
+            th = float(phases[k - 1])
+            sk = sk * np.cos(th) + item[2] * np.sin(th)
         base = (1.0 / k) * (0.3 + 0.7 * abs(np.sin(np.pi * k * beta)))
         norm += base
         a = base * np.exp(lg * np.log(k)) if k > 1 else base
@@ -1056,6 +1066,17 @@ def _bowed_source(semis, gamma, beta, Kcap, fmax=14000.0):
             a = a * np.clip((fmax + 1000.0 - fk) / 3000.0, 0.0, 1.0)
         y += a * sk
     return y / (0.35 * norm)
+
+
+def _sincos(phi, K):
+    """Yield (k, sin(k*phi), cos(k*phi)) for k = 1..K by the Chebyshev recurrence."""
+    s_prev, c_prev = np.zeros_like(phi), np.ones_like(phi)
+    s_cur, c_cur = np.sin(phi), np.cos(phi)
+    c2 = 2.0 * c_cur
+    for k in range(1, K + 1):
+        yield k, s_cur, c_cur
+        s_prev, s_cur = s_cur, c2 * s_cur - s_prev
+        c_prev, c_cur = c_cur, c2 * c_cur - c_prev
 
 
 def _bow_noise(f, rng, n):
@@ -1216,8 +1237,9 @@ def _table_osc(tab, f, n, phase0):
 def drone(schedule, length, xfade=2.5, level_db=-27.0, levels=None, pan=0.0, seed=0, t_start=0.0):
     """Reed drone (SPEC 5.5.4).
 
-    schedule: [{'t': start, 'voices': [(hz, gain), ...]}, ...]; each set holds until the next one and the
-              change is an equal-power crossfade of `xfade` seconds starting at the new set's time.
+    schedule: [{'t': start, 'voices': [(hz, gain), ...], 'xfade': optional}, ...]; each set holds until the
+              next one and the change is an equal-power crossfade of `xfade` seconds (or the new set's own
+              'xfade') starting at the new set's time.
     levels  : optional absolute dB breakpoints [(t, dB), ...] multiplied on top (fade-ins, dips).
     level_db: rms level of a voice set (dBFS).
     Returns a Clip from t_start to t_start + length.
@@ -1231,8 +1253,10 @@ def drone(schedule, length, xfade=2.5, level_db=-27.0, levels=None, pan=0.0, see
     for si, seg in enumerate(sch):
         ts = seg['t']
         te = sch[si + 1]['t'] if si + 1 < len(sch) else t_start + length + xfade
+        x_in = float(seg.get('xfade', xfade))
+        x_out = float(sch[si + 1].get('xfade', xfade)) if si + 1 < len(sch) else xfade
         a = max(0, int(round((ts - t_start) * SR)))
-        b = min(n, int(round((te + xfade - t_start) * SR)))
+        b = min(n, int(round((te + x_out - t_start) * SR)))
         if b <= a:
             continue
         m = b - a
@@ -1257,10 +1281,10 @@ def drone(schedule, length, xfade=2.5, level_db=-27.0, levels=None, pan=0.0, see
         e = np.ones(m)
         loc = np.arange(m) / SR + (a / SR + t_start)
         if si > 0:
-            x = np.clip((loc - ts) / xfade, 0, 1)
+            x = np.clip((loc - ts) / x_in, 0, 1)
             e *= np.sin(0.5 * np.pi * x)
         if si + 1 < len(sch):
-            x = np.clip((loc - te) / xfade, 0, 1)
+            x = np.clip((loc - te) / x_out, 0, 1)
             e *= np.cos(0.5 * np.pi * x)
         out[a:b] += y * e
     out *= 1 + 0.06 * np.sin(TWO_PI * 0.13 * tt) + 0.03 * np.sin(TWO_PI * 0.071 * tt)
@@ -1328,7 +1352,9 @@ def _drum_transients(y, rng, vel):
 
 
 def _bodhran_impact(vel, rng):
-    """Impact stroke: f1 glides 70 -> 52 Hz (tau 60 ms), T60_1 1.6 s, plus a D1 sine (36.7 Hz, T60 1.2 s, -10 dB)."""
+    """Impact stroke: f1 glides 70 -> 52 Hz (tau 60 ms), T60_1 1.6 s. The body is driven (tanh, 3x) so that its 2nd
+    and 3rd harmonics (about 104-210 Hz) carry on small speakers; on top sit a skin slap (400-1200 Hz, -8 dB), a
+    bright noise crack (1.5-6 kHz, 2 ms attack, tau 250 ms, -14 dB) and a D1 sine (36.7 Hz, T60 1.2 s, -16 dB)."""
     T1 = 1.6
     n = _n(T1 * 1.4 + 0.1)
     tt = np.arange(n) / SR
@@ -1344,8 +1370,15 @@ def _bodhran_impact(vel, rng):
         y += a * np.sin(TWO_PI * r * G) * np.exp(-6.91 * tt / T)
     y /= np.sum(w) * 0.55
     y = _drum_transients(y, rng, vel)
-    y = np.tanh(1.5 * y * vel) / np.tanh(1.5)
-    y += db2amp(-10) * np.sin(TWO_PI * 36.7 * tt) * np.exp(-6.91 * tt / 1.2) * vel
+    y = np.tanh(3.0 * y * vel) / np.tanh(3.0)
+    # skin slap
+    m = _n(0.08)
+    y[:m] += db2amp(-8) * vel * bp_noise(rng, m, 400, 1200) * np.exp(-np.arange(m) / (SR * 0.014))
+    # crack
+    m = _n(1.4)
+    tm = np.arange(m) / SR
+    y[:m] += db2amp(-14) * vel * bp_noise(rng, m, 1500, 6000) * (1 - np.exp(-tm / 0.002)) * np.exp(-tm / 0.25)
+    y += db2amp(-16) * np.sin(TWO_PI * 36.7 * tt) * np.exp(-6.91 * tt / 1.2) * vel
     fade(y, 0.002, 0.025)
     return _dc_block(y, 8.0) * 0.42
 

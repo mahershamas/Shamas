@@ -3,20 +3,22 @@
   131.5-133.0 the hand-off from scene 10 (a custom transition, 131.5-132.5): the camera pitches down and cranes up
   (horizon 820 -> 430, 2.5 -> 40 m; the shared camera of scene 10), the rendered night sea turns into the engraved gold
   sea through a luminance-keyed ink bleed (the brightest hatch lines, the crests, come through first; the sky is one
-  continuous sky with the aurora dimming to 25 percent), and the rosette with its two circling stars contracts
-  (scale 1 -> 0.02, easeInOutCubic) while travelling left and low, until at 133.0 it IS the west horizon light of
+  continuous sky with the aurora greying and dimming to 10 percent, 5 by 135.0), and the rosette with its two circling
+  stars contracts (scale 1 -> 0.02, easeInOutSine from 131.2, s10 heartPose) while travelling left, held above the
+  rising horizon, until at 133.0 it IS the west horizon light of
   scene 4. The gold arc of scene 4 comes back over the horizon in its scene-4 state (left 30 percent lit, the right
   end cooled).
   133.0-135.0 (cue 'comet') a gold comet leaves the west light and runs the arc to the east light (easeInOutSine),
   arriving at exactly 135.000 (cue 'name_peak'): white core, a 40 px warm halo, a tail of 1,200 closed-form gold
   grains shed along the path; the arc warms behind it. 135.0 the east light blooms to twice its size (spring) and
-  stays bright; the whole arc glows evenly warm; the name in line L17 arrives in gold leaf with a glint.
+  stays bright; the whole arc glows evenly warm; the name in line L17 arrives in bright gold leaf (key light close
+  above it) with a glint and a soft warm glow behind it, the brightest word on the line.
   Line L17: the words before the name enter at 132.0 with a 0.22 s stagger, the name (last word) at 135.0 in gold leaf,
   pre-positioned so nothing reflows; mist exit 137.0-137.8. The hatch fades under the line (caption shield).
-  137.8-138.6 the sea dissolves into ink (scene 12's transition).
+  137.6-139.0 the sea dissolves into ink (the shared gold-dust dissolve, scenes/index.js).
 */
 import { shoresLayout, toScene, createShoreFx, createShield } from './s04_two_shores.js';
-import { ilyLayout, nightCam, nightSky, handoff, createHeart } from './s10_i_love_you.js';
+import { ilyLayout, nightCam, nightSky, heartPose, createHeart } from './s10_i_love_you.js';
 
 const T0 = 131.5;
 
@@ -30,12 +32,13 @@ void main(){
   if (below < -1.5){ o = vec4(b, 1.0); return; }       // one continuous sky: the incoming scene's
   vec3 a = texture(uA, uv).rgb;
   float sea = smoothstep(-1.5, 1.5, below);
-  // the engraving's bright lines (its crests) come through first, then its dark ground; a fine fbm breaks the front
+  // the engraving's bright lines (its crests) come through first, then its dark ground, in a sweep from the horizon
+  // down toward the camera (never as stray lines in the middle of the old sea); a fine fbm breaks the front
   vec2 q = px / uFrame.y;
   float n = fbm(q * vec2(5.0, 9.0), 4);
   float key = clamp(luma(b) * 4.0, 0.0, 1.0);
-  float v = (1.0 - key) * uLumaKey * 1.5 + 0.35 * n;
-  float m = smoothstep(v - 0.14, v + 0.14, uW * 1.8 - 0.3);
+  float v = (1.0 - key) * uLumaKey * 0.6 + 0.25 * n + clamp(below / (520.0 * uFrame.y / 1080.0), 0.0, 1.0);
+  float m = smoothstep(v - 0.14, v + 0.14, uW * 2.3 - 0.3);
   vec3 c = mix(a, b, m);
   o = vec4(mix(b, c, sea), 1.0);
 }`;
@@ -175,7 +178,16 @@ void main(){
   o = vec4((uHot * core + uGold * glow) * uI, 0.0);
 }`;
 
-function lerp2(a, b, k) { return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]; }
+// a soft warm glow behind the name (additive HDR, under the gold leaf): the climax word is the brightest on the line
+const NAMEGLOW_FS = `
+uniform vec2 uC, uR; uniform vec3 uCol; uniform float uI;
+out vec4 o;
+void main(){
+  vec2 d = (framePx() - uC) / uR;
+  float r2 = dot(d, d);
+  float win = 1.0 - smoothstep(1.6, 2.4, sqrt(r2));          // reaches zero inside the drawn box (no visible edge)
+  o = vec4(uCol * uI * (0.75 * exp(-r2 * 2.5) + 0.25 * exp(-r2 * 1.0)) * win, 0.0);
+}`;
 
 const scene = {
   id: 's11_come_back', t0: T0, t1: 138.6, internalScale: 1, look: 'night_sea',
@@ -184,13 +196,14 @@ const scene = {
     this.L = shoresLayout(ctx);
     this.N = ilyLayout(ctx);
     this.fx = createShoreFx(ctx);
-    this.shield = createShield(ctx, 's11');
+    this.shield = createShield(ctx, 's11', { padX: 24, padY: 14 });   // a little deeper than scene 4's (no hatch through the name)
     this.heart = createHeart(ctx);
     this.trans = G.program('p8.s11.trans', glsl.frag(TRANS_FS));
     this.cometP = G.program('p8.s11.comet', glsl.frag(COMET_FS));
     this.arcP = G.program('p8.s11.arc', glsl.frag(ARC_FS));
     this.lightP = G.program('p8.s11.light', glsl.frag(LIGHT_FS));
     this.ruleP = G.program('p8.s11.rule', glsl.frag(RULE_FS));
+    this.glowP = G.program('p8.s11.nameglow', glsl.frag(NAMEGLOW_FS));
     this.tail = particles.program('p8.s11.tail', TAIL);
     const L = this.L;
     this.arc = this.fx.arc(L.east, L.ctrl, L.west);         // arc length measured from the east light
@@ -204,6 +217,8 @@ const scene = {
     const lay = text.layout({ lineId: 'L17', tau: 100, x: ctx.W / 2, y: this.L.textY, style: { base: 'narrative', size: this.L.textSize }, breaks: ctx.portrait ? [words.length - 1] : undefined });
     const row = lay.rows[lay.rows.length - 1], g = lay.line.glyph;
     this.nameX = row.ox + g[this.nameI0 * 4];
+    this.nameX1 = row.ox + g[(this.nChars - 1) * 4 + 1];
+    this.nameY = row.y;                                       // baseline of the row that holds the name
   },
   // horizon y (frame) for the moving camera
   hzAt(ctx, t) { return ctx.sea.horizonY(nightCam(ctx, t), ctx.W / 2); },
@@ -234,9 +249,10 @@ const scene = {
       out.push(Object.assign({}, base, {
         tau: t - 134.985, part: [this.nameI0, this.nChars], style: Object.assign({}, st, { layer: 'hdr' }), layer: 'hdr',
         enter: { base: 'opacity', dur: 0.25 }, exit: { at: 2.015, kind: 'mist' },
-        glints: [{ at: 0.0, glyph: this.nChars - 1, size: 24, I: 3.0, dur: 0.4, rot: 0.12 }],
+        glints: [{ at: 0.0, glyph: this.nChars - 1, size: 24, I: 3.0, dur: 0.6, rot: 0.12 }],
         sweeps: [{ at: 0.1, dur: 0.9, I: 1.3, width: 40 }],
-        gold: { look: 'night_sea', key: [this.nameX + 40 * ctx.U, L.textY - 120 * ctx.U], keyZ: 150 * ctx.U, keyI: 6.0 + 2.0 * li.flash, fill: [east[0], east[1]], fillI: 2.0, tint: [1.15, 1.12, 1.05],
+        // bright leaf: the key light close above the name (60 px), a warmer, stronger tint than the cream words
+        gold: { look: 'night_sea', key: [this.nameX + 40 * ctx.U, this.nameY - 60 * ctx.U], keyZ: 150 * ctx.U, keyI: 9.0 + 2.0 * li.flash, fill: [east[0], east[1]], fillI: 2.0, envI: 1.3, tint: [1.35, 1.25, 1.05],
           opacity: 1 - ctx.tl.seg(t, 137.0, 137.8, ctx.tl.E.inOutSine) },   // fades with the rest of the line
       }));
     }
@@ -252,8 +268,22 @@ const scene = {
     const lights = [];
     if (li.west > 0) lights.push([ap.C[0], 1.0 * li.west, 1, 18]);
     if (li.east > 0) lights.push([ap.A[0], 1.0 * li.east, 1, 18 * (1 + 0.6 * li.bloom)]);
-    S.engraved(target, { tau: t - 100.0, cam, amp: 0.6, sky: q, stars: 0.6, look: 'night_sea', lights, shield, shieldK: 0.94 });
+    S.engraved(target, { tau: t - 100.0, cam, amp: 0.6, sky: q, stars: 0.6, look: 'night_sea', lights, shield, shieldK: 0.85 });
     this.drawFx(ctx, t, target, ap, li);
+    this.nameGlow(ctx, t, target);
+  },
+  // the name's glow: rises with the name at 135.0, swells on the arrival flash, fades with the line's mist exit
+  nameGlow(ctx, t, target) {
+    const { tl } = ctx, E = tl.E;
+    const I = tl.seg(t, 134.99, 135.35, E.outCubic) * (1 - tl.seg(t, 137.0, 137.8, E.inOutSine)) * (1 + 0.6 * this.lightsAt(ctx, t).flash);
+    if (I <= 0) return;
+    const sz = this.L.textSize * ctx.U;
+    const C = [(this.nameX + this.nameX1) / 2, this.nameY - 0.3 * sz], R = [(this.nameX1 - this.nameX) / 2 + 0.9 * sz, 0.95 * sz];
+    const s = target.scale == null ? 1 : target.scale;
+    const ex = [R[0] * 2.5, R[1] * 2.5];
+    const x0 = Math.max(0, Math.floor((C[0] - ex[0]) * s)), x1 = Math.min(target.w, Math.ceil((C[0] + ex[0]) * s));
+    const y0 = Math.max(0, Math.floor((ctx.H - C[1] - ex[1]) * s)), y1 = Math.min(target.h, Math.ceil((ctx.H - C[1] + ex[1]) * s));
+    if (x1 > x0 && y1 > y0) ctx.G.draw(this.glowP, { uC: C, uR: R, uCol: this.col.lit, uI: 0.07 * I }, target, { blend: 'add', viewport: [x0, y0, x1 - x0, y1 - y0] });
   },
   drawFx(ctx, t, target, ap, li) {
     const { tl, G } = ctx, E = tl.E, A = this.arc, col = this.col, U = ctx.U;
@@ -289,24 +319,11 @@ const scene = {
     light(ap.C, li.west, 40 * U, 120 * U, 0, 0.45);
     light(ap.A, li.east, 40 * U * (1 + li.bloom), 120 * U * (1 + 0.5 * li.bloom), 0.7 * li.flash, 0.45 + 0.2 * li.bloom);
   },
-  // the contracting rosette (131.5-133.2): drawn by the transition (straight into the frame) and then by the overlay
+  // the contracting rosette (131.5-133.25; scene 10 starts the contraction at 131.2 with the same pose): drawn by the
+  // transition (straight into the frame) and then by the overlay. It lands on the west light (the arc's C end) at 133.0.
   heartAt(ctx, t, target) {
     if (t >= 133.25) return;
-    const { tl } = ctx, E = tl.E, N = this.N;
-    const k = handoff(ctx, t);
-    const cam = nightCam(ctx, t);
-    const ap = this.arcPts(ctx, t);
-    const end = [ap.C[0], ap.C[1]];
-    const centre = lerp2(N.R0, end, k);
-    centre[1] += (ctx.portrait ? 60 : 70) * Math.sin(Math.PI * k);
-    const scale = 1 - 0.98 * k;
-    const starI = 1 - tl.seg(t, 132.85, 133.25, E.inOutSine);
-    this.heart.draw(target, t, {
-      center: centre, scale, push: cam.push,
-      alpha: tl.smoothstep(0.035, 0.16, scale), tint: 0.55 + 0.45 * tl.seg(t, 131.5, 132.3, E.inOutSine),
-      dustI: 1 - tl.seg(t, 131.5, 132.2, E.inOutSine), starI,
-      starHalo: Math.max(0.3, scale), starSpike: Math.max(0.35, Math.sqrt(scale)),
-    });
+    this.heart.draw(target, t, heartPose(ctx, t));
   },
   transition(ctx, w, outRT, inRT, dst) {
     const t = ctx.t, cam = nightCam(ctx, t), S = ctx.sea;
@@ -349,7 +366,7 @@ const scene = {
   captions(ctx, tau) { return this.narrative(ctx, T0 + tau); },
   post(ctx, tau) {
     const t = T0 + tau, li = this.lightsAt(ctx, t);
-    return { ghosts: 0.012, ca: 0.0015, streak: { threshold: 4.0, strength: 0.04 }, bloom: { add: 0.05 * li.flash } };
+    return { ghosts: 0, ca: 0.0015, streak: { threshold: 4.0, strength: 0.04 }, bloom: { add: 0.05 * li.flash } };
   },
 };
 export default scene;

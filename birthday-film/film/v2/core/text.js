@@ -96,11 +96,14 @@ export const STYLES = {
   narrative: { family: 'Cormorant Garamond', style: 'italic', weight: 400, size: 52, tracking: 0, color: '#F4EBDD', enter: 'default', exit: 'default', glow: 0.10 },
   narrativePhoto: { base: 'narrative', size: 50, color: '#F8F0E3' },
   roman: { family: 'Cormorant Garamond', style: 'normal', weight: 400, size: 50, tracking: 0.01, color: '#EDE3D2', enter: 'opacity', exit: 'opacity', glow: 0.06 },
-  caps: { family: 'Cormorant Garamond', style: 'normal', weight: 500, size: 22, tracking: 0.34, color: '#D4A64A', opacity: 0.85, enter: 'caps', exit: 'default', glow: 0.16, uppercase: true },
+  // small caps lines: the lining-figure cut (old-style figures would drop below the caps baseline), never smaller than
+  // minSize (frame px at U = 1: landscape, portrait), and the space either side of a middle dot tightened to dotSpace
+  caps: { family: 'Cormorant Garamond LF', style: 'normal', weight: 500, size: 30, tracking: 0.28, color: '#E3C27A', opacity: 0.95, enter: 'caps', exit: 'default', glow: 0.16, uppercase: true, minSize: [30, 34], dotSpace: 0.6 },
   display: { family: 'Cormorant Garamond', style: 'normal', weight: 300, size: 104, tracking: 0.02, color: '#F4EBDD', enter: 'opacity', exit: 'opacity', glow: 0.08, layer: 'hdr' },
   displayItalic: { family: 'Cormorant Garamond', style: 'italic', weight: 300, size: 300, tracking: 0, color: '#F4EBDD', enter: 'opacity', exit: 'opacity', glow: 0.08, layer: 'hdr' },
-  script: { family: 'Pinyon Script', style: 'normal', weight: 400, size: 72, tracking: 0, color: '#5A3A1E', enter: 'nib', exit: 'opacity', glow: 0.0 },
-  label: { family: 'Cormorant Garamond', style: 'normal', weight: 500, size: 18, tracking: 0.22, color: '#8C8272', opacity: 0.9, enter: 'none', exit: 'opacity', glow: 0.0, uppercase: true },
+  // iron-gall ink lifted to about 3.2:1 on the ink ground, with a faint warm under-glow along the strokes (inkGlow)
+  script: { family: 'Pinyon Script', style: 'normal', weight: 400, size: 72, tracking: 0, color: '#8C5C30', enter: 'nib', exit: 'opacity', glow: 0.0, inkGlow: 0.10, inkGlowColor: '#E39A4C' },
+  label: { family: 'Cormorant Garamond LF', style: 'normal', weight: 500, size: 18, tracking: 0.22, color: '#8C8272', opacity: 0.9, enter: 'none', exit: 'opacity', glow: 0.0, uppercase: true, dotSpace: 0.6 },
 };
 export function styleOf(s) {
   const base = typeof s === 'string' ? STYLES[s] : s && s.base ? styleOf(s.base) : STYLES.narrative;
@@ -111,10 +114,29 @@ export function styleOf(s) {
 }
 export function fontString(st, U = 1) { return `${st.style} ${st.weight} ${(st.size * U).toFixed(2)}px "${st.family}"`; }
 
+// Lining-figure cuts of Cormorant Garamond (the stock cut with its digits remapped to the lnum glyphs: Canvas2D cannot
+// switch OpenType features). Registered once under their own family name.
+const LF_FACES = [
+  { file: '../fonts/cormorant-lf-roman.woff2', style: 'normal' },
+  { file: '../fonts/cormorant-lf-italic.woff2', style: 'italic' },
+];
+let lfDone = null;
+function registerLiningFaces() {
+  if (lfDone) return lfDone;
+  lfDone = Promise.all(LF_FACES.map(async f => {
+    const face = new FontFace('Cormorant Garamond LF', `url(${new URL(f.file, import.meta.url).href}) format('woff2')`, { style: f.style, weight: '300 700' });
+    await face.load();
+    document.fonts.add(face);
+  }));
+  return lfDone;
+}
+
 export async function loadFonts(texts, U = 1) {
+  await registerLiningFaces();
   const sample = Array.from(new Set((texts.join('') + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ·’,.').split(''))).join('');
   const seen = new Set();
   const variants = Object.keys(STYLES).map(k => styleOf(k));
+  variants.push(styleOf({ base: 'caps', weight: 400 }), styleOf({ base: 'caps', weight: 600 }));
   // every face the build sheets use, at a nominal size (font loading is per face, not per size)
   variants.push(styleOf({ base: 'narrative', weight: 300 }), styleOf({ base: 'roman', weight: 300 }), styleOf({ base: 'roman', weight: 500 }));
   for (const st of variants) {
@@ -200,6 +222,7 @@ uniform int uNibOn; uniform vec4 uNib;                // front x, feather, slant
 uniform vec4 uNibX;                                   // table x0, x1, bloom px, tau
 uniform vec4 uNibT[${NIBN / 4 + 1}];                  // passage time of the front at ${NIBN + 1} x samples
 uniform float uNibBloomDur;
+uniform vec4 uInkGlow;                                // nib ink under-glow: rgb (display), amount
 uniform float uLumaGamma;
 ${TEXT_FX_GLSL}
 in vec2 vPx; in vec2 vT;
@@ -262,7 +285,12 @@ void main(){
     float dens = 0.86 + 0.24 * fbm(vPx * 0.045 + 11.0, 3);
     float edge = 1.0 - smoothstep(0.25, 0.9, a);
     col = col * dens * (1.0 - 0.18 * edge);
-    col = mix(col, col * 1.6 + vec3(0.035, 0.025, 0.012), wet * 0.6);
+    col = mix(col, col * 1.6 + vec3(0.035, 0.025, 0.012), wet * 0.84);
+  }
+  float ig = 0.0;
+  if (uNibOn == 1 && uInkGlow.w > 0.0){
+    // a ~1.2 px warm halo hugging the strokes (mip 1 of the glyph, outside the ink only)
+    ig = clamp(tap(uv, 1.0) * 1.35 - a, 0.0, 1.0) * uInkGlow.w;
   }
   float g = 0.0;
   if (uGlow > 0.0){
@@ -275,8 +303,8 @@ void main(){
     vec2 suv = uv - uShadow.xy * uPxToTex * uTexel;
     sh = textureLod(uArr, vec3(suv, vB.w), log2(max(uShadow.w * uPxToTex, 1.0))).r * uShadow.z;
   }
-  vec3 rgb = col * a + uGlowCol * g;
-  float al = a + sh * (1.0 - a);
+  vec3 rgb = col * a + uGlowCol * g + uInkGlow.rgb * ig;
+  float al = a + max(sh, ig) * (1.0 - a);
   o = vec4(rgb, al) * op;
 }`);
 
@@ -298,8 +326,12 @@ export function createText(G) {
       text = L[entry.lineId];
       if (typeof text !== 'string') throw new Error('unknown line id ' + entry.lineId);
     } else text = entry.text || '';
-    const style = styleOf(entry.style || 'narrative');
+    let style = styleOf(entry.style || 'narrative');
     if (style.uppercase) text = text.toUpperCase();
+    if (style.minSize) {
+      const ms = style.minSize[G.H > G.W ? 1 : 0];
+      if (style.size < ms) style = Object.assign({}, style, { size: ms });
+    }
     return { text, style };
   };
 
@@ -371,7 +403,19 @@ export function createText(G) {
       wordOf[i] = word;
       if (sp) word++;
     }
-    pen[chars.length] = m.width;
+    // tightened spaces either side of a middle dot (caps lines): every glyph after such a space moves left
+    const shift = new Float32Array(chars.length + 1);
+    if (st.dotSpace != null && st.dotSpace < 1) {
+      const sw = M(' ').width * (1 - st.dotSpace);
+      let acc = 0;
+      for (let i = 0; i < chars.length; i++) {
+        shift[i] = acc;
+        if (isSpace(chars[i]) && (chars[i - 1] === '\u00B7' || chars[i + 1] === '\u00B7')) acc += sw;
+      }
+      shift[chars.length] = acc;
+      for (let i = 0; i < chars.length; i++) { pen[i] -= shift[i]; glyph[i * 4] -= shift[i]; glyph[i * 4 + 1] -= isSpace(chars[i]) ? shift[i + 1] : shift[i]; }
+    }
+    pen[chars.length] = m.width - shift[chars.length];
     // clusters: glyphs, merged where the font joins them
     const clusters = [];
     for (let i = 0; i < chars.length; i++) {
@@ -386,7 +430,7 @@ export function createText(G) {
     for (const c of clusters) {
       const s = chars.slice(c.i0, c.i1).join('');
       c.str = s;
-      c.pen = M(chars.slice(0, c.i1).join('')).width - M(s).width;
+      c.pen = M(chars.slice(0, c.i1).join('')).width - M(s).width - shift[c.i0];
       const cm = M(s);
       c.left = Math.ceil(Math.max(cm.actualBoundingBoxLeft, 0)) + 1;
       c.right = Math.ceil(Math.max(cm.actualBoundingBoxRight, 0)) + 1;
@@ -427,13 +471,17 @@ export function createText(G) {
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    if (shift[chars.length] > 0) {
+      whole.x.clearRect(0, 0, W, H);
+      for (const c of clusters) whole.x.fillText(c.str, ox + c.pen, oy);
+    }
     // ink extent (line px relative to the text origin)
     const wd = whole.x.getImageData(0, 0, W, H).data;
     let inkL = W, inkR = 0;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (wd[(y * W + x) * 4 + 3] > 8) { if (x < inkL) inkL = x; if (x > inkR) inkR = x; }
     const xh = M('x').actualBoundingBoxAscent;
     L = {
-      w: W, h: H, ox, oy, adv: m.width - trackPx, asc, desc, n: chars.length, glyph, trackPx, xh, size: st.size * U,
+      w: W, h: H, ox, oy, adv: m.width - shift[chars.length] - trackPx, asc, desc, n: chars.length, glyph, trackPx, xh, size: st.size * U,
       chars, pen, clusters, arr: { tex: arrTex }, layerW, layerH, loy, pad, canvas: whole.cv, imgData: wd,
       inkL: inkL - ox, inkR: inkR + 1 - ox, words: word + 1, isScript, _tex: null,
     };
@@ -690,7 +738,7 @@ export function createText(G) {
     const u = {
       uI0: I0, uI1: I1, uI2: I2, uLayerPx: [L.layerW, L.layerH], uView: view, uArr: L.arr, uTexel: [1 / L.layerW, 1 / L.layerH], uPxToTex: 1,
       uGlow: glowAmt, uGlowCol: glowCol, uShadow: maskOut ? [0, 0, 0, 1] : sh, uMaskOut: maskOut ? 1 : 0, uGreek: entry.greek ? 1 : 0,
-      uXH: L.xh, uBase: lay.rows[0].y, uNibOn: 0, uLumaGamma: style.gamma || 1,
+      uXH: L.xh, uBase: lay.rows[0].y, uNibOn: 0, uLumaGamma: style.gamma || 1, uInkGlow: [0, 0, 0, 0],
     };
     const en = lay.anim.en;
     if (en.mode === 3 && !entry.greek) {
@@ -703,6 +751,8 @@ export function createText(G) {
       u.uNib = [front, en.feather * U, en.slant, lay.rows[0].y];
       u.uNibX = [tb.xsL + off, tb.xsR + off, en.bloom * U, entry.tau];
       u.uNibT = NIBT; u.uNibBloomDur = en.bloomDur;
+      const igA = maskOut ? 0 : (entry.inkGlow == null ? style.inkGlow : entry.inkGlow) || 0;
+      if (igA > 0) u.uInkGlow = [...hex(entry.inkGlowColor || style.inkGlowColor || '#E39A4C'), igA];
     }
     fxUniforms(lay, u);
     return u;

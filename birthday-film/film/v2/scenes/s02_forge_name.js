@@ -27,9 +27,9 @@ export function layoutOf(ctx) {
   const P = ctx.portrait;
   return {
     C: P ? [540, 960] : [960, 540],
-    nameC: P ? [540, 980] : [960, 560],
-    nameSize: P ? 240 : 300,
-    capsY: P ? 820 : 388,
+    nameC: P ? [540, 990] : [960, 560],
+    nameSize: P ? 320 : 300,                   // portrait: the title fills about half the width
+    capsY: P ? 780 : 388,                      // portrait: clear of the particle cloud
     capsX: P ? 540 : 960,
   };
 }
@@ -52,7 +52,15 @@ uniform float uU, uPush, uDustI, uNameI, uSeed;
 uniform vec3 uC1, uC2, uC3, uHot;
 uniform float uEv[32]; uniform int uNEv;
 uniform vec4 uInk;                // ink x0, x1 of the name; y top; y of the writing front
+uniform vec4 uGShield; uniform float uGShieldK;   // caption shield for the grains (x0, y0, x1, y1 frame px), strength
 out float vGlint;
+out vec4 vStr;                    // motion streak: unit direction, half-length px, core size px (z = 0: round sprite)
+// 1 outside the caption rect, 1 - uGShieldK inside (feathered 30 px): no gold grain may sit in a line of type
+float grainShield(vec2 px){
+  if (uGShieldK <= 0.0 || uGShield.z <= uGShield.x) return 1.0;
+  vec2 d = max(uGShield.xy - px, px - uGShield.zw);
+  return 1.0 - uGShieldK * (1.0 - smoothstep(0.0, 30.0 * uU, length(max(d, 0.0))));
+}
 float hh(int id, float k){ return h12(vec2(float(id) * 1.618 + k * 31.7, k * 7.3 + 0.5)); }
 // burst position of grain id (frame px). The gold is thrown out mostly in the equatorial plane (the gold-red shell):
 // directions favour the horizontal; half the grains ride one of 96 radial filaments; the speed is lumped by the same
@@ -76,6 +84,20 @@ vec3 grainCol(int id){
   return c < 0.2 ? uC1 : (c < 0.7 ? uC2 : uC3);         // 2 : 5 : 3
 }
 vec2 swirl(vec2 p, float tau){ return 40.0 * uU * curl2(p * 0.004 / uU + vec2(uSeed, tau * 0.07)); }
+// a dust grain's position before the push (gid: global id)
+vec2 dustPos(int gid, float e){
+  vec2 B = burstPos(gid, e, true);
+  B += swirl(B, e) * smoothstep(0.0, 1.2, e) * 0.8;
+  return B;
+}
+// most grains are faint, a few carry the light: about a fifth of them hold most of it
+float grainBri(int id){ return 0.15 + 2.0 * pow(hh(id, 8.0), 6.0); }
+float grainSize(int id){ return mix(0.9, 2.6, pow(hh(id, 8.0), 4.0)); }
+// the cloud feathers out toward its rim (frame-height units, the cloud's own flattened metric) instead of ending as a disc
+float cloudFeather(vec2 px){
+  vec2 q = (px - uC) / (1080.0 * uU);
+  return smoothstep(0.62, 0.28, length(vec2(q.x, q.y / 0.75)));
+}
 `;
 
 const GRAINS = GRAIN_GLSL + `
@@ -90,7 +112,10 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
   float hot = exp(-2.2 * max(e, 0.0));                    // fresh ejecta are white-hot
   c = mix(c, uHot, 0.65 * hot);
   // most grains are faint, a few are bright (a power law reads as depth and glitter, not as a uniform dot field)
-  float bri = 0.35 + 1.5 * pow(hh(id, 8.0), 3.0);
+  float bri = grainBri(id);
+  vStr = vec4(0.0);
+  // radial motion streak of the burst (decays with the ejecta's speed)
+  float sLen = 6.0 * uU * exp(-1.6 * max(e, 0.0)) * step(0.0, e);
   if (!dust){
     vec4 H = fetchPoint(uHome, id);
     float s = 14.6 + 2.2 * H.z + 0.2 * hh(id, 4.0);
@@ -120,8 +145,11 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
     vec2 Q = vec2(min(Qp.x, H.x) - (30.0 + 90.0 * hh(id, 21.0)) * uU, mix(Qp.y, H.y, 0.8));
     float iu = 1.0 - ke;
     px = g < 1.0 ? (g > 0.0 ? P1 : B) : iu * iu * Qp + 2.0 * iu * ke * Q + ke * ke * H.xy;
-    size = mix(2.4, 1.0, ke) * uU;
-    float al = (1.0 - pow(ke, 6.0)) * born;
+    size = mix(grainSize(id) * 1.1, 1.0, ke) * uU;
+    // resting grains feather out toward the rim of the cloud; once a grain joins the pen it is fully seen
+    float al = (1.0 - pow(ke, 6.0)) * born * mix(cloudFeather(px), 1.0, ge);
+    al *= grainShield(px);
+    if (g <= 0.0 && sLen > 0.3 * uU){ vStr = vec4(normalize(burstVel(id, false)), sLen, size); size += 3.0 * sLen; }
     // grains on their way are brighter than the resting cloud: the stream reads
     float I = (1.1 + 2.4 * hot) * (1.0 + 3.0 * spark) * mix(bri, 1.35, max(ge, step(0.0, t - s)));
     I *= 0.8 + 0.35 * sin(t * (2.0 + 5.0 * hh(id, 9.0)) + hh(id, 10.0) * TAU);
@@ -132,28 +160,40 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
       if (gl < 0.12){ vGlint = 1.0; size = 7.0 * uU; al = 1.0; I = 1.8 * (1.0 - gl / 0.12) * (0.5 + bri); c = mix(c, uC1, 0.6); }
       else al = 0.0;
     }
+    if (vGlint > 0.5) vStr = vec4(0.0);
     col = vec4(min(c * I, vec3(6.0)), al * uNameI);
     return;
   }
   // ejecta dust: never used for the name; it coasts out, then drifts at 4 px/s and glitters
   int j = id - uNName;
-  vec2 B = burstPos(id, e, true);
-  B += swirl(B, e) * smoothstep(0.0, 1.2, e) * 0.8;
+  vec2 B = dustPos(id, e);
   float da = hh(id, 12.0) * TAU;
   B += normalize(vec2(cos(da), sin(da) * 0.6 - 0.7)) * 4.0 * uU * max(e - 8.0, 0.0);
   px = uC + (B - uC) * uPush;
-  size = mix(1.1, 2.2, hh(id, 13.0)) * uU;
+  size = mix(1.0, 2.0, hh(id, 13.0)) * grainSize(id) * uU;
   float tw = 0.55 + 0.45 * sin(t * (1.3 + 3.0 * hh(id, 14.0)) + hh(id, 15.0) * TAU);
   float I = (0.45 + 2.4 * hot) * (0.4 + 0.6 * exp(-0.3 * max(e, 0.0))) * tw * (1.0 + 3.0 * spark) * bri;
-  // harp harmonics of the gold dust: grain j lights once at event j
-  if (j < uNEv){
-    float te = t - uEv[j];
-    if (te > -0.02 && te < 0.5){
-      float env = smoothstep(-0.02, 0.0, te) * exp(-max(te, 0.0) / 0.16);
-      if (env > 0.02){ vGlint = 1.0; size = 26.0 * uU; I = 4.5 * env; c = mix(c, uC1, 0.7); }
+  float al = born * uDustI * cloudFeather(px) * grainShield(px);
+  if (sLen > 0.3 * uU){ vStr = vec4(normalize(burstVel(id, true)), sLen, size); size += 3.0 * sLen; }
+  // harp harmonics of the gold dust: event k is taken by the first of the grains k, k + 32, ... k + 160 that sits
+  // inside the cloud (within 420 px of its centre) at that moment, so a glint never lights alone in empty sky
+  if (j < 192){
+    int k = j - (j / 32) * 32, m = j / 32;
+    if (k < uNEv){
+      float te = t - uEv[k];
+      if (te > -0.02 && te < 0.5){
+        float ek = uEv[k] - ${T0.toFixed(1)};
+        bool mine = length(dustPos(id, ek) - uC) < 420.0 * uU;
+        for (int mm = 0; mm < 5; mm++){
+          if (mm >= m || !mine) break;
+          if (length(dustPos(uNName + k + 32 * mm, ek) - uC) < 420.0 * uU) mine = false;
+        }
+        float env = smoothstep(-0.02, 0.0, te) * exp(-max(te, 0.0) / 0.16);
+        if (mine && env > 0.02){ vGlint = 1.0; vStr = vec4(0.0); size = 11.0 * uU; I = 3.0 * env; c = mix(c, uC1, 0.7); al = born * uDustI; }
+      }
     }
   }
-  col = vec4(min(c * I, vec3(6.0)), born * uDustI);
+  col = vec4(min(c * I, vec3(6.0)), al);
 }`;
 
 export const GRAIN_FS = `
@@ -163,10 +203,37 @@ void main(){
   vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
   float w;
   if (vGlint > 0.5){
+    // a fine four-point glint: thin tapering arms and a small hot core (not a soft diamond blob)
     vec2 a = abs(q);
-    float arms = exp(-a.y * 9.0) * max(1.0 - a.x, 0.0) + exp(-a.x * 9.0) * max(1.0 - a.y, 0.0);
-    w = arms * 0.9 + exp(-dot(q, q) * 7.0) * 1.2;
+    float arms = exp(-a.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-a.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);
+    w = arms * 0.9 + exp(-dot(q, q) * 18.0) * 1.2;
   } else w = exp(-dot(q, q) * 2.0);
+  o = vec4(vCol.rgb * vCol.a * w, 0.0);
+}`;
+// the scene-2 grains: as GRAIN_FS, plus the radial motion streak of the burst (a capsule Gaussian along vStr.xy whose
+// total energy matches the round sprite)
+export const GRAIN_STREAK_FS = `
+in vec4 vCol; in float vSize; in float vGlint; in vec4 vStr;
+out vec4 o;
+void main(){
+  if (vStr.z <= 0.0 || vGlint > 0.5){
+    vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
+    float w;
+    if (vGlint > 0.5){
+      vec2 a = abs(q);
+      float arms = exp(-a.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-a.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);
+      w = arms * 0.9 + exp(-dot(q, q) * 18.0) * 1.2;
+    } else w = exp(-dot(q, q) * 2.0);
+    o = vec4(vCol.rgb * vCol.a * w, 0.0);
+    return;
+  }
+  vec2 d = (gl_PointCoord - 0.5) * (vSize + 2.0);
+  // an elongated Gaussian: never thinner than about a pixel (no aliased combs), tapering at both ends, with the same
+  // integral as the round sprite (sigma rs/4)
+  float s0 = max(vStr.w, 1.0) * 0.25;
+  float sp = max(s0, 0.6), sa = sqrt(s0 * s0 + vStr.z * vStr.z / 2.25);
+  float al = dot(d, vStr.xy), pe = dot(d, vec2(-vStr.y, vStr.x));
+  float w = exp(-0.5 * (pe * pe / (sp * sp) + al * al / (sa * sa))) * (s0 * s0) / (sp * sa);
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
 }`;
 
@@ -275,7 +342,8 @@ void main(){
   if (uHasEj == 1) c += texture(uEj, screenUV()).rgb;
   if (uFlashI > 0.0){
     float r = length(px - uKC) / (1080.0 * uU);
-    float f = 0.70 * exp(-r / 0.022) + 0.24 * exp(-r / 0.08) + 0.06 * exp(-r / 0.22);
+    // energy concentrated in a white-hot centre; the outer frame stays dark (no beige fog)
+    float f = 0.85 * exp(-r / 0.018) + 0.13 * exp(-r / 0.06) + 0.02 * exp(-r / 0.25);
     c += mix(uFlashA, uFlashB, uFlashMix) * f * uFlashI;
   }
   o = vec4(c, 1.0);
@@ -289,7 +357,7 @@ const scene = {
     this.neb = G.program('s01.neb', glsl.frag(NEB_FS));
     this.ej = G.program('s02.ejecta', glsl.frag(EJECTA));
     this.main = G.program('s02.main', glsl.frag(MAIN));
-    this.grains = particles.program('s02.grains', GRAINS, { fs: GRAIN_FS });
+    this.grains = particles.program('s02.grains', GRAINS, { fs: GRAIN_STREAK_FS });
     this.dots = particles.program('s02.dots', DOTS_GLSL, { fs: DOTS_FS });
     const D = h => ctx.displayToScene(h), Lin = h => ctx.hexLin(h);
     this.col = Object.assign(skyColours(ctx), {
@@ -313,6 +381,10 @@ const scene = {
     for (let i = 0; i < 56; i++) { d4[i * 4] = ring[i * 2]; d4[i * 4 + 1] = ring[i * 2 + 1]; }
     this._dots = particles.pointsTexture(d4, 4);
     this._ring = ring;
+    // the caps line's box (frame px, with a margin) for the star and grain shields
+    const cm = text.measure(this.capsEntry(0));
+    const half = (cm.inkR - cm.inkL) / 2 + 24 * ctx.U;
+    this._capsBox = [this.L.capsX - half, this.L.capsY - cm.asc - 12 * ctx.U, this.L.capsX + half, this.L.capsY + 12 * ctx.U];
     const ev = ctx.events('gold_dust').map(e => e.t).slice(0, 32);
     this._ev = new Float32Array(32); this._ev.set(ev); this._nEv = ev.length;
   },
@@ -352,12 +424,16 @@ const scene = {
   },
   // star shields around the name and the line above it (frame px rects)
   shields() {
-    const [x0, x1, y0, y1] = this._ink, L = this.L;
-    return new Float32Array([x0 - 30, y0 - 20, x1 + 40, y1 + 24, L.capsX - 290, L.capsY - 26, L.capsX + 290, L.capsY + 10, 0, 0, 0, 0]);
+    const [x0, x1, y0, y1] = this._ink, c = this._capsBox;
+    return new Float32Array([x0 - 30, y0 - 20, x1 + 40, y1 + 24, c[0], c[1], c[2], c[3], 0, 0, 0, 0]);
+  },
+  capsEntry(tau) {
+    return { lineId: 'L1a', tau, x: this.L.capsX, y: this.L.capsY, style: 'caps', enter: { base: 'caps', stagger: 0.018 } };
   },
   grainUniforms(ctx, t, extra = {}) {
     const cam = this.cam(ctx, t);
     return Object.assign({
+      uGShield: this._capsBox, uGShieldK: 0.8 * ctx.tl.seg(t, 14.6, 15.6, ctx.tl.E.inOutSine),
       uTau: t, uHome: this._home, uC: this.L.C, uShake: cam.shake, uU: ctx.U, uPush: cam.push, uDustI: 1, uNameI: 1, uSeed: 3.7,
       uC1: this.col.p1, uC2: this.col.p2, uC3: this.col.p3, uHot: this.col.hot, uEv: this._ev, uNEv: this._nEv, uNName: N_NAME, uInk: this._inkU,
     }, extra);
@@ -381,12 +457,13 @@ const scene = {
   },
   captions(ctx, tau) {
     const t = T0 + tau;
-    const caps = { lineId: 'L1a', tau: t - 15.0, x: this.L.capsX, y: this.L.capsY, style: 'caps', enter: { base: 'caps', stagger: 0.018 } };
+    const caps = this.capsEntry(t - 15.0);
     const name = nameEntry(ctx, this.L, t - 15.0);
     // per-pixel formation on the grains' clock: s(x) = 14.6 + 2.2 xn (+0.1, the mean of the 0.2 hash), 0.8 s arrival
     name.reveal = { t0: 14.6 + 0.1 - 15.0, span: 2.2, dur: 0.8, lo: 0.85, hi: 1.0, x0: this._ink[0], x1: this._ink[1] };
     name.sweeps = [{ at: 18.0 - 15.0, dur: 1.0, I: 1.5, width: 64 }];
-    name.glints = [{ at: 18.95 - 15.0, glyph: 3, size: 46, I: 5, dur: 0.4 }];
+    // the strike ends on one small, brief highlight on the top bevel of the last letter (not a big stock twinkle)
+    name.glints = [{ at: 18.95 - 15.0, glyph: 3, size: 22, I: 3.5, dur: 0.25 }];
     name.gold = this.nameGold(ctx, t);
     return [caps, name];
   },
@@ -397,8 +474,9 @@ const scene = {
     const fl = Math.exp(-6 * e);
     return {
       bloom: { threshold: 1.0 * (1 - k), knee: 0.5, mix: 0.05 * k, add: 0.25 * (1 - k) },
-      streak: { strength: 0.5 * fl },
-      ca: 0.0012 + 0.0048 * Math.exp(-5 * e),
+      streak: { strength: 0.25 * fl },
+      // a brief kick (2.7 px in the corners at the peak): stronger splits the background stars into RGB triplets
+      ca: 0.0012 + 0.0013 * Math.exp(-5 * e),
       ghosts: 0,
     };
   },

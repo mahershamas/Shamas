@@ -19,6 +19,8 @@
 
   Exported: dusk(ctx) -> layout numbers, orbAt(ctx, t) -> {x, y, core, glow, I} (the orb scene 6 picks up at 64.5).
 */
+import { drawCaptionBands } from './s04_two_shores.js';
+
 const T0 = 54.0;
 
 export function dusk(ctx) {
@@ -144,9 +146,10 @@ vec3 skyAt(vec2 q, vec3 m){
   // sun: limb-darkened disc and the Mie halo, with faint crepuscular rays above the ridges
   vec2 d = q - uSun.xy; float r = length(d);
   float fw = max(fwidth(r), 1e-3);
-  float disc = clamp((uSun.z - r) / fw + 0.5, 0.0, 1.0);
+  // a 1.5 px feathered edge and visible limb darkening toward the warm rim (never a flat clipped sticker)
+  float disc = clamp((uSun.z - r) / (1.5 * fw) + 0.5, 0.0, 1.0);
   float mu = sqrt(max(1.0 - r * r / (uSun.z * uSun.z), 0.0));
-  c += mix(uSunRim, uSunCore, pow(mu, 0.45)) * uSun.w * disc;
+  c += mix(uSunRim, uSunCore, pow(mu, 0.8)) * uSun.w * disc;
   c += uSunHalo * uSunK.x * haloShape(r);
   if (d.y < 0.0){
     float ang = atan(d.x, -d.y);
@@ -244,6 +247,7 @@ uniform vec4 uGl;        // glitter I, facet slope sigma x, facet slope sigma z,
 uniform vec4 uGl2;       // molten front (layout px below the horizon), sun layout x, sun layout y, focal px
 uniform vec2 uSunS;      // screen x of the sun's column
 uniform float uMistBK, uSpan;
+uniform vec2 uMolFade;   // frame y where the molten sheen fades out (portrait: the path keeps only its sparkles there)
 out vec4 o;
 void main(){
   vec2 px = framePx(); vec2 q = toLayout(px);
@@ -305,7 +309,8 @@ void main(){
     // into liquid tongues instead of straight bars
     float sw = 0.5 + 0.5 * sin(zW * 1.4 + 3.2 * R.z + 2.2 * vn(vec2(xw * 2.2 + 7.0, zW * 0.35)) + uTau * 1.7);
     float bands = mix(0.4, pow(sw, 3.0), res);
-    c += uMolC * mol * densM * (0.06 + 1.6 * bands) * (0.35 + 0.65 * smoothstep(-0.1, 0.3, R.z)) * 0.65 * uGl.x;
+    // tongues of liquid gold (a small broad term), warm and saturated
+    c += uMolC * mol * densM * (0.02 + 1.2 * bands) * (0.35 + 0.65 * smoothstep(-0.1, 0.3, R.z)) * 0.65 * uGl.x * (1.0 - smoothstep(uMolFade.x, uMolFade.y, px.y));
   }
   o = vec4(c * cov, cov);
 }`;
@@ -328,16 +333,16 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
   if (a < 0.0) return;
   float dep = pow(hh(id, 3.0), 1.6);
   float y0 = uHz + 3.0 + uSpan * 0.62 * dep;
-  float w = uColW * (0.45 + 0.9 * dep);
+  float w = uColW * (0.45 + 0.9 * dep) * (st ? 1.0 : 2.0);
   float x0 = uSunL.x + (hh(id, 2.0) - 0.5) * 2.0 * w * (0.5 + 0.5 * hh(id, 9.0));
   float vy = -(10.0 + 15.0 * hh(id, 4.0)) * (0.55 + 0.6 * dep);
   vec2 L = vec2(x0 + 7.0 * sin(a * (0.6 + hh(id, 5.0)) + hh(id, 6.0) * 6.28) * (0.3 + dep), y0 + vy * a);
   vec2 P = uO + (L - uF) * uS;
   vec3 c = mix(uC1, uC2, hh(id, 7.0));
   float tw = 0.6 + 0.4 * sin(t * (5.0 + 7.0 * hh(id, 8.0)) + hh(id, 10.0) * 6.28);
-  float I = (1.6 + 4.0 * pow(hh(id, 11.0), 2.0)) * tw;
+  float I = (st ? 1.6 : 2.2) * (1.0 + 2.5 * pow(hh(id, 11.0), 2.0)) * tw;
   float al = smoothstep(0.0, 0.3, a) * uExit;
-  size = (1.0 + 1.5 * hh(id, 12.0)) * (0.5 + 0.7 * dep) * uU;
+  size = (1.0 + 1.5 * hh(id, 12.0)) * (0.5 + 0.7 * dep) * uU * (st ? 1.0 : 1.5);
   if (st){
     vec4 H = fetchPoint(uHome, id);
     float ta = uT0 + 0.25 + 1.4 * H.z + 0.08 * (hh(id, 13.0) - 0.5);
@@ -369,7 +374,8 @@ void main(){
   float w;
   if (vGlint > 0.5){
     vec2 a = abs(q);
-    w = (exp(-a.y * 9.0) * max(1.0 - a.x, 0.0) + exp(-a.x * 9.0) * max(1.0 - a.y, 0.0)) * 0.9 + exp(-dot(q, q) * 7.0) * 1.2;
+    // a soft glint with an anamorphic (horizontal) bias: the vertical arm is a third as long
+    w = (exp(-a.y * 9.0) * max(1.0 - a.x, 0.0) + 0.6 * exp(-a.x * 9.0) * max(1.0 - 3.0 * a.y, 0.0)) * 0.9 + exp(-dot(q, q) * 7.0) * 1.2;
   } else w = exp(-dot(q, q) * 2.0);
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
 }`;
@@ -407,12 +413,14 @@ const scene = {
     const night = (h, k, blue = 1.08) => S(h).map((v, i) => v * k * (i === 2 ? blue : 1));
     this.col = {
       zen: [S('#24345A'), night('#24345A', 0.30, 1.1)], mid: [S('#8E7BA0'), night('#8E7BA0', 0.16, 1.25)], hzc: [S('#F2B26E'), night('#F2B26E', 0.13)],
+      // the dusk opens darker (straight out of scene 4's navy) and warms to the build-sheet sky by 58.0
+      zenEarly: S('#1A2547'), midEarly: S('#6E5F86'), hzcEarly: S('#C98E62'),
       glow: S('#F2A65A'), core: S('#FFF0C8'), rim: S('#FFC870'), halo: S('#F2A65A'),
       cloudW: S('#F4B48C'), cloudC: S('#6E6488'),
       ridge: ['#3B3F5C', '#4E5677', '#6B7395', '#8E95B0'].map(h => [S(h), night(h, 0.30, 1.15)]),
       mist: [S('#C9C3CC'), night('#C9C3CC', 0.22, 1.1)],
       deep: [S('#120F20'), night('#120F20', 0.45)],
-      gl: S('#FFC870'), molA: S('#F6C76B'), molB: S('#FFF1C1'),
+      gl: S('#FFC870'), molA: S('#F0A548'), molB: S('#F6C76B'),
       m1: ctx.hexLin('#FFE7A3'), m2: ctx.hexLin('#D4A64A'), star: ctx.hexLin('#DCE6FF'),
       orbCore: ctx.hexLin('#FFE7A3'), orbGlow: ctx.hexLin('#FFD27A'), white: [1.0, 0.95, 0.84],
     };
@@ -433,7 +441,9 @@ const scene = {
   cam(ctx, t) {
     const { tl } = ctx, D = this.D;
     const push = 1 + 0.03 * tl.seg(t, 54.0, 63.0, tl.E.inOutSine);
-    const k = tl.seg(t, 63.0, 64.5, tl.E.inExpo);
+    // mostly exponential, with a little linear so the push already reads (scale about 1.9 at 64.0, 6 at 64.5)
+    const pk = tl.seg(t, 63.0, 64.5);
+    const k = 0.12 * pk + 0.88 * tl.E.inExpo(pk);
     const km = tl.seg(t, 63.0, 64.5, tl.E.inOutSine);
     const S = push * (1 + (6 / 1.03 - 1) * k);
     const O = [D.notch[0] + (D.orbEnd[0] - D.notch[0]) * km, D.notch[1] + (D.orbEnd[1] - D.notch[1]) * km];
@@ -454,15 +464,17 @@ const scene = {
     const m = [1.0, 0.6, 0.35, 0.15].map(par => 1 + par * 0.0045 * Math.max(0, tau));
     const after = tl.seg(t, 62.3, 64.0, E.inOutSine);
     const sv = Math.sqrt(sun.vis);
+    const early = 1 - tl.seg(t, 54.0, 58.0, E.inOutSine);
     return {
       t, tau, u, sun, cam, m,
       uni: {
         uF: cam.F, uO: cam.O, uS: cam.S, uHz: this.D.hz, uTau: tau,
-        uZen: lerp3(C.zen[0], C.zen[1], u), uMid: lerp3(C.mid[0], C.mid[1], u), uHzc: lerp3(C.hzc[0], C.hzc[1], Math.pow(u, 1.3)),
+        uZen: lerp3(lerp3(C.zen[0], C.zenEarly, early), C.zen[1], u), uMid: lerp3(lerp3(C.mid[0], C.midEarly, early), C.mid[1], u),
+        uHzc: lerp3(lerp3(C.hzc[0], C.hzcEarly, early), C.hzc[1], Math.pow(u, 1.3)),
         uGlowC: C.glow, uSunCore: C.core, uSunRim: C.rim, uSunHalo: C.halo, uCloudW: C.cloudW.map(v => v * (1 - 0.7 * u)), uCloudC: C.cloudC.map(v => v * (1 - 0.75 * u)),
         uMistA: lerp3(C.mist[0], C.mist[1], u), uMistB: lerp3(C.mist[0], C.mist[1], u * 0.9),
-        uSun: [sun.x, sun.y, this.D.R, 6.5 * (0.75 + 0.25 * sv)],
-        uSunK: [0.55 * (0.25 + 0.75 * sv) * (1 - 0.7 * after), 0.55 * (0.3 + 0.7 * sv) * (1 - 0.6 * after), 0.035 * sv, 0.65 * (0.15 + 0.85 * sv)],
+        uSun: [sun.x, sun.y, this.D.R, 2.1 * (0.75 + 0.25 * sv)],
+        uSunK: [0.88 * (0.25 + 0.75 * sv) * (1 - 0.7 * after), 0.55 * (0.3 + 0.7 * sv) * (1 - 0.6 * after), 0.035 * sv, 0.65 * (0.15 + 0.85 * sv)],
         uRc: C.ridge.map(r => lerp3(r[0], r[1], u)).flat(),
         uRh: C.ridge.map((r, i) => lerp3(lerp3(r[0], C.hzc[0], 0.32 + 0.06 * i), lerp3(r[1], C.hzc[1], 0.25), u)).flat(),
         uMistK: [0.35 * (1 - 0.3 * u), 0.35 * (1 - 0.3 * u), 0.55 * (1 - 0.4 * u), 0.15 + 0.85 * tl.seg(t, 57.0, 63.0)],
@@ -519,8 +531,11 @@ const scene = {
         uShore: lerp3(U.uHzc, U.uMid, 0.3).map(v => v * 0.6), uGlC: this.col.gl, uMolC: lerp3(this.col.molA, this.col.molB, tl.seg(t, 60.0, 60.9)),
         uGl: [(1 + 1.2 * gold) * Math.min(1, fade), 0.0068 + 0.004 * molten, 0.040 + 0.03 * molten, molten],
         uGl2: [span * tl.seg(t, 60.0, 60.385), st.sun.x, st.sun.y, 1745], uSunS: sunS, uSpan: span,
+        uMolFade: ctx.portrait ? [1500, 1700] : [1e5, 2e5],
       }, U), target, { blend: 'premul', viewport: [0, 0, target.w, Math.min(target.h, Math.ceil((H - top) * sc))] });
     }
+    // the lines sit on the dusk sky (stratus, the first stars): a soft darker band under each
+    drawCaptionBands(ctx, target, this.bandEntries(ctx, t), 0.38);
     // the last light and the orb live in the scene target: scene 6's 'over' entrance covers it as it takes over
     this.drawOrb(ctx, t, target);
   },
@@ -561,6 +576,10 @@ const scene = {
     const D = this.D;
     return { lineId: 'L7b', tau, x: D.textX, y: D.yB, style: { base: 'narrative', size: D.size }, opacity: 0.92, exit: { at: 2.6, kind: 'mist', dur: 1.0 } };
   },
+  // one entry per line for the caption bands (the gold word is part of line L7b's row)
+  bandEntries(ctx, t) {
+    return this.captions(ctx, t - T0).filter(e => e.layer !== 'hdr').map(e => { const o = Object.assign({}, e); delete o.part; return o; });
+  },
   captions(ctx, tau) {
     const t = T0 + tau, D = this.D;
     const out = [];
@@ -573,9 +592,12 @@ const scene = {
       const sx = cam.O[0] + (sun.x - cam.F[0]) * cam.S, sy = cam.O[1] + (sun.y - cam.F[1]) * cam.S;
       out.push(Object.assign({}, b, {
         part: [g0, 999], layer: 'hdr', enter: 'none', opacity: 1,
-        reveal: { t0: 0.15, span: 1.4, dur: 0.35, lo: 0.4, hi: 1.0, x0: this._ink[0], x1: this._ink[1] },
+        // the reveal runs past the ink's end, so the full stop forms with the last letter instead of popping after it
+        reveal: { t0: 0.15, span: 1.4, dur: 0.35, lo: 0.4, hi: 1.0, x0: this._ink[0], x1: this._ink[1] + 14 * ctx.U },
         sweeps: [{ at: 1.8, dur: 0.8, I: 1.6, width: 46 }],
-        glints: [{ at: 2.45, glyph: this.goldRange[0] + 1, size: 30, I: 4, dur: 0.35 }],
+        glints: [{ at: 2.45, glyph: this.goldRange[0] + 1, size: 18, I: 2.5, dur: 0.35 }],
+        // the gold word leaves last, with the same mist exit as the cream words
+        exit: { at: 2.75, kind: 'mist', dur: 1.0 },
         gold: { look: 'winter_gold', key: [sx, sy], keyZ: 260, keyI: 4.2 },
       }));
     }
@@ -583,8 +605,10 @@ const scene = {
   },
   post(ctx, tau) {
     const t = T0 + tau, tl = ctx.tl, E = tl.E;
-    const ev = -0.3 * tl.seg(t, 54.0, 54.5, E.inOutSine) + 0.3 * tl.seg(t, 57.0, 60.0, E.inOutSine) - 3.0 * tl.seg(t, 63.0, 64.5, E.inOutSine);
-    return { exposure: ev };
+    // the dusk opens dark (-0.8 EV, darker than scene 4's dimmed sea) and recovers to -0.2 EV by 59.5
+    // (back to 0 EV by 63.2, so the push and the orb that scene 6 picks up at 64.5 are unchanged)
+    const ev = -0.8 + 0.6 * tl.seg(t, 56.0, 59.5, E.inOutSine) + 0.2 * tl.seg(t, 62.4, 63.2, E.inOutSine) - 3.0 * tl.seg(t, 63.0, 64.5, E.inOutSine);
+    return { exposure: ev, ca: 0.0015 };
   },
 };
 export default scene;

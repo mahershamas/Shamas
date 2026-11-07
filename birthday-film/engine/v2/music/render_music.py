@@ -16,17 +16,22 @@ Manifest
               "eq": [[f, q, dB] (peaking) | ["ls" | "hs", f, dB] (shelves, S = 1) | ["hp" | "lp", f], ...], "hall": send | [[t, send], ...], "aurora": send | [[t, send], ...],
               "abs": true  -> the stem is already at its final dBFS level: the loudness trim is undone on it}],
    "reverbs": {"<send name>": {"ir": "hall" | "aurora", "return_db": 0, "auto": [[t, dB], ...]}},
-   "reverb_cuts": [[t_cut, t_resume], ...]   room tails generated before t_cut stop at t_cut (8 ms fade); the
-                                             room input between t_cut and t_resume is dropped (a gated hold)
-   "master": {"hp_hz", "high_shelf": [f, dB], "comp": {"threshold_db", "ratio", "attack_ms", "release_ms"},
+   "gates": [{"t0", "t1", "fade", "keep": [stem, ...]}]   hard gates on the final mix (rooms and filter tails
+                                             included): only the kept stems sound inside [t0, t1]
+   "reverb_cuts": [[t_cut, t_resume(, fade_s)], ...]   room tails generated before t_cut stop at t_cut (raised-
+                                             cosine fade of fade_s, default 8 ms, ending at t_cut); the room
+                                             input between t_cut and t_resume is dropped (a gated hold)
+   "master": {"hp_hz", "high_shelf": [f, dB], "comp": {"threshold_db", "ratio", "attack_ms", "release_ms",
+                                                      "sc_hp_hz" (optional side-chain high-pass of the detector)},
               "ride": [[t, dB], ...] (the conductor's long-range dynamics, applied after the compressor),
               "ceiling_dbtp", "target_lufs", "end_fade": [t0, t1], "bits": 24},
    "checks": {"silence": [{"t0", "t1", "max_dbfs", "what": "full mix" | "dry", "exclude": [stem, ...]}],
+              ("full mix" with "exclude": the final mix, rooms included, minus the excluded stems and their rooms)
               "quiet_after": [{"t", "max_dbfs", "what"}], "zero_after": t},
    "sections": [[label, t0, t1], ...]  (optional: short-term loudness table in the report)}
 
 Master chain (in order): stem EQ and faders -> rooms -> high-pass (2nd order) -> high shelf -> loudness trim ->
-bus compressor (feed-forward, 20 ms RMS detector, stereo-linked, 6 dB soft knee) -> ride -> true-peak limiter
+bus compressor (feed-forward, 20 ms RMS detector on an optionally high-passed side chain, stereo-linked, 6 dB soft knee) -> ride -> true-peak limiter
 (4x oversampled peak detection, non-causal look-ahead, smooth attack, exponential release) -> end fade ->
 TPDF dither -> 24-bit WAV. The trim is iterated until the integrated loudness (ITU-R BS.1770-4, measured
 here and cross-checked with ffmpeg ebur128) is on target.
@@ -177,11 +182,16 @@ def true_peak_dbtp(x, os_factor=4):
 
 
 # --------------------------------------------------------------------------- dynamics
-def compressor_gain(x, threshold_db, ratio, attack_ms, release_ms, knee_db=6.0, det_ms=20.0, block=48):
-    """Stereo-linked feed-forward compressor; returns the per-sample linear gain."""
+def compressor_gain(x, threshold_db, ratio, attack_ms, release_ms, knee_db=6.0, det_ms=20.0, block=48, sc_hp_hz=None):
+    """Stereo-linked feed-forward compressor; returns the per-sample linear gain. sc_hp_hz: the detector hears a
+    2nd-order high-passed copy (low drums and sub no longer pump the whole mix)."""
     n = len(x)
     nb = n // block + 1
-    e = np.max(x.astype(float) ** 2, axis=1)
+    xd = x.astype(float)
+    if sc_hp_hz:
+        xd = signal.sosfilt(signal.butter(2, float(sc_hp_hz), 'highpass', fs=SR, output='sos'), xd, axis=0)
+    e = np.max(xd ** 2, axis=1)
+    del xd
     e = np.concatenate([e, np.zeros(nb * block - n)])
     eb = e.reshape(nb, block).mean(axis=1)
     k = max(1, int(round(det_ms / 1000.0 * SR / block)))
@@ -247,12 +257,14 @@ def room(send, ir, cuts, t0=0.0):
     """Wet signal of `send` (n, 2) through `ir`, with gated cuts. Returns (n, 2) float32."""
     n = len(send)
     out = np.zeros((n, 2), np.float32)
-    edges = [(0.0, None)]
-    for tc, tr in sorted(cuts):
-        edges[-1] = (edges[-1][0], tc)
-        edges.append((tr, None))
-    nf = int(0.008 * SR)
-    for a, b in edges:
+    edges = [(0.0, None, None)]
+    for c in sorted(cuts):
+        tc, tr = c[0], c[1]
+        fs = float(c[2]) if len(c) > 2 else 0.008
+        edges[-1] = (edges[-1][0], tc, fs)
+        edges.append((tr, None, None))
+    for a, b, fs in edges:
+        nf = int(round((fs or 0.008) * SR))
         i0 = max(0, int(round((a - t0) * SR)))
         i1 = n if b is None else min(n, int(round((b - t0) * SR)))
         if i1 <= i0:
@@ -301,6 +313,7 @@ def main():
     ap.add_argument('out')
     ap.add_argument('--report', default=None)
     ap.add_argument('--no-ffmpeg', action='store_true')
+    ap.add_argument('--dump-precomp', default=None, help='save the trimmed mix before the compressor (.npy, float32)')
     a = ap.parse_args()
     t_start = time.time()
     man = json.load(open(a.manifest))
@@ -311,11 +324,22 @@ def main():
     rvs = man.get('reverbs', {})
     checks = man.get('checks', {})
     dry_checks = [c for c in checks.get('silence', []) + checks.get('quiet_after', []) if c.get('what') == 'dry']
+    # full-mix checks that leave some stems out: those stems (and their room returns) are tracked separately and
+    # subtracted from the final mix
+    ex_checks = [c for c in checks.get('silence', []) if c.get('what') != 'dry' and c.get('exclude')]
+    gates = man.get('gates', [])
+    # stem subsets tracked on their own (dry + rooms): the excluded stems of those checks, the stems a gate keeps
+    subsets = []
+    for grp in [tuple(sorted(c['exclude'])) for c in ex_checks] + [tuple(sorted(g.get('keep', []))) for g in gates]:
+        if grp and grp not in subsets:
+            subsets.append(grp)
 
     # ---------------------------------------------------------------- stems -> dry sums and room sends
     dry = {False: np.zeros((n, 2), np.float32), True: np.zeros((n, 2), np.float32)}
     sends = {(r, ab): np.zeros((n, 2), np.float32) for r in rvs for ab in (False, True)}
     chk = [{False: np.zeros((n, 2), np.float32), True: np.zeros((n, 2), np.float32)} for _ in dry_checks]
+    ex_dry = [{False: np.zeros((n, 2), np.float32), True: np.zeros((n, 2), np.float32)} for _ in subsets]
+    ex_sends = [{} for _ in subsets]
     stem_info = []
     for st in man['stems']:
         x = read_stem(os.path.join(base, st['file']), n)
@@ -333,6 +357,15 @@ def main():
         for ci, c in enumerate(dry_checks):
             if st['name'] not in c.get('exclude', []):
                 chk[ci][ab] += y
+        for ci, grp in enumerate(subsets):
+            if st['name'] in grp:
+                ex_dry[ci][ab] += y
+                for r in rvs:
+                    sv = st.get(r)
+                    if sv is None or (np.isscalar(sv) and sv == 0):
+                        continue
+                    k = (r, ab)
+                    ex_sends[ci][k] = ex_sends[ci].get(k, 0) + y * curve(sv, n).astype(np.float32)[:, None]
         stem_info.append({'name': st['name'], 'abs': ab, 'peak_dbfs_after_fader': round(float(db(np.max(np.abs(y)))), 2)})
         del x, y
     # ---------------------------------------------------------------- rooms
@@ -345,6 +378,12 @@ def main():
             if np.any(sends[(r, ab)]):
                 wet[ab] += room(sends[(r, ab)], irs[spec.get('ir', r)], cuts) * ret
         del sends[(r, False)], sends[(r, True)]
+    for ci in range(len(subsets)):
+        for (r, ab), sx in ex_sends[ci].items():
+            spec = rvs[r]
+            ret = I.db2amp(spec.get('return_db', 0.0) + curve(spec.get('auto'), n)).astype(np.float32)[:, None]
+            ex_dry[ci][ab] += room(sx, irs[spec.get('ir', r)], cuts) * ret
+    del ex_sends
     # ---------------------------------------------------------------- linear master filters
     ms = man['master']
     sos = signal.butter(2, ms.get('hp_hz', 28.0), 'highpass', fs=SR, output='sos')
@@ -356,6 +395,27 @@ def main():
     Mx = lin(dry[False] + wet[False])
     Ax = lin(dry[True] + wet[True])
     chk = [{False: lin(c[False]), True: lin(c[True])} for c in chk]
+    sub = [{False: lin(d[False]), True: lin(d[True])} for d in ex_dry]
+    del ex_dry
+    # hard gates: inside [t0, t1] only the kept stems (with their own rooms) sound; everything else, including
+    # filter and room tails, fades out over `fade` s before t0 and back in over `fade` s from t1
+    for gt in gates:
+        k = subsets.index(tuple(sorted(gt.get('keep', [])))) if gt.get('keep') else None
+        nf = max(1, int(round(float(gt.get('fade', 0.006)) * SR)))
+        i0, i1 = int(round(gt['t0'] * SR)) - nf, min(n, int(round(gt['t1'] * SR)) + nf)
+        w = np.ones(i1 - i0)
+        w[:nf] = 0.5 - 0.5 * np.cos(np.pi * np.arange(nf) / nf)
+        w[-nf:] = 0.5 + 0.5 * np.cos(np.pi * np.arange(nf) / nf)
+        w = w[:, None]
+        for ab, X in ((False, Mx), (True, Ax)):
+            keep = sub[k][ab][i0:i1] if k is not None else 0.0
+            X[i0:i1] = X[i0:i1] * (1.0 - w) + keep * w
+    ex_win = []
+    for c in ex_checks:
+        k = subsets.index(tuple(sorted(c['exclude'])))
+        i0, i1 = int(round(c['t0'] * SR)), int(round(c['t1'] * SR))
+        ex_win.append({False: (Mx - sub[k][False])[i0:i1], True: (Ax - sub[k][True])[i0:i1]})
+    del sub
     del dry, wet
     # ---------------------------------------------------------------- trim / comp / limiter, iterated on loudness
     target = float(ms.get('target_lufs', -16.0))
@@ -375,7 +435,7 @@ def main():
         g = I.db2amp(trim_db)
         s = g * Mx + Ax
         gc = compressor_gain(s, cp.get('threshold_db', -18.0), cp.get('ratio', 2.0), cp.get('attack_ms', 30.0),
-                             cp.get('release_ms', 250.0)) if cp else np.ones(n)
+                             cp.get('release_ms', 250.0), sc_hp_hz=cp.get('sc_hp_hz')) if cp else np.ones(n)
         s *= (gc * ride)[:, None]
         gl, nlim = limiter_gain(s, ceil - 0.12)
         s *= gl[:, None]
@@ -392,6 +452,8 @@ def main():
             step = (target - L) / float(np.clip(slope, 0.3, 1.0))
         prev = (trim_db, L)
         trim_db += step
+    if a.dump_precomp:
+        np.save(a.dump_precomp, (I.db2amp(trim_db) * Mx + Ax).astype(np.float32))
     tp = true_peak_dbtp(s)
     if tp > ceil - 0.02:                                  # final safety pass on the measured true peak
         gl2, _ = limiter_gain(s, ceil - 0.2)
@@ -414,8 +476,10 @@ def main():
     rep['short_term_max_lufs'] = round(float(np.max(st_l)), 2)
     rep['short_term_max_at'] = round(float(tst[np.argmax(st_l)]), 2)
     rep['comp_gr_max_db'] = round(float(-db(np.min(gc))), 2)
+    rep['comp_gr_max_at'] = round(float(np.argmin(gc) / SR), 2)
     rep['comp_gr_median_db_when_active'] = round(float(np.median(-db(gc[gc < 0.999]))) if np.any(gc < 0.999) else 0.0, 2)
     rep['limiter_gr_max_db'] = round(float(-db(np.min(gl))), 2)
+    rep['limiter_gr_max_at'] = round(float(np.argmin(gl) / SR), 2)
     rep['limited_ms'] = round(float(np.sum(gl < 0.999) / SR * 1000), 1)
     res = []
     for c in checks.get('silence', []):
@@ -423,11 +487,15 @@ def main():
         if c.get('what') == 'dry':
             k = dry_checks.index(c)
             seg = (I.db2amp(trim_db) * chk[k][False][i0:i1] + chk[k][True][i0:i1]) * (gc * ride * gl)[i0:i1, None]
+        elif c in ex_checks:
+            k = ex_checks.index(c)
+            seg = (I.db2amp(trim_db) * ex_win[k][False] + ex_win[k][True]) * (gc * ride * gl * fade)[i0:i1, None]
         else:
             seg = out[i0:i1]
         v = rms_dbfs(seg)
         res.append({'t0': c['t0'], 't1': c['t1'], 'what': c.get('what'), 'exclude': c.get('exclude', []),
                     'rms_dbfs': round(v, 2), 'max_dbfs': c['max_dbfs'], 'pass': bool(v < c['max_dbfs']),
+                    'peak_dbfs': round(float(db(np.max(np.abs(seg)))), 2) if len(seg) else None,
                     'full_mix_rms_dbfs': round(rms_dbfs(out[i0:i1]), 2)})
     for c in checks.get('quiet_after', []):
         i0 = int(round(c['t'] * SR))
@@ -460,6 +528,8 @@ def main():
         rep['ffmpeg_ebur128'] = ffmpeg_loudness(a.out)
     rep['render_s'] = round(time.time() - t_start, 1)
     np.save(os.path.splitext(a.out)[0] + '_gain.npy', np.asarray(gain_total[::48], np.float32))
+    np.savez(os.path.splitext(a.out)[0] + '_dyn.npz', comp=np.asarray(gc[::48], np.float32),
+             limiter=np.asarray(gl[::48], np.float32))                 # 1 kHz: compressor and limiter gains
     js = json.dumps(rep, indent=1)
     if a.report:
         with open(a.report, 'w') as f:

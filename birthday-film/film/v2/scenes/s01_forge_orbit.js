@@ -1,8 +1,8 @@
 /*
   Scene 1: forge-orbit (0.0-12.0), package P5.
   Black vellum ground; a seeded starfield with gravitational-wave lensing; two stars (gold A, pearl B) spiralling in,
-  locked to the harp plucks t_k = 12 - 8*0.8^k (one half-orbit per pluck); arc smear instead of strobing; 40-sample
-  trails; the held breath 11.85-12.0: the radius closes with an easeOutCubic (the two cores read as one by 11.9),
+  locked to the harp plucks t_k = 12 - 8*0.8^k (one half-orbit per pluck); arc smear instead of strobing (a hot
+  point weighted along at most 0.6 rad of arc, the trail carries the rest); 160-sample trails (no beading); the held breath 11.85-12.0: the radius closes with an easeOutCubic (the two cores read as one by 11.9),
   the cores fuse into one elongated core at the barycentre, the spikes grow to 600 px, the frame lifts 15 percent and
   the background stops twinkling.
   Passes: nebula at half resolution -> main analytic pass (full res) -> overlay trails (points).
@@ -94,7 +94,8 @@ vec2 toWorld(vec2 px){ return uC + rot2(-uCamRot) * (px - uC) / uCamS - uDrift; 
 vec3 vellum(vec2 px){
   vec2 fq = px / uFrame.y;
   float fib = fbm(vec2(fq.x * 9.0, fq.y * 90.0), 3) * 0.6 + vn(px * 0.9) * 0.4;
-  return uGround * (0.12 + 0.5 * fib);
+  // the vellum fibre stays just perceptible (about 3/255): the film never opens on a dead black frame
+  return uGround * (0.25 + 0.6 * fib);
 }
 vec3 starLayer(vec2 w, float cs, float thr, float rmin, float rmax, float bmax, float seed){
   vec2 cell = floor(w / cs); vec2 f = w - cell * cs;
@@ -134,13 +135,13 @@ float spikes(vec2 v, float len){
 }
 vec3 binaryStar(vec2 px, float mid, vec3 core, vec3 halo, vec2 other, float coreW){
   vec2 dp = px - uC; float rp = length(dp); float th = atan(dp.y, dp.x);
-  float d;
-  if (uSpan >= TAU) d = abs(rp - uR);
-  else {
-    float a = clamp(wrapPi(th - mid), -0.5 * uSpan, 0.5 * uSpan);
-    d = length(px - (uC + uR * vec2(cos(mid + a), sin(mid + a))));
-  }
-  float arcLen = uR * min(uSpan, TAU);
+  // the visible smear is capped at 0.6 rad and weighted along the arc with a Gaussian (a hot point with a soft
+  // tail, never a flat capsule with hard ends); the trail carries the rest of the motion
+  float span = min(uSpan, 0.6);
+  float a = clamp(wrapPi(th - mid), -0.5 * span, 0.5 * span);
+  float d = length(px - (uC + uR * vec2(cos(mid + a), sin(mid + a))));
+  float along = exp(-2.0 * pow(a / (0.5 * span + 1e-3), 2.0));
+  float arcLen = uR * span;
   float norm = 6.0 / (6.0 + arcLen);
   vec2 P = uC + uR * vec2(cos(mid), sin(mid));
   vec2 v = px - P;
@@ -149,9 +150,11 @@ vec3 binaryStar(vec2 px, float mid, vec3 core, vec3 halo, vec2 other, float core
   if (al > 0.0) al /= uSt;                                // tidal stretch of the halo toward the companion
   float hd = min(length(vec2(al, pe)), d + 0.5 * length(v));
   float sg = 2.55 * uU;
-  float c = exp(-d * d / (2.0 * sg * sg)) * 9.0 * norm;
+  // core gain kept under the clip point (the bloom carries the brightness), tinted 20% toward its own halo so the
+  // gold and the pearl differ in the cores too; the spikes and halos are unchanged
+  float c = exp(-d * d / (2.0 * sg * sg)) * 4.0 * norm * along;
   float hl = exp(-hd / (60.0 * uU)) * 0.28;
-  return core * (c * coreW + spikes(v, uSpike) * (1.0 - smoothstep(0.0, 0.45, uMerge))) + halo * hl;
+  return mix(core, halo, 0.2) * c * coreW + core * spikes(v, uSpike) * (1.0 - smoothstep(0.0, 0.45, uMerge)) + halo * hl;
 }
 
 void main(){
@@ -161,10 +164,12 @@ void main(){
   vec2 pn = px / uFrame.y, cn = uC / uFrame.y, dv = pn - cn;
   float r = length(dv), th = atan(dv.y, dv.x);
   float wave = cos(2.0 * (th - uPh) + 18.0 * r) * smoothstep(1.2, 0.0, r);
-  vec2 q = pn + (r > 1e-5 ? dv / r : vec2(0.0)) * uAmp / (r + 0.05) * wave;
+  // the shear fades out near the binary (no smeared commas of background stars beside the pair)
+  vec2 q = pn + (r > 1e-5 ? dv / r : vec2(0.0)) * uAmp / (r + 0.05) * wave * smoothstep(0.04, 0.14, r);
   vec2 qpx = q * uFrame.y;
-  // the two-armed pattern is also seen as a faint magnification of the field (bright spiral arms)
-  float mag = 1.0 + uLensVis * wave * smoothstep(0.02, 0.12, r);
+  // the two-armed pattern is also seen as a faint magnification of the field (bright spiral arms); it only ever
+  // brightens, so the negative lobe can not read as a dark blot around the stars
+  float mag = 1.0 + uLensVis * max(wave, 0.0) * smoothstep(0.02, 0.12, r);
   c += texture(uNeb, pxToUV(qpx)).rgb * mag;
   c += starField(toWorld(qpx)) * uVisField * mag;
   // the binary
@@ -187,24 +192,26 @@ void main(){
   o = vec4(c, 1.0);
 }`;
 
+const NTR = 160;
 const TRAIL = `
 uniform vec2 uC; uniform float uRS, uVis; uniform vec3 uGold, uPearl;
 float phiOf(float t){ return 3.14159265 * log((12.0 - t) / 8.0) / log(0.8); }
 float rOf(float t){ return 190.0 * pow(max(12.0 - t, 1e-4) / 9.0, 0.4); }
+// ${NTR} samples per star at 2.5 ms spacing: the sample spacing stays under a fifth of the sprite size (no beads)
 void particle(int id, out vec2 px, out float size, out vec4 col){
-  int s = id / 40, i = id - (id / 40) * 40;
-  float tt = uTau - float(i) * 0.01;
+  int s = id / ${NTR}, i = id - (id / ${NTR}) * ${NTR};
+  float tt = uTau - float(i) * 0.0025;
   float ph = phiOf(min(tt, 11.85)) + (s == 1 ? PI : 0.0);
   float r = tt <= 11.85 ? rOf(tt) : rOf(11.85) * pow(1.0 - clamp((tt - 11.85) / 0.15, 0.0, 1.0), 3.0);
   r *= uRS;
   px = uC + r * vec2(cos(ph), sin(ph));
   float w = 14.08 / max(12.0 - min(tt, 11.85), 0.15);       // dphi/dt
-  float spacing = r * w * 0.01;
+  float spacing = r * w * 0.01;                              // the width keeps the 10 ms look
   size = clamp(spacing * 1.4, 2.5, 18.0);
-  float fade = 1.0 - float(i) / 40.0;
+  float fade = 1.0 - float(i) / ${NTR}.0;
   // the first samples sit on the star itself: start the trail behind the core so the core keeps its own colour
-  float lead = smoothstep(2.5, 6.0, float(i));
-  float a = uVis * fade * fade * 0.55 * (2.5 / size) * step(3.0, tt) * lead;
+  float lead = smoothstep(10.0, 24.0, float(i));
+  float a = uVis * fade * fade * 0.55 * 0.25 * (2.5 / size) * step(3.0, tt) * lead;   // 4x the samples, a quarter each
   col = vec4(s == 1 ? uPearl : uGold, a);
 }`;
 
@@ -226,7 +233,9 @@ export default {
     const { G, tl } = ctx;
     const t = tau;                                 // scene starts at 0: tau is absolute time
     const cam = this.camera(ctx, tau);
-    const visField = tl.seg(t, 2.5, 4.0, tl.E.inOutSine);
+    // frame 0 already shows the vellum and a faint field (it is the thumbnail); the field grows faintly from 0.5 s,
+    // then rises fully over 2.5-4.0
+    const visField = Math.max(0.10 + 0.22 * tl.seg(t, 0.5, 2.5, tl.E.inOutSine), tl.seg(t, 2.5, 4.0, tl.E.inOutSine));
     const visStars = tl.seg(t, 3.0, 4.0, tl.E.inOutSine);
     const neb = G.target('s01.neb', ctx.W * 0.5 * target.scale, ctx.H * 0.5 * target.scale, { scale: 0.5 * target.scale });
     G.draw(this.neb, { uC: this.C, uDrift: cam.drift, uCamS: cam.s, uCamRot: cam.rot, uVis: visField,
@@ -241,7 +250,7 @@ export default {
     G.draw(this.main, {
       uNeb: neb, uC: this.C, uDrift: cam.drift, uCamS: cam.s, uCamRot: cam.rot, uU: ctx.U,
       uTw: Math.min(t, T_HOLD), uVisField: visField, uVisStars: visStars,
-      uPh: phiOf(tc), uAmp: amp * visStars, uLensVis: Math.min(0.45, 0.2 * visStars * Math.pow(amp / 0.002, 2.0)),
+      uPh: phiOf(tc), uAmp: amp * visStars, uLensVis: Math.min(0.35, 0.2 * visStars * Math.pow(amp / 0.002, 2.0)),
       uMid: 0.5 * (p1 + p2), uSpan: Math.max(0, p2 - p1), uR: R, uSt: 1 + 0.8 * tl.smoothstep(60, 0, R),
       uSpike: (140 + 460 * tl.E.outCubic(hold)) * ctx.U, uGlow: 0.9 * tl.E.inQuad(hold), uMerge: merge,
       uGround: this.col.ground, uAcore: this.col.aCore, uAhalo: this.col.aHalo, uBcore: this.col.bCore, uBhalo: this.col.bHalo,
@@ -251,7 +260,7 @@ export default {
   overlay(ctx, tau, p, target) {
     const vis = ctx.tl.seg(tau, 3.0, 4.0, ctx.tl.E.inOutSine);
     if (vis <= 0) return;
-    ctx.particles.draw(this.trail, 80, { uTau: tau, uC: this.C, uRS: this.rs, uVis: vis, uGold: this.col.gold, uPearl: this.col.pearlTrail }, target);
+    ctx.particles.draw(this.trail, 2 * NTR, { uTau: tau, uC: this.C, uRS: this.rs, uVis: vis, uGold: this.col.gold, uPearl: this.col.pearlTrail }, target);
   },
   post(ctx, tau) {
     // the held breath lifts the frame 15%. Chromatic aberration is kept to about a pixel in the corners: at the
