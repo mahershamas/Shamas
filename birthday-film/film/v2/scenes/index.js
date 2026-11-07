@@ -31,8 +31,8 @@ export const TRANSITIONS = [
   { from: 's07_beside_you', to: 's08_honest', t0: 90.0, kind: 'cut' },                    // scene 8 recedes the photo itself
   { from: 's08_honest', to: 's09_ocean_later', t0: 107.4, t1: 108.6, kind: 'inkbleed', opts: { scale: 3, oct: 5, edge: 0.03, gold: 1 } },
   { from: 's09_ocean_later', to: 's10_i_love_you', t0: 117.0, kind: 'cut' },              // hard cut, cue 'stop'
-  { from: 's10_i_love_you', to: 's11_come_back', t0: 131.5, t1: 132.5, kind: 'inkbleed', opts: { scale: 3, oct: 5, edge: 0.03, gold: 0, lumaKey: 0.6 } },
-  { from: 's11_come_back', to: 's12_promise', t0: 137.8, t1: 138.6, kind: 'inkbleed', opts: { scale: 3, oct: 5, edge: 0.03, gold: 0 } },
-  { from: 's12_promise', to: 's13_signature', t0: 144.4, t1: 145.4, kind: 'crossfade' },
-  { from: 's13_signature', to: 's14_first_light', t0: 155.0, t1: 156.0, kind: 'inkbleed', opts: { scale: 3, oct: 5, edge: 0.03, gold: 1 } },
+  { from: 's10_i_love_you', to: 's11_come_back', t0: 131.5, t1: 132.5, kind: 'custom', ease: p => p },   // scene 11: luma-keyed ink bleed of the sea only, one continuous sky
+  { from: 's11_come_back', to: 's12_promise', t0: 137.8, t1: 138.6, kind: 'custom' },              // scene 12: the sea dissolves into ink from the edges in
+  { from: 's12_promise', to: 's13_signature', t0: 144.4, t1: 145.4, kind: 'custom' },              // scene 13: the knot crumbles to dust
+  { from: 's13_signature', to: 's14_first_light', t0: 155.0, t1: 156.0, kind: 'custom' },         // scene 14: gilded ink front from the edges in
 ];
