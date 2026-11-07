@@ -1,0 +1,10 @@
+{ "bpm": 60, "bar": 3.0, "jig_bar": 1.2, "duration": 183.0,
+  "cues": { "hold_breath": 11.85, "merger": 12.0, "caps": 15.0, "name_done": 18.0, "rubric": 19.0,
+    "line2": 24.0, "arc": 31.0, "band": 37.0, "chime1": 48, "chime2": 49, "chime3": 50, "chime4": 51, "chime5": 52,
+    "dark": 54.5, "gold": 60.0, "push_light": 63.0, "border_tips": 64.5, "photo": 66.0, "border_meet": 67.5,
+    "colour": 69.0, "portrait1": 71.0, "portrait2": 71.2, "portrait3": 71.4, "portrait4": 71.6, "glass": 71.5,
+    "forget": 72.0, "feel": 78.0, "easy": 84.0, "pearl": 87.0, "heart_ink": 102.0, "heart_cry": 104.0,
+    "gild": 105.2, "ocean": 108.0, "stop": 117.0, "ily": 118.0, "climax": 120.0, "mind": 126.0,
+    "come_back": 132.0, "comet": 133.0, "name_peak": 135.0, "knot_close": 141.0, "signature": 145.0,
+    "homecoming": 147.0, "pickup": 155.4, "jig": 156.0, "jig_B": 165.6, "coda": 175.2, "last_light": 178.9,
+    "black": 181.3 } }
