@@ -13,6 +13,7 @@
         [--tune film] [--maxrate 12M] [--bufsize 24M] [--abitrate 256k] [--master [path]] [--encode v2]
         [--segdir DIR [--chunks N] [--keep]]   resumable: finished chunks are skipped when the command is rerun
         [--res 2] [--segcodec hq10 [--segcrf 6]] [--grainres 0.333] [--level 5.1]   4K: output scale, 10-bit intermediate, grain size, H.264 level
+        [--frames-only]   with --segdir and --keep: render the chunks and write list.txt, skip the final encode
    node render.js --html ... --stills 0,10.5,42 --outdir ../private/out/stills [--variant portrait] [--res 2]
 
  --encode v2 sets the version-2 delivery settings (SPEC 4.4): --workers 2 --crf 14 --preset slow --tune grain
@@ -169,6 +170,8 @@ async function main() {
   const t0 = Date.now(); await Promise.all(procs);
   console.log(`frames done in ${((Date.now() - t0) / 1000).toFixed(0)}s; final encode`);
   const list = path.join(tmp, 'list.txt'); fs.writeFileSync(list, segs.map(s => `file '${s}'`).join('\n'));
+  // --frames-only: stop after the chunks (with --segdir/--keep) and leave the final encode to a separate step
+  if (args['frames-only'] === 'true') { console.log('frames only: chunks and list.txt left in', tmp); return; }
   const dur = tEnd - tStart;
   const gw = Math.round(width * grainRes), gh = Math.round(height * grainRes);
   // hq10 segments are 10-bit 4:4:4 full-range BT.709 YUV; lossless segments are full-range RGB
