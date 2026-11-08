@@ -7,11 +7,16 @@
     frag(body)                   returns HEADER + body (a fragment shader: write `out vec4 o;` yourself, or use FRAG_OUT).
     FRAG_OUT                     'out vec4 o;\n' convenience.
     VERT_TRI                     the fullscreen-triangle vertex shader (gl_VertexID, no buffers).
+    RES                          the output scale R from the URL (?res=2; 1 when absent): the canvas and every
+                                 frame-sized target hold R texels per frame pixel, the layout stays in frame px
+    RES_REQUESTED                the raw ?res value as a number (main.js refuses anything but 1 or 2 at boot)
+    atRes(r1, hi)                shader text for the output scale: r1 (the ORIGINAL R = 1 text, byte for byte) at
+                                 R = 1, hi at R = 2. Keeps every R = 1 shader source identical.
 
   Standard uniforms (set automatically by gl.js draw() when a shader declares them):
-    uRes    vec2   size of the render target in texels
-    uScale  float  target texels per frame pixel (internalScale of the pass; 1 at full resolution)
-    uFrame  vec2   output frame size in frame pixels (1920x1080 landscape, 1080x1920 portrait)
+    uRes    vec2   size of the render target in texels (the canvas: physical px, frame size x R)
+    uScale  float  target texels per frame pixel (internalScale of the pass x R; R on the canvas)
+    uFrame  vec2   output frame size in frame pixels, logical at every R (1920x1080 landscape, 1080x1920 portrait)
 
   Coordinate helpers
     framePx()     frame pixel of this fragment, ORIGIN TOP-LEFT (layout space of the spec)
@@ -31,6 +36,14 @@
     misc      rot2(a) (mat2), voronoiEdge(vec2) (F2-F1 distance, small at cell edges), ggx(N,V,L,rough,F0)
     sea       gerstner(vec2 xz, float t, float ampScale, out float h, out vec2 g): the 4-wave engraved swell of scene 4
 */
+
+// The output scale is read once at module load, not passed in: scene modules build their shader text at import
+// time, before boot() runs. Only 1 and 2 are supported (main.js boot() refuses any other ?res).
+const Q_RES = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('res') : null;
+export const RES_REQUESTED = Q_RES == null ? 1 : Number(Q_RES);
+export const RES = RES_REQUESTED === 2 ? 2 : 1;
+// atRes(r1, hi): shader text for R = 1 (the ORIGINAL text, byte for byte) or for R = 2
+export function atRes(r1, hi) { return RES === 1 ? r1 : hi; }
 
 export const VERT_TRI = `#version 300 es
 precision highp float;

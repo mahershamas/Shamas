@@ -18,6 +18,7 @@
 import S02, { layoutOf, nameEntry, GRAIN_GLSL, GRAIN_FS, DOTS_GLSL, DOTS_FS } from './s02_forge_name.js';
 import S04, { shoresHz, shoresCam, shoresSea, createShoreFx } from './s04_two_shores.js';
 import { SKY_GLSL, NEB_FS, skyColours, camAt } from './s01_forge_orbit.js';
+import { atRes } from '../core/glsl.js';
 
 const T0 = 22.5;
 const N_DIS = 6000, N_PEN = 600;
@@ -149,7 +150,7 @@ void main(){
   float dy = px.y - uY;
   float d = length(vec2(dx, dy));
   float hw = 0.75 * uU;
-  float fw = 0.75;                                          // one pixel AA
+  float fw = ${atRes('0.75', '0.375')};                                          // one pixel AA
   float core = clamp((hw + fw - d) / (2.0 * fw), 0.0, 1.0);
   float glow = exp(-d / (3.0 * uU)) * 0.6 + exp(-d / (6.0 * uU)) * 0.4;
   // a drawn rule tapers at its ends (engraver's burin), but never under a moving pen tip
@@ -338,7 +339,8 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
       const m = text.drawMask(ent);
       if (m.lineOpacity > 0) {
         const r = m.rect;
-        const mt = G.acquire(r[2], r[3], { format: 'rgba8', mips: true });
+        // the copy follows the mask's own size (R texels per frame px: text.drawMask); r stays the frame px rect
+        const mt = G.acquire(m.rt.w, m.rt.h, { format: 'rgba8', mips: true, scale: m.rt.scale });
         G.draw(this.P.mask, Object.assign({ uSrc: m.rt, uRect: r, uQ: q }, fieldU), mt);
         G.mipmaps(mt);
         const size = m.lay.line.size, U = ctx.U;

@@ -23,7 +23,15 @@
     GOLD_RAMPS                   {look: [[r,g,b] x 7]} scene-linear ramp stops per look (winter_gold, night_sea, photo)
     const gold = createGold(G)
     gold.draw(target, opts)      opts:
-      mask        RT or Tex with mipmaps (alpha = coverage)
+      mask        RT or Tex with mipmaps (alpha = coverage). At output scale R > 1 (?res=2) every mask given to
+                  gold.draw must have R texels per frame px (text.drawMask() masks do): the bevel mips are sampled one
+                  level up per doubling, while the bevel steps 2^lod stay in frame px. Level 0 gives the crisp edge.
+                  Three R = 2 calibrations keep the leaf's HD light (the leaf is HDR and the tonemap is compressive and
+                  per pixel, so resolved thin strokes, edges and ridges would display less light than at HD):
+                  the sharp key/fill lobe takes the bevel normal of the frame px centre (the stem ridges are far
+                  narrower than a pixel; per physical px they came and went with the glyph's sub-pixel phase); the leaf
+                  is raised by up to 30 % where the frame px is partly covered (mask level 1); and inside a gild
+                  crossfade (text masks) up to 30 % of the coverage comes from the frame px (mask level 1).
       rect        [x, y, w, h] frame px that the mask covers
       maskFlipY   true when the mask is a GL render target (bottom-up rows), e.g. from text.drawMask()
       textMask    true for text.drawMask() masks: coverage from r (with gild/reveal), bevel from a
@@ -42,7 +50,7 @@
     gold.glint(target, {x, y, size = 28, I = 6, rot = 0, col})   a four-point star glint (additive HDR)
     gold.sweepAt(sweeps, tau, ink) -> {x, width, I, slant} | null    evaluates a sweeps list (exported for scenes)
 */
-import { frag, HEADER_VS } from './glsl.js';
+import { frag, HEADER_VS, atRes } from './glsl.js';
 import { displayToScene, sceneToDisplay, DEFAULTS, LOOKS } from './post.js';
 
 const STOPS = ['#6E4A12', '#B8862B', '#D4A64A', '#E3B341', '#E9C676', '#FFE7A3', '#FFF4D6'];
@@ -146,18 +154,37 @@ float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 k
   for (int k = 0; k < 4; k++){
     vec2 o = (vec2(k == 1 || k == 2 ? 0.5 : -0.5, k >= 2 ? 0.5 : -0.5) + vec2(0.13, -0.11)) * 0.5;
     vec2 c = uv + (duvDx * o.x + duvDy * o.y) * exp2(lod);
-    gx += textureLod(mask, c + sx, lod).a - textureLod(mask, c - sx, lod).a;
-    gy += textureLod(mask, c + sy, lod).a - textureLod(mask, c - sy, lod).a;
+    gx += textureLod(mask, c + sx, lod${atRes('', ' + 1.0')}).a - textureLod(mask, c - sx, lod${atRes('', ' + 1.0')}).a;
+    gy += textureLod(mask, c + sy, lod${atRes('', ' + 1.0')}).a - textureLod(mask, c - sy, lod${atRes('', ' + 1.0')}).a;
   }
   gx *= 0.25; gy *= 0.25;
   vec3 N = normalize(vec3(-vec2(gx, gy) * bump * 0.5, 1.0));      // frame coords, y down
   // thick parts of the leaf show the crackle, the squares and the beaten texture; hairlines stay clean
-  float thick = smoothstep(0.45, 0.85, textureLod(mask, uv, lod + 0.5).a);
+  float thick = smoothstep(0.45, 0.85, textureLod(mask, uv, lod + ${atRes('0.5', '1.5')}).a);
   vec3 lt = goldLeafTex(fragPx, thick);
   float crack = lt.y;
   // beaten leaf: a fine low-amplitude ripple in the normal (catches the key light as a broken sheen)
   vec2 bt = vec2(vn(fragPx * 0.30 + 1.3), vn(fragPx * 0.30 + 8.9)) - 0.5;
-  N = normalize(N + vec3(bt * 0.05 * thick * goldDetail, 0.0));
+  N = normalize(N + vec3(bt * 0.05 * thick * goldDetail, 0.0));${atRes('', `
+  // R = 2: the sharp key and fill lobes take the bevel normal of this fragment's frame px centre. That lobe is far
+  // narrower than a pixel (the bright ridge down a stem), so a frame point-samples it: per frame px, as at HD, the ridge
+  // keeps the HD width and energy wherever it falls (per physical px it came and went with the glyph's sub-pixel
+  // phase, e.g. 239 -> 100 at a stem centre of 120.2). Everything else stays per physical px.
+  vec3 Ns;
+  {
+    vec2 fc = floor(fragPx) + 0.5 - fragPx;
+    vec2 us = uv + duvDx * fc.x + duvDy * fc.y;
+    float hx = 0.0, hy = 0.0;
+    for (int k = 0; k < 4; k++){
+      vec2 o = (vec2(k == 1 || k == 2 ? 0.5 : -0.5, k >= 2 ? 0.5 : -0.5) + vec2(0.13, -0.11)) * 0.5;
+      vec2 c = us + (duvDx * o.x + duvDy * o.y) * exp2(lod);
+      hx += textureLod(mask, c + sx, lod + 1.0).a - textureLod(mask, c - sx, lod + 1.0).a;
+      hy += textureLod(mask, c + sy, lod + 1.0).a - textureLod(mask, c - sy, lod + 1.0).a;
+    }
+    Ns = normalize(vec3(-vec2(hx, hy) * 0.25 * bump * 0.5, 1.0));
+    vec2 bs = vec2(vn((fragPx + fc) * 0.30 + 1.3), vn((fragPx + fc) * 0.30 + 8.9)) - 0.5;
+    Ns = normalize(Ns + vec3(bs * 0.05 * thick * goldDetail, 0.0));
+  }`)}
   float mott = fbm(fragPx * 0.018 + 5.3, 3);
   float grain = vn(fragPx * 0.45) * thick * goldDetail;
   float rough = 0.20 + 0.22 * crack;
@@ -169,8 +196,8 @@ float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 k
   vec3 V = vec3(0.0, 0.0, 1.0);
   vec3 L = normalize(vec3(keyPos.xy - fragPx, keyPos.z));
   float sharp = 0.12 * (0.35 + 0.65 * goldDetail);
-  float spec = ggx(N, V, L, rough, vec3(1.0)).x * keyI * sharp + ggx(N, V, L, 0.70, vec3(1.0)).x * keyI * 0.09;
-  if (fillI > 0.0){ vec3 L2 = normalize(vec3(fillPos.xy - fragPx, fillPos.z)); spec += ggx(N, V, L2, rough, vec3(1.0)).x * fillI * sharp + ggx(N, V, L2, 0.70, vec3(1.0)).x * fillI * 0.09; }
+  float spec = ggx(${atRes('N', 'Ns')}, V, L, rough, vec3(1.0)).x * keyI * sharp + ggx(N, V, L, 0.70, vec3(1.0)).x * keyI * 0.09;
+  if (fillI > 0.0){ vec3 L2 = normalize(vec3(fillPos.xy - fragPx, fillPos.z)); spec += ggx(${atRes('N', 'Ns')}, V, L2, rough, vec3(1.0)).x * fillI * sharp + ggx(N, V, L2, 0.70, vec3(1.0)).x * fillI * 0.09; }
   spec *= mix(1.0, lt.x, 0.6);
   // speculars roll off past white-hot so small type never sparkles into noise; strikes (below) may go further
   float s = env * 0.84 + spec;
@@ -219,11 +246,21 @@ void main(){
   vec2 uv = uFlip == 1 ? vec2(q.x, 1.0 - q.y) : q;
   vec2 dx = vec2(1.0 / uRect.z, 0.0), dy = vec2(0.0, (uFlip == 1 ? -1.0 : 1.0) / uRect.w);
   goldDetail = uDetail;
-  vec4 m = textureLod(uMask, uv, 0.0);
+  vec4 m = textureLod(uMask, uv, 0.0);${atRes('', `
+  // R = 2: the coverage is crisp (mask level 0, R texels per frame px), but the leaf is blended in HDR before a
+  // compressive tonemap that runs per pixel, so a thin bright stroke or edge resolved at 4K displays less light than
+  // its partly covered HD pixels did. m1 is the mask over this fragment's frame px (level 1).
+  vec4 m1 = textureLod(uMask, uv, 1.0);
+  // text masks inside a gild crossfade (0 < g < 1, g = r / a over the frame px; the ink caption is composited over the
+  // leaf in display space there): 30 % of the frame px coverage at the middle of the crossfade, none outside it
+  if (uTextMask == 1){ float gg = clamp(m1.r / max(m1.a, 1e-3), 0.0, 1.0); m = mix(m, m1, 1.2 * gg * (1.0 - gg)); }`)}
   float cov = (uTextMask == 1 ? m.r : m.a) * uOpacity;
   if (cov <= 0.0005){ o = vec4(0.0); return; }
   float s = goldS(uMask, uv, dx, dy, vPx, uKey, uKeyI, uFill, uFillI, uBump, uLod, uSweep, uSweepY);
-  vec3 c = goldRamp(s * uEnvI) * uTint;
+  vec3 c = goldRamp(s * uEnvI) * uTint;${atRes('', `
+  // R = 2: where an HD pixel would be partly covered (shape coverage over the frame px), raise the leaf by up to 30 %
+  // (at half coverage) so thin strokes and edges keep their HD energy; 0 inside the stroke and outside it
+  c *= 1.0 + 0.3 * 4.0 * m1.a * (1.0 - m1.a);`)}
   o = vec4(c * cov, cov);
 }`);
 

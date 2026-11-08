@@ -19,6 +19,7 @@
 */
 import { shoresLayout, toScene, createShoreFx, createShield } from './s04_two_shores.js';
 import { ilyLayout, nightCam, nightSky, heartPose, createHeart } from './s10_i_love_you.js';
+import { atRes } from '../core/glsl.js';
 
 const T0 = 131.5;
 
@@ -131,7 +132,7 @@ void main(){
   vec3 base = mix(uGold, uCoolC, cool) * mix(1.0, 0.75, cool);
   vec3 col = mix(base * 0.85, uLitC * uLitK, lit);
   float sh = 1.0 + 0.22 * (vn(vec2(s * 0.045, uTau * 0.7)) - 0.5);
-  float core = smoothstep(1.55, 0.45, d);
+  float core = smoothstep(${atRes('1.55, 0.45', '1.275, 0.725')}, d);
   float gk = (1.0 + 1.6 * lit) * (1.0 - 0.6 * cool);
   float glow = 0.20 * gk * exp(-d / 2.2) + 0.05 * gk * exp(-d / 9.0);
   vec3 c = col * (core + glow) * sh;

@@ -1,9 +1,12 @@
 /*
   film/v2/main.js: boot and the frame graph (SPEC 6.1, 6.3).
 
-  Contract: window.FILM = {duration, width, height}; window.filmReady (Promise, resolves once fonts, photo, cues and every
+  Contract: window.FILM = {duration, width, height, res, frameWidth, frameHeight}: width/height are the capture size in
+  physical px (frame size x res; the viewport must be exactly that at deviceScaleFactor 1), frameWidth/frameHeight the
+  layout size in frame px; window.filmReady (Promise, resolves once fonts, photo, cues and every
   scene's init are done); async window.seek(t) draws the frame for time t and resolves after the GPU has finished it.
   URL: ?variant=portrait (1080x1920, default landscape 1920x1080), ?render=1 (no live loop), ?profile=1 (stage timings),
+       ?res=2 (output scale: 2x the pixels per axis, same layout and look; 1 or 2, anything else is refused at boot),
        ?showtext=1 (debug: placeholder scenes draw the real lines; stills must stay under private/),
        ?t=<seconds> (live preview start time).
   The page must be opened with file access to sibling files (render.js launches Chromium with
@@ -45,7 +48,9 @@ const PORTRAIT = Q.get('variant') === 'portrait';
 const RENDER = Q.get('render') === '1';
 const PROFILE = Q.get('profile') === '1';
 const W = PORTRAIT ? 1080 : 1920, H = PORTRAIT ? 1920 : 1080;
-window.FILM = { duration: TL.DURATION, width: W, height: H };
+// output scale (glsl.RES, parsed at module load). Named RES: drawFrame declares a local const R.
+const RES = glsl.RES;
+window.FILM = { duration: TL.DURATION, width: W * RES, height: H * RES, res: RES, frameWidth: W, frameHeight: H };
 let readyOk, readyFail;
 window.filmReady = new Promise((a, b) => { readyOk = a; readyFail = b; });
 const DEBUG = window.FILM_DEBUG = { timings: null, photoAssertLog, errors: [] };
@@ -155,9 +160,10 @@ void main(){
 }`);
 
 async function boot() {
+  if (glsl.RES_REQUESTED !== RES) throw new Error('unsupported ?res=' + glsl.RES_REQUESTED + ' (1 or 2)');
   const canvas = document.getElementById('gl');
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-  const G = createGL(canvas, { width: W, height: H });
+  canvas.style.width = (W * RES) + 'px'; canvas.style.height = (H * RES) + 'px';
+  const G = createGL(canvas, { width: W, height: H, res: RES });
   const [cues, ev] = await Promise.all([loadJSON('cues.json'), loadJSON('cues_events.json', true)]);
   TL.setCues(cues); TL.setEvents(ev);
   if (!window.LINES) throw new Error('LINES missing (private/v2/lines.js not loaded)');
@@ -180,14 +186,16 @@ async function boot() {
   DEBUG.scenes = SCENES.map(s => ({ id: s.id, t0: s.t0, t1: s.t1, internalScale: s.internalScale, look: s.look }));
   DEBUG.transitions = TRANSITIONS.map(t => ({ from: t.from, to: t.to, t0: t.t0, t1: t.t1, kind: t.kind }));
   DEBUG.hdr = G.hdr.name;
+  DEBUG.res = RES;
 
   const now = () => performance.now();   // profiling only (?profile=1); never affects pixels
   const px1 = new Float32Array(4), px8 = new Uint8Array(4);
   // a 1-pixel readback is a true GPU sync in Chromium (gl.finish only flushes the command buffer)
   function sync(target) { G.bindTarget(target); if (target) G.gl.readPixels(0, 0, 1, 1, G.gl.RGBA, G.gl.FLOAT, px1); else G.gl.readPixels(0, 0, 1, 1, G.gl.RGBA, G.gl.UNSIGNED_BYTE, px8); }
 
+  // a scene's HDR target: internalScale (logical, layer.scale) x the output scale RES texels per frame px
   function sceneTarget(name, scale) {
-    return G.target('frame.' + name, W * scale, H * scale, { scale });
+    return G.target('frame.' + name, W * scale * RES, H * scale * RES, { scale: scale * RES });
   }
   function entriesOf(L) {
     const s = L.scene;
@@ -205,7 +213,7 @@ async function boot() {
     const A = timeline.active(t);
     if (PROFILE) sync(null);
     const T0 = PROFILE ? now() : 0;
-    const C = G.target('frame.C', W, H);
+    const C = G.target('frame.C', W * RES, H * RES, { scale: RES });
     const caps = A.layers.map(L => entriesOf(L));
     // 2-3 render and transition
     if (!A.transition) {
@@ -232,6 +240,8 @@ async function boot() {
         let M = null;
         if (kind === 2) {
           // gold-dust dissolve: the field and its feather at quarter resolution (static in time: only the threshold moves)
+          // Logical at every RES: a smooth field sampled by uv, so the dissolve front is identical at every output
+          // scale; the grain and glints are evaluated at full resolution in SRC_TRANS.
           M = G.target('frame.dmask', W / 4, H / 4, { scale: 0.25 });
           // portrait may override the centre and the radial aspect (an aspect tuned for 16:9 turns the iris into a tide in 9:16)
           const ctr = (PORTRAIT && o.centerPortrait) || o.center || [0.5, 0.5];
@@ -250,17 +260,17 @@ async function boot() {
       const hdrEntries = caps[i].filter(isHDR);
       if (!L.scene.overlay && !hdrEntries.length) return;
       ctx.layer = L;
-      const target = single ? C : G.target('frame.O', W, H);
+      const target = single ? C : G.target('frame.O', W * RES, H * RES, { scale: RES });
       if (!single) G.clear(target, [0, 0, 0, 0]);
       if (L.scene.overlay) L.scene.overlay(ctx, L.tau, L.p, target);
       if (hdrEntries.length) {
-        const T = single ? G.target('frame.T', W, H) : G.target('frame.TL', W, H);
+        const T = single ? G.target('frame.T', W * RES, H * RES, { scale: RES }) : G.target('frame.TL', W * RES, H * RES, { scale: RES });
         G.clear(T, [0, 0, 0, 0]);
         for (const e of hdrEntries) gold.drawText(T, text, e);
         G.draw(P.copy, { uA: T, uK: 1 }, target, { blend: 'premul' });
         if (single) TM = T;
         else {
-          if (!TM) { TM = G.target('frame.T', W, H); G.clear(TM, [0, 0, 0, 0]); }
+          if (!TM) { TM = G.target('frame.T', W * RES, H * RES, { scale: RES }); G.clear(TM, [0, 0, 0, 0]); }
           G.draw(P.copy, { uA: T, uK: L.weight }, TM, { blend: 'add' });
         }
       }
@@ -309,6 +319,7 @@ async function boot() {
 /*
   ctx (shared by every scene; per-call fields are set by the frame graph before each call):
     G, gl, W, H, U (min(W,H)/1080), portrait (bool), layout ('landscape' | 'portrait')
+    R            output scale (layout stays in frame px; texels per frame px of a full-resolution target = target.scale)
     glsl         core/glsl.js module (HEADER, frag, ...)        tl     core/timeline.js module (E, seg, env, spring, ...)
     text, gold, particles, knot, post, sea                     the core module instances (see their headers)
     photo        {tex, w, h, meta}     photoR  plain photo renderer     photoCamera(crop, opts), faceEllipses(cam)
@@ -320,7 +331,7 @@ async function boot() {
 */
 function makeCtx(mods) {
   return Object.assign({
-    gl: mods.G.gl, W, H, U: mods.G.U, portrait: PORTRAIT, layout: PORTRAIT ? 'portrait' : 'landscape',
+    gl: mods.G.gl, W, H, U: mods.G.U, R: RES, portrait: PORTRAIT, layout: PORTRAIT ? 'portrait' : 'landscape',
     glsl, tl: TL, cue: TL.cue, events: TL.events, rng: name => TL.mulberry32(TL.seedOf(name)),
     hex, hexLin, displayToScene, sceneToDisplay, glyphPoints, shuffle, closedKnot, verifyKnot, horizonPitch,
     photoCamera: (crop, o = {}) => photoCamera(crop, Object.assign({ frame: [W, H], layout: PORTRAIT ? 'portrait' : 'landscape' }, o)),

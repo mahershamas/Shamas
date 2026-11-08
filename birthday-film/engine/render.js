@@ -3,6 +3,9 @@
  Deterministic frame-by-frame renderer: HTML film -> MP4 (lossless RGB capture, one BT.709 conversion, overlay grain).
 
  The film page must expose window.FILM {duration,width,height}, window.filmReady (Promise) and window.seek(t).
+ FILM.width/height are the PHYSICAL capture size: the viewport is sized to exactly that at deviceScaleFactor 1 (a smaller
+ viewport would crop silently). Pages with an output scale (film/v2 ?res=N) also report FILM.res and the logical layout
+ size FILM.frameWidth/frameHeight (width = frameWidth x res); render.js checks both against --res after loading.
 
  Usage:
    node render.js --html ../film/index.html --out ../private/out/film.mp4 --audio ../private/out/music.wav
@@ -10,10 +13,18 @@
         [--tune film] [--maxrate 12M] [--bufsize 24M] [--abitrate 256k] [--master [path]] [--encode v2]
         [--segdir DIR [--chunks N] [--keep]]   resumable: finished chunks are skipped when the command is rerun
         [--res 2] [--segcodec hq10 [--segcrf 6]] [--grainres 0.333] [--level 5.1]   4K: output scale, 10-bit intermediate, grain size, H.264 level
-   node render.js --html ... --stills 0,10.5,42 --outdir ../private/out/stills [--variant portrait]
+   node render.js --html ... --stills 0,10.5,42 --outdir ../private/out/stills [--variant portrait] [--res 2]
 
  --encode v2 sets the version-2 delivery settings (SPEC 4.4): --workers 2 --crf 14 --preset slow --tune grain
    --maxrate 24M --bufsize 48M --abitrate 320k --grain 0.14 (any option given explicitly still wins).
+ --res 2 renders the page at 2x the pixels per axis with the same layout (3840x2160, portrait 2160x3840): the page gets
+   &res=2 and the workers inherit it. It defaults to --level 5.1 (2160x3840 = 32,400 macroblocks per frame, 972,000 per
+   second at 30 fps: inside 5.1, invalid at 4.1), --maxrate 100M --bufsize 200M (a 24M VBV starves 4K grain),
+   --workers 2 (memory: 2-4 GB per Chromium) and --grainres 1/3 (the HD grain size in frame px). These are applied before
+   the --encode v2 preset, so they win over it; options given explicitly still win over both. Use --segcodec hq10 for
+   4K chunks (lossless 4K chunks need about 35 GB for the film). --res 1 (the default) changes nothing.
+ Workers are forked with --variant, --res, --segcodec and --segcrf forwarded; a resumable chunk's .done key records res,
+   segcodec and segcrf only when they differ from the defaults, so HD keys are unchanged and 4K never reuses HD chunks.
  --master additionally writes a 10-bit HEVC master (x265, CRF 16, yuv420p10le, BT.709 tags) from the same lossless
    frames, to the given path or to <out>_master_hevc.mp4.
  Chromium is launched with --allow-file-access-from-files so that ES-module pages (film/v2) load from file://.
@@ -33,6 +44,12 @@ function parseArgs() {
   return a;
 }
 const args = parseArgs();
+// --res N: output scale (the page renders N times the frame pixels per axis, same layout); 1 = the HD frame
+const resN = args.res == null ? 1 : Number(args.res);
+if (resN !== 1 && resN !== 2) { console.error('--res must be 1 or 2'); process.exit(2); }
+// 4K defaults (explicit options still win; set before the v2 preset so it cannot override them): H.264 level 5.1
+// (2160x3840 = 32,400 macroblocks per frame), a VBV sized for 4K, two workers (memory)
+if (resN > 1) for (const [k, v] of Object.entries({ level: '5.1', maxrate: '100M', bufsize: '200M', workers: '2' })) if (args[k] == null) args[k] = v;
 const ENCODE_V2 = { workers: '2', crf: '14', preset: 'slow', tune: 'grain', maxrate: '24M', bufsize: '48M', abitrate: '320k', grain: '0.14' };
 if (args.encode === 'v2') for (const k in ENCODE_V2) if (args[k] == null) args[k] = ENCODE_V2[k];
 const fps = parseFloat(args.fps || '30');
@@ -44,10 +61,10 @@ const maxrate = args.maxrate || '12M';
 const bufsize = args.bufsize || '24M';
 const abitrate = args.abitrate || '256k';
 const grain = args.grain == null ? 0.16 : parseFloat(args.grain);
-// --grainres: grain noise resolution as a fraction of the output size (default 2/3; 1/3 at 4K keeps the HD grain size)
-const grainRes = args.grainres == null ? 2 / 3 : parseFloat(args.grainres);
-// --res N: output scale (the page renders N times the frame pixels, same layout); 1 = the HD frame
-const resQ = args.res && args.res !== '1' ? `&res=${args.res}` : '';
+// --grainres: grain noise resolution as a fraction of the output size (default 2/3 / res: the HD grain size in frame
+// px at every output scale; 2/3/1 === 2/3 exactly)
+const grainRes = args.grainres == null ? 2 / 3 / resN : parseFloat(args.grainres);
+const resQ = resN !== 1 ? `&res=${resN}` : '';
 const variantQ = (args.variant ? `&variant=${args.variant}` : '') + resQ;
 // --segcodec lossless (default: libx264rgb qp 0) | hq10 (10-bit 4:4:4 x264 at --segcrf, default 6: visually lossless,
 // far smaller, for 4K renders on a tight disk)
@@ -63,6 +80,8 @@ async function openFilm(html, width, height) {
   await page.goto('file://' + path.resolve(html) + `?render=1&fps=${fps}${variantQ}`, { waitUntil: 'load' });
   await page.evaluate(() => window.filmReady);
   const film = await page.evaluate(() => window.FILM);
+  if ((film.res || 1) !== resN) throw new Error(`page reports res ${film.res}, expected ${resN}`);
+  if (film.frameWidth && (film.width !== film.frameWidth * (film.res || 1) || film.height !== film.frameHeight * (film.res || 1))) throw new Error('FILM size mismatch');
   if (!width && (film.width !== 1920 || film.height !== 1080)) {
     await page.setViewportSize({ width: film.width, height: film.height });
   }
@@ -79,6 +98,8 @@ async function runWorker({ html, start, end, fps, segPath, width, height, idx })
   const enc = segcodec === 'hq10'
     ? ['-vf', 'scale=out_color_matrix=bt709:out_range=pc:flags=accurate_rnd+full_chroma_int,format=yuv444p10le',
        '-c:v', 'libx264', '-profile:v', 'high444', '-crf', segcrf, '-preset', 'fast', '-g', '30',
+       // bounded memory at 4K: default threads and lookahead cost about 5.5 GB per worker
+       '-threads', '3', '-x264-params', 'rc-lookahead=10',
        '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'pc']
     : ['-c:v', 'libx264rgb', '-qp', '0', '-preset', 'ultrafast', '-g', '30'];
   const ff = spawn('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error',
@@ -117,7 +138,7 @@ async function main() {
   const width = film.width || 1920, height = film.height || 1080;
   const tStart = parseFloat(args.start || '0'), tEnd = parseFloat(args.end || String(film.duration));
   const f0 = Math.round(tStart * fps), f1 = Math.round(tEnd * fps), total = f1 - f0;
-  console.log(`film ${width}x${height} ${film.duration}s; rendering frames ${f0}..${f1} (${total}) at ${fps} fps with ${workers} workers`);
+  console.log(`film ${width}x${height}${resN !== 1 ? ` (res ${resN})` : ''} ${film.duration}s; rendering frames ${f0}..${f1} (${total}) at ${fps} fps with ${workers} workers`);
   // --segdir DIR [--chunks N]: resumable rendering. Frames are split into N chunks rendered by a pool of `workers`;
   // each finished chunk leaves DIR/segNN.mkv plus a .done marker and is skipped when the same command is rerun.
   const resumable = !!args.segdir;
@@ -129,12 +150,18 @@ async function main() {
     const s = f0 + i * per, e = Math.min(f1, s + per); if (s >= e) break;
     const segPath = path.join(tmp, `seg${String(i).padStart(3, '0')}.mkv`); segs.push(segPath);
     const done = segPath + '.done';
-    const key = JSON.stringify({ s, e, fps, width, height, variant: args.variant || '' });
+    // the chunk key: fields beyond the HD ones only when non-default, so existing HD .done markers stay valid
+    const keyO = { s, e, fps, width, height, variant: args.variant || '' };
+    if (resN !== 1) keyO.res = resN;
+    if (segcodec !== 'lossless') { keyO.segcodec = segcodec; keyO.segcrf = segcrf; }
+    const key = JSON.stringify(keyO);
     if (resumable && fs.existsSync(done) && fs.readFileSync(done, 'utf8') === key && fs.existsSync(segPath)) { console.log(`chunk ${i} (${s}-${e}) already done, skipped`); continue; }
     jobs.push({ i, cfg: { html, start: s, end: e, fps, segPath, width, height, idx: i }, done, key });
   }
+  // workers parse their own flags: forward everything that changes the page URL or the chunk encoding
+  const fwd = []; for (const k of ['variant', 'res', 'segcodec', 'segcrf']) if (args[k] != null) fwd.push('--' + k, String(args[k]));
   const runJob = j => new Promise((res, rej) => {
-    const p = fork(__filename, ['--worker', JSON.stringify(j.cfg), ...(args.variant ? ['--variant', args.variant] : []), '--fps', String(fps)], { stdio: 'inherit' });
+    const p = fork(__filename, ['--worker', JSON.stringify(j.cfg), ...fwd, '--fps', String(fps)], { stdio: 'inherit' });
     p.on('exit', c => { if (c === 0) { if (resumable) fs.writeFileSync(j.done, j.key); res(); } else rej(new Error('worker ' + j.i + ' exit ' + c)); });
   });
   const queue = jobs.slice();

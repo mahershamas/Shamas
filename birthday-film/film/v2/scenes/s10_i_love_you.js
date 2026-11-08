@@ -30,6 +30,7 @@
 */
 import { _GLSL as SEA_GLSL, horizonPitch } from '../core/sea.js';
 import { shoresLayout, drawCaptionBands } from './s04_two_shores.js';
+import { atRes } from '../core/glsl.js';
 
 const T0 = 117.0;
 const DEG = Math.PI / 180;
@@ -180,6 +181,18 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
 }`;
 
 // ------------------------------------------------------------------ reflection of the overlay in the sea
+// Output scale R = 2:
+// - the ripple normal (seaGrad, its footprint fp and the slope variance) is evaluated at the centre of the FRAME pixel,
+//   exactly where R = 1 evaluates it, and is shared by its R x R physical px. The kept waves reach down to 2-6 frame px
+//   wavelengths, which R = 1 point-samples once per frame px (the mirror's sparkle is that sampling); a per-physical-px
+//   normal resolves them into a different, smoother ripple pattern instead (2.3-2.4 LSB MAE, 21-34 LSB blocks).
+// - the reflected ray, the Fresnel term and the horizon coverage use the physical px ray: no 2 x 2 blocks.
+// - the lookups read the native overlay (R texels per frame px) at trilinear lod 0.25. The mirror is sparkle: the
+//   tonemap is compressive per pixel, so its display level depends on the spread of the per-pixel values, not only on
+//   their mean. A 2 x 2 linear box of the overlay (mip level 1, or the overlay drawn a second time at scale 1) averages
+//   the gold's specular peaks before the tonemap and reads +1.0 to +3.8 LSB brighter in display space than R = 1 over
+//   121-130; level 0 lets every physical px pick up the overlay's sub-frame-px detail on top of the ripple and reads
+//   -0.8 to -1.6 LSB darker. lod 0.25 keeps the R = 1 display level within +-0.8 LSB in both layouts.
 const REFL_FS = `
 uniform sampler2D uSrc; uniform float uAmp, uK;
 out vec4 o;
@@ -188,9 +201,11 @@ void main(){
   vec3 rd = camRayL(px);
   vec3 rdx = camRayL(px + vec2(1.0, 0.0)), rdy = camRayL(px + vec2(0.0, 1.0));
   float fwy = abs(rdx.y - rd.y) + abs(rdy.y - rd.y);
-  float hzCov = smoothstep(-0.5, 0.5, -rd.y / max(fwy, 1e-7));
+  float hzCov = smoothstep(-0.5, 0.5, -rd.y / max(fwy${atRes('', ' * 0.5')}, 1e-7));
   if (hzCov <= 0.0){ o = vec4(0.0); return; }
-  vec2 xz = seaHit(rd), xzx = seaHit(rdx), xzy = seaHit(rdy);
+  ${atRes('vec2 xz = seaHit(rd), xzx = seaHit(rdx), xzy = seaHit(rdy);', `vec2 pc = floor(px) + 0.5;
+  vec3 rc = camRayL(pc), rcx = camRayL(pc + vec2(1.0, 0.0)), rcy = camRayL(pc + vec2(0.0, 1.0));
+  vec2 xz = seaHit(rc), xzx = seaHit(rcx), xzy = seaHit(rcy);`)}
   float fp = max(length(xzx - xz), length(xzy - xz));
   float var, curv;
   vec2 g = seaGrad(xz, uTau, uAmp, fp, var, curv);
@@ -202,7 +217,7 @@ void main(){
   // the filtered slope variance smears the reflection along the vertical (a rippled mirror)
   float sm = clamp(sqrt(var) * 700.0, 0.0, 18.0) + 0.75;
   vec3 acc = vec3(0.0);
-  for (int i = -2; i <= 2; i++) acc += texture(uSrc, pxToUV(q + vec2(0.0, float(i) * sm))).rgb * (i == 0 ? 0.3 : (abs(i) == 1 ? 0.22 : 0.13));
+  for (int i = -2; i <= 2; i++) acc += ${atRes('texture(uSrc, pxToUV(q + vec2(0.0, float(i) * sm)))', 'textureLod(uSrc, pxToUV(q + vec2(0.0, float(i) * sm)), 0.25)')}.rgb * (i == 0 ? 0.3 : (abs(i) == 1 ? 0.22 : 0.13));
   o = vec4(acc * F * uK * hzCov, 0.0);
 }`;
 const COPY_FS = `uniform sampler2D uA; uniform float uK; out vec4 o; void main(){ o = texture(uA, screenUV()) * uK; }`;
@@ -362,7 +377,11 @@ const scene = {
     if (t < 117.95) return;
     const { G, tl } = ctx, E = tl.E;
     const cam = nightCam(ctx, t);
-    const ov = G.target('p8.s10.ov', ctx.W, ctx.H);
+    // the overlay follows the target's density (R texels per frame px at output scale R), so the rosette, the stars
+    // and the motes are drawn natively and COPY_FS is a 1:1 texel copy. Above R = 1 it also carries mips for the mirror
+    // (REFL_FS reads lod 0.25), rebuilt from this frame's level 0 before any read
+    const s = target.scale == null ? 1 : target.scale;
+    const ov = G.target('p8.s10.ov', Math.round(ctx.W * s), Math.round(ctx.H * s), s > 1 ? { scale: s, mips: true } : { scale: s });
     G.clear(ov, [0, 0, 0, 0]);
     const climax = 1 + 0.55 * Math.exp(-Math.max(0, t - 120.0) / 0.45) * (t >= 120.0 ? 1 : 0);
     const pose = heartPose(ctx, t);
@@ -370,8 +389,9 @@ const scene = {
     this.heart.draw(ov, t, Object.assign({}, pose, {
       starI: tl.seg(t, 118.0, 119.0, E.inOutSine) * climax, textRect: this.lyRect, textK: lyK,
     }));
+    if (s > 1) G.mipmaps(ov);
     // composite only the box the overlay can reach (rosette + motes + star halos)
-    const s = target.scale == null ? 1 : target.scale, L = this.L, C = pose.center;
+    const L = this.L, C = pose.center;
     const ext = (293 * L.bs + 316) * cam.push;          // band C + motes (470 px) and the star halos (293 + 308 px)
     const bx0 = Math.max(0, Math.floor((Math.min(L.R0[0], C[0]) - ext) * s)), bx1 = Math.min(target.w, Math.ceil((Math.max(L.R0[0], C[0]) + ext) * s));
     const by0 = Math.max(0, Math.floor((ctx.H - (Math.max(L.R0[1], C[1]) + ext)) * s)), by1 = Math.min(target.h, Math.ceil((ctx.H - (Math.min(L.R0[1], C[1]) - ext)) * s));

@@ -146,9 +146,12 @@ const scene = {
   progress(ctx, t) { return ctx.tl.seg(t, 138.0, 141.0, ctx.tl.E.inOutSine); },
   render(ctx, tau, p, target) {
     const L = this.L;
-    // the ground is static: rendered once into a persistent target, then copied
-    if (!this.bgRT) {
-      this.bgRT = ctx.G.target('p8.s12.ground', ctx.W, ctx.H);
+    // the ground is static: rendered once into a persistent target at the target's density (R texels per frame px
+    // at output scale R), then copied 1:1; drawn again only if that size changes
+    const s = target.scale == null ? 1 : target.scale;
+    const gw = Math.round(ctx.W * s), gh = Math.round(ctx.H * s);
+    if (!this.bgRT || this.bgRT.w !== gw || this.bgRT.h !== gh) {
+      this.bgRT = ctx.G.target('p8.s12.ground', gw, gh, { scale: s });
       ctx.G.draw(this.bg, { uCtr: L.c, uIn: this.col.inC, uOut: this.col.outC, uR: L.bgR, uFib: 0.015 }, this.bgRT);
     }
     ctx.G.draw(this.copy, { uA: this.bgRT, uK: 1 }, target);

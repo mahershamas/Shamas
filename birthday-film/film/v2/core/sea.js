@@ -52,7 +52,7 @@
     S.dirAt(cam, x, y)                      alias of ray (place a sun or a light at a frame position)
     S.project(cam, dir) -> [x, y] | null    frame px of a world direction (null if behind the camera)
     S.horizonY(cam, x = W/2) -> y           frame y of the horizon at frame x
-    S.quarter(name) -> RT                   a W/4 x H/4 HDR target (scale 0.25) for sky() and aurora()
+    S.quarter(name) -> RT                   a W/4 x H/4 HDR target (scale 0.25; x R at output scale R) for sky() and aurora()
 
     S.sky(rtQ, {tau, cam, top = '#0A1220', mid = '#0A1020', horizon = '#12182A', band = 0.05 (rad, height of the
                 horizon band), haze: {color, I = 0.6, width = 0.035}, glow: {color = '#E39A4C', I = 0, width = 0.6,
@@ -96,8 +96,21 @@
   70 ms; glitter 5 ms; flare 6 ms.
   Determinism: every term is a function of (tau, uniforms, frame px); dithers are fixed in space, never in time; the
   star catalogue is seeded (mulberry32).
+  Output scale R (G.R, ?res=2): geometry, the hatch spacing LOD, the wave footprints and every look-defining width stay
+  in frame px; the hand-written 1-px anti-aliasing ramps of the horizon and the sun limb become 1 physical px. The
+  engraved hatch box filter keeps its HD footprint (1 frame px, the fw derivatives are taken over +1 frame px): the
+  lines are bright HDR on dark water and the tonemap is compressive and runs per pixel, so any narrower box resolves
+  them into thinner, brighter cores that display less light than HD after downscaling (a 0.75 frame px box: about -2 LSB
+  red in the lit sea at 33.0 and -27 % red in the moonlight column at 113.0). The glitter arm thickness stays in frame px. The
+  quarter/half sky, aurora and god-ray targets have R x the texels per side (scale x R); their shaders are
+  resolution-free.
+  The engraved sea is a pure function of the frame px position, but HD point-samples it at its pixel centres, so the
+  HD frame itself depends on that sampling phase: rendered at R = 1 with the sea sampled 0.25 frame px lower or higher,
+  it moves by up to ~2 LSB per 128-px window and reads an energy max (the gate's sigma-6 blur) of 8-23 against itself.
+  The 4K box-down matches the mean of those two HD phases (regional within 0.65 LSB, < 0.15 at the gate's energy max
+  points), so where 4K and HD differ on the hatch, HD's centre phase is the outlier.
 */
-import { frag, HEADER_VS } from './glsl.js';
+import { frag, HEADER_VS, atRes } from './glsl.js';
 import { hexLin } from './gl.js';
 import { displayToScene, sceneToDisplay, DEFAULTS, LOOKS } from './post.js';
 import { mulberry32 } from './timeline.js';
@@ -232,7 +245,7 @@ vec3 sunDisc(vec3 rd){
   float ca = dot(rd, uSun.xyz);
   float ang = sqrt(max(2.0 * (1.0 - ca), 0.0));
   float rr = uSun.w;
-  float aa = 0.9 / uF;
+  float aa = ${atRes('0.9', '0.45')} / uF;
   float core = smoothstep(rr + aa, rr - aa, ang);
   float mu = sqrt(max(1.0 - (ang * ang) / (rr * rr), 0.0));
   // no hard edge: past the limb the radiance falls off exponentially (about uSunSoft * r per e-fold)
@@ -302,7 +315,7 @@ void main(){
   vec3 rd = camRayL(px);
   vec3 rdx = camRayL(px + vec2(1.0, 0.0)), rdy = camRayL(px + vec2(0.0, 1.0));
   float fwy = abs(rdx.y - rd.y) + abs(rdy.y - rd.y);
-  float hzCov = smoothstep(-0.5, 0.5, -rd.y / max(fwy, 1e-7));     // sea coverage of this pixel (AA horizon)
+  float hzCov = smoothstep(-0.5, 0.5, -rd.y / max(fwy${atRes('', ' * 0.5')}, 1e-7));     // sea coverage of this pixel (AA horizon)
   float hzBand = exp(-abs(rd.y) / 0.018);
   vec3 sky = vec3(0.0);
   if (hzCov < 1.0){ sky = skyOf(rd, px); sky = mix(sky, uMist, hzBand * 0.55 * uHazeI); }
@@ -455,7 +468,7 @@ void main(){
   vec3 rd = camRayL(px);
   vec3 rdx = camRayL(px + vec2(1.0, 0.0)), rdy = camRayL(px + vec2(0.0, 1.0));
   float fwy = abs(rdx.y - rd.y) + abs(rdy.y - rd.y);
-  float hzCov = smoothstep(-0.5, 0.5, -rd.y / max(fwy, 1e-7));
+  float hzCov = smoothstep(-0.5, 0.5, -rd.y / max(fwy${atRes('', ' * 0.5')}, 1e-7));
   float haze = uHazeI * exp(-abs(rd.y) / uHazeW);
   vec3 sky = vec3(0.0);
   if (hzCov < 1.0){
@@ -779,7 +792,7 @@ out vec4 o;
 void main(){
   vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize * 2.0 + 1.0);   // in px from the centre
   float core = exp(-dot(q, q) / max(vSize * vSize * 0.35, 0.5));
-  float sx = exp(-abs(q.y) * 1.6) * exp(-abs(q.x) / (vSize * 0.9)), sy = exp(-abs(q.x) * 1.6) * exp(-abs(q.y) / (vSize * 0.9));
+  float sx = exp(-abs(q.y) * ${atRes('1.6', '0.8')}) * exp(-abs(q.x) / (vSize * 0.9)), sy = exp(-abs(q.x) * ${atRes('1.6', '0.8')}) * exp(-abs(q.y) / (vSize * 0.9));
   o = vec4(vCol.rgb * (core + 0.35 * (sx + sy)), 0.0);
 }`);
 
@@ -972,11 +985,11 @@ export function createSea(G) {
   // the full-resolution passes then read it with one bilinear tap (direct view and reflection)
   function half(q) {
     if (!q) return null;
-    const h = G.target('sea.skyhalf', W / 2, H / 2, { scale: 0.5 });
+    const h = G.target('sea.skyhalf', W / 2 * G.R, H / 2 * G.R, { scale: 0.5 * G.R });
     G.draw(P.upCR, { uSrc: q }, h);
     return h;
   }
-  S.quarter = name => G.target('sea.q.' + name, W / 4, H / 4, { scale: 0.25 });
+  S.quarter = name => G.target('sea.q.' + name, W / 4 * G.R, H / 4 * G.R, { scale: 0.25 * G.R });
 
   // sun record -> uniforms
   function sunUniforms(cam, sun, look) {
@@ -1014,7 +1027,7 @@ export function createSea(G) {
     const { u } = camUniforms(o.cam);
     const a = (o.tau || 0) * (o.speed || 0.06);
     const cs = o.colors || ['#3DF5B0', '#1E9C8A', '#6A4FD8'];
-    const aur = G.target('sea.aurora', W / 4, H / 8, { scale: 0.25 });
+    const aur = G.target('sea.aurora', W / 4 * G.R, H / 8 * G.R, { scale: 0.25 * G.R });
     G.draw(P.aurora, Object.assign(u, {
       uScaleZ: o.scaleZ || 1.6, uScaleX: o.scaleX || 2.1,
       uTau: o.tau || 0, uI: I, uSpeed: o.speed || 0.06, uReveal: o.reveal == null ? 1 : o.reveal,
@@ -1084,7 +1097,7 @@ export function createSea(G) {
     const { u, b } = camUniforms(o.cam);
     const su = sunUniforms(o.cam, o.sun, look);
     const sp = projectB(b, su.uSun.slice(0, 3)) || [W / 2, H / 2];
-    const src = G.target('sea.gr.src', W / 4, H / 4, { scale: 0.25 }), blur = G.target('sea.gr.blur', W / 4, H / 4, { scale: 0.25 });
+    const src = G.target('sea.gr.src', W / 4 * G.R, H / 4 * G.R, { scale: 0.25 * G.R }), blur = G.target('sea.gr.blur', W / 4 * G.R, H / 4 * G.R, { scale: 0.25 * G.R });
     const common = Object.assign(u, su, { uTau: o.tau || 0, uSunPx: sp, uMistK: o.mist == null ? 1 : o.mist });
     G.draw(P.grSrc, Object.assign({}, common, { uSpread: o.spread || 0.07, uRayCol: scl(chroma(o.color || '#FFC88A', look), 0.6) }), src);
     G.draw(P.grBlur, Object.assign({}, common, { uSrc: src, uDensity: o.density == null ? 0.9 : o.density, uDecay: o.decay == null ? 0.965 : o.decay }), blur);
@@ -1111,8 +1124,8 @@ export function createSea(G) {
   S.flare = function (target, o) {
     const I = o.I == null ? 0.15 : o.I, len = o.len || 300, sl = o.streakLen || 1200;
     const ext = Math.max(len, o.streak ? sl * 0.5 : 0) + 4;
-    const sc = target ? (target.scale == null ? 1 : target.scale) : 1;
-    const th = target ? target.h : H;
+    const sc = target ? (target.scale == null ? 1 : target.scale) : G.R;
+    const th = target ? target.h : G.PH;
     const x0 = Math.max(0, Math.floor((o.x - ext) * sc)), x1 = Math.min(Math.round(W * sc), Math.ceil((o.x + ext) * sc));
     const yTop = Math.max(0, Math.floor((o.y - len - 4) * sc)), yBot = Math.min(th, Math.ceil((o.y + len + 4) * sc));
     if (x1 <= x0 || yBot <= yTop) return;

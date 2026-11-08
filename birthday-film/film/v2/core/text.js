@@ -12,6 +12,18 @@
     boundaries, and the fragment cost is a few texture taps (no per-fragment glyph search).
     A static line is snapped to whole pixels and samples texel centres, so it is identical to the Canvas2D raster.
 
+  Output scale R (G.R, ?res=2)
+    Layout never changes with R: metrics, the ligature test, the whole-line raster (ink extent, nib table, the lazy
+    whole-line texture), c.alpha / c.box (points, outlines, the quads), snapping and the layer sizes all come from the
+    1x raster in frame px. At R > 1 each cluster is rasterised a second time at R x (font size, tracking and position
+    x R, same pen fraction) into an R x layer for the GPU, so captions, masks and gold are native at the output size.
+    That raster is registered on the 1x one in x per cluster (a gradient-weighted shift measure, residual <= ~0.06
+    frame px; unregistered, Skia's 1/4-device-px glyph positioning and size-dependent hinting put their edges up to
+    ~0.2-0.3 frame px apart, which read as a 0.2 px layout shift of a caption stem at 120.2).
+    The shader gets uTexel = 1 / physical layer size and uPxToTex = R (blur, shadow and glow offsets follow), and the
+    fixed-mip taps move up one level per doubling. drawMask() masks have R texels per frame px (target scale R) over
+    the same frame px rect.
+
   API (stage-A API kept; additions marked +)
     STYLES, styleOf(s), fontString(style, U), await loadFonts(texts, U)
     const T = createText(G)
@@ -88,7 +100,7 @@
     + T.nibEntries(entry) -> [inkEntry (caption), goldEntry (hdr)]   for a nib line with a gild: return both from
              scene.captions(); the pair crossfades ink -> gold leaf left to right with a sweep landing at the end.
 */
-import { frag, HEADER_VS } from './glsl.js';
+import { frag, HEADER_VS, atRes } from './glsl.js';
 import { hex, srgbToLin } from './gl.js';
 import { mulberry32 } from './timeline.js';
 
@@ -240,7 +252,7 @@ void main(){
   float blur = vA.w * uPxToTex;
   float a;
   if (uGreek == 1){
-    float ink = smoothstep(0.02, 0.08, tap(uv, 3.0));
+    float ink = smoothstep(0.02, 0.08, tap(uv, ${atRes('3.0', '4.0')}));
     float yb = (vPx.y - uBase);
     a = ink * (1.0 - smoothstep(-1.0, 1.0, abs(yb + uXH * 0.5) - uXH * 0.5)) * 0.55;
   } else if (blur > 0.35){
@@ -263,7 +275,7 @@ void main(){
     float n = fbm(vPx * 0.12 + 3.7, 3);
     float d = uNibX.z * smoothstep(thr, thr + 0.12, n);
     if (d > 0.02){
-      float b = tap(uv, 0.8);
+      float b = tap(uv, ${atRes('0.8', '1.8')});
       float lv = 0.5 - 0.15 * d;
       float fw = fwidth(b) * 0.8 + 0.01;
       a = max(a, smoothstep(lv - fw, lv + fw, b) * 0.95);
@@ -290,13 +302,13 @@ void main(){
   float ig = 0.0;
   if (uNibOn == 1 && uInkGlow.w > 0.0){
     // a ~1.2 px warm halo hugging the strokes (mip 1 of the glyph, outside the ink only)
-    ig = clamp(tap(uv, 1.0) * 1.35 - a, 0.0, 1.0) * uInkGlow.w;
+    ig = clamp(tap(uv, ${atRes('1.0', '2.0')}) * 1.35 - a, 0.0, 1.0) * uInkGlow.w;
   }
   float g = 0.0;
   if (uGlow > 0.0){
     // soft glow from the high mips of the glyph's own layer (three taps: no blockiness from a lone mip-4 fetch)
     vec2 r = 4.0 * uPxToTex * uTexel;
-    g = (textureLod(uArr, vec3(uv, vB.w), 4.0).r * 1.2 + tap(uv + vec2(r.x, r.y), 3.0) + tap(uv - vec2(r.x, r.y), 3.0)) / 3.2 * uGlow;
+    g = (textureLod(uArr, vec3(uv, vB.w), ${atRes('4.0', '5.0')}).r * 1.2 + tap(uv + vec2(r.x, r.y), ${atRes('3.0', '4.0')}) + tap(uv - vec2(r.x, r.y), ${atRes('3.0', '4.0')})) / 3.2 * uGlow;
   }
   float sh = 0.0;
   if (uShadow.z > 0.0){
@@ -315,6 +327,9 @@ function isLetterish(ch) { return /[\p{L}\p{N}]/u.test(ch); }
 export function createText(G) {
   const { gl } = G;
   const U = G.U;
+  // output scale (G.R): the glyph layers are rasterised at PR texels per frame px; all layout stays on the 1x raster.
+  // Not named R: T.line and T.layout declare their own R.
+  const PR = G.R || 1;
   const prog = G.program('text.line2', FS, VS);
   const cache = new Map();
   const T = {};
@@ -343,6 +358,29 @@ export function createText(G) {
     x.font = fs; x.letterSpacing = trackPx.toFixed(3) + 'px'; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
     x.fillStyle = '#fff';
     return { cv, x };
+  }
+  // x shift (frame px) of a px x raster bufH against the 1x raster buf (w x h): one Lucas-Kanade step on both, box-
+  // averaged to the 1x grid and smoothed [1 2 1] in x and y. Edges weigh, ink mass does not: a hairline that the two
+  // sizes anti-alias to different weights moves both of its edges apart, which cancels (an ink centroid would follow
+  // the heavier side). NaN without ink.
+  function rasterShiftX(buf, w, h, bufH, px) {
+    const n = w * h, A = new Float32Array(n), B = new Float32Array(n), T = new Float32Array(n), wh = w * px;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let b = 0;
+      for (let j = 0; j < px; j++) for (let i = 0; i < px; i++) b += bufH[(y * px + j) * wh + x * px + i];
+      A[y * w + x] = buf[y * w + x]; B[y * w + x] = b / (px * px);
+    }
+    const smooth = M => {
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const k = y * w + x; T[k] = (2 * M[k] + (x > 0 ? M[k - 1] : 0) + (x < w - 1 ? M[k + 1] : 0)) / 4; }
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const k = y * w + x; M[k] = (2 * T[k] + (y > 0 ? T[k - w] : 0) + (y < h - 1 ? T[k + w] : 0)) / 4; }
+    };
+    smooth(A); smooth(B);
+    let num = 0, den = 0;
+    for (let y = 0; y < h; y++) for (let x = 1; x < w - 1; x++) {
+      const k = y * w + x, g = (A[k + 1] - A[k - 1]) / 2;
+      num += g * (B[k] - A[k]); den += g * g;
+    }
+    return den > 0 ? -num / den : NaN;
   }
   let probe = null;
   function measurer(fs, trackPx) {
@@ -441,15 +479,22 @@ export function createText(G) {
     const r16 = v => Math.ceil(v / 16) * 16;
     const layerW = r16(maxW + 2 * pad + 1), layerH = r16(maxAsc + maxDesc + 2 * pad);
     const loy = pad + maxAsc;
+    // texels of the GPU layers: PR per frame px (the logical size is rounded to 16 first, so the uv and mip grids stay
+    // aligned with frame px at every output scale)
+    const texW = layerW * PR, texH = layerH * PR;
     // rasterise each cluster into its own layer
     const nl = Math.max(1, clusters.length);
-    const levels = Math.floor(Math.log2(Math.max(layerW, layerH))) + 1;
+    const levels = Math.floor(Math.log2(Math.max(texW, texH))) + 1;
     const arrTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, arrTex);
-    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, levels, gl.R8, layerW, layerH, nl);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, levels, gl.R8, texW, texH, nl);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     const R = ctx2d(layerW, layerH, fs, trackPx);
     const buf = new Uint8Array(layerW * layerH);
+    // PR > 1: a second raster of each cluster at PR x (font size, tracking and position scaled; same pen fraction) for
+    // the GPU layer only. The 1x raster above still gives c.alpha and c.box (points, outlines, the layout quads).
+    const RH = PR > 1 ? ctx2d(texW, texH, fontString(st, U * PR), trackPx * PR) : null;
+    const bufH = RH ? new Uint8Array(texW * texH) : null;
     clusters.forEach((c, li) => {
       c.layer = li;
       c.lox = pad + c.left;
@@ -463,7 +508,28 @@ export function createText(G) {
       let bx0 = layerW, by0 = layerH, bx1 = 0, by1 = 0;
       for (let y = 0; y < layerH; y++) for (let x = 0; x < layerW; x++) if (buf[y * layerW + x] > 0) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; }
       c.box = bx0 <= bx1 ? [bx0, by0, bx1 + 1, by1 + 1] : [0, 0, 1, 1];
-      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, li, layerW, layerH, 1, gl.RED, gl.UNSIGNED_BYTE, buf);
+      if (RH) {
+        // register the PR x raster on the 1x raster. Skia quantises a glyph's x to 1/4 device px (1/4 frame px at 1x,
+        // 1/4 physical px at PR x) and hints and anti-aliases the two sizes a little differently, so at the same pen
+        // position the two rasters' edges sit up to ~0.3 frame px apart in x. The HD frame shows the 1x raster (and all
+        // layout comes from it), so the PR x raster is moved by its measured x shift (rasterShiftX) and drawn again,
+        // keeping the closest of up to six tries (residual <= ~0.06 frame px). y is left alone: both rasters put the
+        // baseline on a whole device px, and a 1-physical-px step would be half a frame px.
+        let x2 = (c.lox + f) * PR, best = null, step = 1;
+        for (let it = 0; it < 6; it++) {
+          RH.x.clearRect(0, 0, texW, texH);
+          RH.x.fillText(c.str, x2, loy * PR);
+          const dh = RH.x.getImageData(0, 0, texW, texH).data;
+          for (let k = 0; k < bufH.length; k++) bufH[k] = dh[k * 4 + 3];
+          const dx = rasterShiftX(buf, layerW, layerH, bufH, PR);   // NaN for a cluster without ink
+          // past the best try (Skia moves the glyph in whole 1/4-device-px steps): smaller steps from here
+          if (best && Math.sign(dx) !== Math.sign(best.dx)) step *= 0.5;
+          if (!best || Math.abs(dx) < Math.abs(best.dx)) best = { dx, buf: bufH.slice() };
+          if (!(Math.abs(dx) > 1 / 32)) break;
+          x2 -= dx * step * PR;
+        }
+        gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, li, texW, texH, 1, gl.RED, gl.UNSIGNED_BYTE, best.buf);
+      } else gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, li, layerW, layerH, 1, gl.RED, gl.UNSIGNED_BYTE, buf);
     });
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
@@ -482,7 +548,7 @@ export function createText(G) {
     const xh = M('x').actualBoundingBoxAscent;
     L = {
       w: W, h: H, ox, oy, adv: m.width - shift[chars.length] - trackPx, asc, desc, n: chars.length, glyph, trackPx, xh, size: st.size * U,
-      chars, pen, clusters, arr: { tex: arrTex }, layerW, layerH, loy, pad, canvas: whole.cv, imgData: wd,
+      chars, pen, clusters, arr: { tex: arrTex }, layerW, layerH, texW, texH, loy, pad, canvas: whole.cv, imgData: wd,
       inkL: inkL - ox, inkR: inkR + 1 - ox, words: word + 1, isScript, _tex: null,
     };
     Object.defineProperty(L, 'tex', { get() { if (!L._tex) L._tex = G.texture(whole.cv, { mips: true }); return L._tex; } });
@@ -736,7 +802,7 @@ export function createText(G) {
     const glowCol = hex(entry.glowColor || entry.color || style.color).map(v => v * (entry.gain || 1));
     const sh = entry.shadow ? [entry.shadow.dx || 0, entry.shadow.dy == null ? 0.5 : entry.shadow.dy, entry.shadow.alpha == null ? 0.3 : entry.shadow.alpha, entry.shadow.blur == null ? 1 : entry.shadow.blur] : [0, 0, 0, 1];
     const u = {
-      uI0: I0, uI1: I1, uI2: I2, uLayerPx: [L.layerW, L.layerH], uView: view, uArr: L.arr, uTexel: [1 / L.layerW, 1 / L.layerH], uPxToTex: 1,
+      uI0: I0, uI1: I1, uI2: I2, uLayerPx: [L.layerW, L.layerH], uView: view, uArr: L.arr, uTexel: [1 / L.texW, 1 / L.texH], uPxToTex: PR,
       uGlow: glowAmt, uGlowCol: glowCol, uShadow: maskOut ? [0, 0, 0, 1] : sh, uMaskOut: maskOut ? 1 : 0, uGreek: entry.greek ? 1 : 0,
       uXH: L.xh, uBase: lay.rows[0].y, uNibOn: 0, uLumaGamma: style.gamma || 1, uInkGlow: [0, 0, 0, 0],
     };
@@ -773,7 +839,8 @@ export function createText(G) {
     lay.lineOp = (en.mode === 2 ? Math.max(...lay.inst.map(s => s.op), 0) : lay.anim.opacity * (1 - lay.anim.exitFade));
     const r = lay.rect.map(Math.round);
     r[2] = Math.max(1, r[2]); r[3] = Math.max(1, r[3]);
-    const rt = G.acquire(r[2], r[3], { format: 'rgba8', mips: true });
+    // PR texels per frame px (core/gold.js samples its bevel mips one level up per doubling); r stays the frame px rect
+    const rt = G.acquire(r[2] * PR, r[3] * PR, { format: 'rgba8', mips: true, scale: PR });
     G.clear(rt, [0, 0, 0, 0]);
     if (lay.anim.shown && lay.lineOp > 0) {
       const u = baseUniforms(lay, true, r);

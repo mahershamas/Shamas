@@ -180,8 +180,10 @@ const scene = {
     const t = ctx.t, L = this.lay;
     // the knot has fully crumbled by 145.0, well before the plate appears
     const u = ctx.tl.seg(t, 144.4, 145.0) * 1.16 - 0.08;
+    // uTexel is one FRAME px in uv (scale / size; 1 / size at R = 1), so the keyline dilation stays 5 frame px at every R
+    const s = outRT.scale == null ? 1 : outRT.scale;
     ctx.G.draw(this.P.trans, { uA: outRT, uB: inRT, uU: u, uW: w, uKnot: [L.knot[0], L.knot[1], L.knot[2] * 1.45, 0], uEmber: this.col.ember,
-      uTexel: [1 / outRT.w, 1 / outRT.h] }, dst);
+      uTexel: [s / outRT.w, s / outRT.h] }, dst);
     this.knotDust(ctx, t, dst);
   },
   overlay(ctx, tau, p, target) {

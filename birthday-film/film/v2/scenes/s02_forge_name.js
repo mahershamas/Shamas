@@ -18,6 +18,7 @@
   object keeps its caches (scene._name, scene._dots, scene._home) after init.
 */
 import { SKY_GLSL, NEB_FS, skyColours, camAt, vnoise } from './s01_forge_orbit.js';
+import { atRes } from '../core/glsl.js';
 
 const T0 = 12.0;
 const N_NAME = 18000, N_DUST = 6000;
@@ -100,6 +101,9 @@ float cloudFeather(vec2 px){
 }
 `;
 
+// Output scale R = 2 (atRes): a streak sprite gets size + 1 frame px so that it spans size + 2 frame px as at R = 1
+// (particles.js adds a 2-texel margin, which is only 1 frame px at R = 2; the spark grains fill their sprite, so their
+// energy follows its area). Harp-harmonic dust glints are marked vGlint = 2 (random positions, not snapped).
 const GRAINS = GRAIN_GLSL + `
 uniform int uNName;
 void particle(int id, out vec2 px, out float size, out vec4 col){
@@ -160,7 +164,7 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
       if (gl < 0.12){ vGlint = 1.0; size = 7.0 * uU; al = 1.0; I = 1.8 * (1.0 - gl / 0.12) * (0.5 + bri); c = mix(c, uC1, 0.6); }
       else al = 0.0;
     }
-    if (vGlint > 0.5) vStr = vec4(0.0);
+    if (vGlint > 0.5) vStr = vec4(0.0);${atRes('', '\n    if (vStr.z > 0.0) size += 1.0;')}
     col = vec4(min(c * I, vec3(6.0)), al * uNameI);
     return;
   }
@@ -189,13 +193,17 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
           if (length(dustPos(uNName + k + 32 * mm, ek) - uC) < 420.0 * uU) mine = false;
         }
         float env = smoothstep(-0.02, 0.0, te) * exp(-max(te, 0.0) / 0.16);
-        if (mine && env > 0.02){ vGlint = 1.0; vStr = vec4(0.0); size = 11.0 * uU; I = 3.0 * env; c = mix(c, uC1, 0.7); al = born * uDustI; }
+        if (mine && env > 0.02){ vGlint = ${atRes('1.0', '2.0')}; vStr = vec4(0.0); size = 11.0 * uU; I = 3.0 * env; c = mix(c, uC1, 0.7); al = born * uDustI; }
       }
     }
   }
-  col = vec4(min(c * I, vec3(6.0)), al);
+  ${atRes('', 'if (vStr.z > 0.0) size += 1.0;\n  ')}col = vec4(min(c * I, vec3(6.0)), al);
 }`;
 
+// Output scale R = 2 (atRes): landing glints (vGlint 1) sit exactly on frame-pixel centres (text.points homes), which
+// are texel corners at R = 2, so each thin arm is snapped across its width by half a texel (1 / vSize in q: s). The
+// two texel rows beside the axis take the R = 1 centre-row weight and the arms keep their R = 1 brightness (about 7x
+// dimmer unsnapped). Snapping along the arms as well would add a plateau and overshoot by 20 percent.
 export const GRAIN_FS = `
 in vec4 vCol; in float vSize; in float vGlint;
 out vec4 o;
@@ -204,8 +212,8 @@ void main(){
   float w;
   if (vGlint > 0.5){
     // a fine four-point glint: thin tapering arms and a small hot core (not a soft diamond blob)
-    vec2 a = abs(q);
-    float arms = exp(-a.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-a.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);
+    ${atRes('vec2 a = abs(q);', 'vec2 a = abs(q), s = vGlint < 1.5 ? max(a - 1.0 / max(vSize, 1.0), 0.0) : a;')}
+    ${atRes('float arms = exp(-a.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-a.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);', 'float arms = exp(-s.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-s.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);')}
     w = arms * 0.9 + exp(-dot(q, q) * 18.0) * 1.2;
   } else w = exp(-dot(q, q) * 2.0);
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
@@ -220,14 +228,14 @@ void main(){
     vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
     float w;
     if (vGlint > 0.5){
-      vec2 a = abs(q);
-      float arms = exp(-a.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-a.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);
+      ${atRes('vec2 a = abs(q);', 'vec2 a = abs(q), s = vGlint < 1.5 ? max(a - 1.0 / max(vSize, 1.0), 0.0) : a;')}
+      ${atRes('float arms = exp(-a.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-a.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);', 'float arms = exp(-s.y * 28.0) * pow(max(1.0 - a.x, 0.0), 2.0) + exp(-s.x * 28.0) * pow(max(1.0 - a.y, 0.0), 2.0);')}
       w = arms * 0.9 + exp(-dot(q, q) * 18.0) * 1.2;
     } else w = exp(-dot(q, q) * 2.0);
     o = vec4(vCol.rgb * vCol.a * w, 0.0);
     return;
   }
-  vec2 d = (gl_PointCoord - 0.5) * (vSize + 2.0);
+  vec2 d = (gl_PointCoord - 0.5) * (vSize + 2.0)${atRes('', ' * 0.5')};
   // an elongated Gaussian: never thinner than about a pixel (no aliased combs), tapering at both ends, with the same
   // integral as the round sprite (sigma rs/4)
   float s0 = max(vStr.w, 1.0) * 0.25;
@@ -237,7 +245,8 @@ void main(){
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
 }`;
 
-// rubrication dots: AA discs of red lead with a 1 px highlight, one every 18 ms
+// rubrication dots: AA discs of red lead with a 1 px highlight, one every 18 ms. DOTS_FS measures d in texels, so at
+// R = 2 the highlight width 0.45 px^2 becomes 0.45 * R^2 = 1.8 texels^2; the disc edge stays one texel (crisper).
 export const DOTS_GLSL = `
 uniform sampler2D uDots; uniform float uT0, uFade, uU; uniform vec3 uRed;
 out float vPop;
@@ -262,7 +271,7 @@ void main(){
   float r = vSize * 0.5;
   float cov = clamp(r - length(d) + 0.5, 0.0, 1.0);
   // 1 px highlight toward the key light (upper left)
-  float hl = exp(-dot(d - vec2(-0.55, -0.6) * r * 0.5, d - vec2(-0.55, -0.6) * r * 0.5) / 0.45);
+  float hl = exp(-dot(d - vec2(-0.55, -0.6) * r * 0.5, d - vec2(-0.55, -0.6) * r * 0.5) / ${atRes('0.45', '1.8')});
   vec3 c = mix(vCol.rgb, uHi, clamp(hl, 0.0, 1.0) * 0.85) * (1.0 + 2.5 * vPop);
   o = vec4(c * cov * vCol.a, cov * vCol.a);
 }`;

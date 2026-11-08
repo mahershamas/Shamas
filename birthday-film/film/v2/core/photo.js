@@ -77,6 +77,10 @@
         seeded jitter), flies 0.9 s on a curved path and lands on its home cell with the engraving's value; it then
         fades as the engraving texture appears there (PH.draw engrave.reveal uses the same delays, so they hand over
         seamlessly). tipAt(tRel) -> [[lx, ly], [rx, ry]] frame px of the two pen tips at t (sampled 17 times).
+        Output scale R = 2: each grain's sprite is padded by 4 physical px (2 at R = 1), i.e. 2 frame px at every R. The
+        Gaussian's sigma is 0.28 x the drawn size, so a 2-physical-px pad cut its tail at 2.7 sigma at 4K against
+        3.6 sigma at HD: the grains lost about 1.5 % of their light and the gold field over the plate read about 1.6 LSB
+        darker (66.5).
     PH.bokeh(target, cam, {I = 1, t = 0 (s, drift), drift = 6 (px/s up), size = 1, grow = 1 (0..1 disc growth)})
         about 60 warm discs (60-180 px) splatted from the photo's own highlights (seeded, never on the faces).
     PH.thread(target, cam, {tip (source x of the drawing tip, 0..w), from = 0, I = 1, steady = 0.7, glint (source x
@@ -103,7 +107,7 @@
   Determinism: everything is a pure function of the options; the bokeh sources come from a seeded draw over a GPU
   readback of the photo made at init (identical across launches on the same machine).
 */
-import { frag, HEADER_VS } from './glsl.js';
+import { frag, HEADER_VS, atRes } from './glsl.js';
 import { DEFAULTS, LOOKS, displayToScene } from './post.js';
 import { createKnot, seatKnot } from './knot.js';
 import { createGold } from './gold.js';
@@ -125,8 +129,9 @@ export const photoAssertLog = { calls: 0, minMargin: Infinity, last: null, failu
 
 export function photoCamera(crop, o = {}) {
   const meta = window.PHOTO_META;
-  const W = (o.frame && o.frame[0]) || (window.FILM && window.FILM.width) || 1920;
-  const H = (o.frame && o.frame[1]) || (window.FILM && window.FILM.height) || 1080;
+  // the fallback is the logical frame (FILM.width/height are the capture size in physical px at ?res=2)
+  const W = (o.frame && o.frame[0]) || (window.FILM && (window.FILM.frameWidth || window.FILM.width)) || 1920;
+  const H = (o.frame && o.frame[1]) || (window.FILM && (window.FILM.frameHeight || window.FILM.height)) || 1080;
   const dest = o.dest || [0, 0, W, H];
   const [cx0, cy0, cx1, cy1] = crop;
   const sx = dest[2] / (cx1 - cx0), sy = dest[3] / (cy1 - cy0);
@@ -312,9 +317,9 @@ void main(){
   float baseLod = log2(max(2.0 / spx, 1.0));  // the texture is 2x
   // plate coverage (anti-aliased edges) and the optional dissolving edges
   vec2 dl = px - uDest.xy, dr = uDest.xy + uDest.zw - px;
-  float cov = clamp(min(min(dl.x, dr.x), min(dl.y, dr.y)) + 0.5, 0.0, 1.0);
+  float cov = clamp(min(min(dl.x, dr.x), min(dl.y, dr.y))${atRes('', ' * 2.0')} + 0.5, 0.0, 1.0);
   vec2 iu = src / uSize;
-  cov *= clamp(min(min(iu.x, 1.0 - iu.x) * uSize.x, min(iu.y, 1.0 - iu.y) * uSize.y) * spx + 0.5, 0.0, 1.0);
+  cov *= clamp(min(min(iu.x, 1.0 - iu.x) * uSize.x, min(iu.y, 1.0 - iu.y) * uSize.y) * spx${atRes('', ' * 2.0')} + 0.5, 0.0, 1.0);
   if (uEdge.x + uEdge.y + uEdge.z + uEdge.w > 0.0){
     // distances (frame px) to the visible picture's edges: the dest rect or the image itself, whichever is nearer
     vec2 el = min(dl, iu * uSize * spx), er = min(dr, (1.0 - iu) * uSize * spx);
@@ -369,7 +374,7 @@ void main(){
       // the cache is 2 texels per source px: under mild minification (<= 1.7 texels per frame px) one bilinear level
       // is alias-free enough and costs half a trilinear fetch on the software rasteriser
       float texPerPx = 2.0 / spx;
-      float lq = uLod > 0.0 ? log2(max(texPerPx, 1.0)) + uLod : (texPerPx <= uLod0Max ? 0.0 : log2(texPerPx));
+      ${atRes('float lq = uLod > 0.0 ? log2(max(texPerPx, 1.0)) + uLod : (texPerPx <= uLod0Max ? 0.0 : log2(texPerPx));', 'float lq = uLod > 0.0 ? log2(max(texPerPx, 1.0)) + uLod : (texPerPx * 0.5 <= uLod0Max ? 0.0 : log2(texPerPx * 0.5));')}
       cc = textureLod(uCache, src / uSize, lq);
     }
     disp = dynGrade(cc);
@@ -935,7 +940,7 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
     const look = o.look === undefined ? 'photo' : o.look;
     f.CACHE = !!(look && !f.DEBUG && o.cache !== false);
     const prog = mainProg(f);
-    const tw = target ? target.w : G.W, th = target ? target.h : G.H, sc = target ? (target.scale || 1) : 1;
+    const tw = target ? target.w : G.PW, th = target ? target.h : G.PH, sc = target ? (target.scale || 1) : G.R;
     const d = cam.dest;
     const cover = d[0] <= 0.5 && d[1] <= 0.5 && d[0] + d[2] >= tw / sc - 0.5 && d[1] + d[3] >= th / sc - 0.5 && !o.edgeFade && (o.opacity == null || o.opacity >= 1);
     // rasterise only the dest rect (plus a pixel), clipped to the target
@@ -1053,7 +1058,7 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
     // rasterise only the band around the seat curve
     const ys = meta.seatEdge.map(p => cam.toFrame(p)[1]);
     const xs = [cam.toFrame([0, 0])[0], cam.toFrame([PW, 0])[0]];
-    const tw = target ? target.w : G.W, th = target ? target.h : G.H, sc = target ? (target.scale || 1) : 1;
+    const tw = target ? target.w : G.PW, th = target ? target.h : G.PH, sc = target ? (target.scale || 1) : G.R;
     const pad = 40;
     const vx0 = Math.max(0, Math.floor((Math.min(...xs) - pad) * sc)), vx1 = Math.min(tw, Math.ceil((Math.max(...xs) + pad) * sc));
     const vy0 = Math.max(0, Math.floor((Math.min(...ys) - pad - 60 * cam.sy) * sc)), vy1 = Math.min(th, Math.ceil((Math.max(...ys) + pad + 60 * cam.sy) * sc));
@@ -1181,7 +1186,7 @@ void main(){ vec4 c = texture(uHalf, screenUV()); o = uOpaque == 1 ? vec4(c.rgb,
 in vec4 vCol; in float vSize;
 out vec4 o;
 void main(){
-  vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
+  vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + ${atRes('2.0', '4.0')}) / max(vSize, 1.0);
   float w = exp(-dot(q, q) * 1.6);
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
 }`), HEADER_VS + `
@@ -1235,7 +1240,7 @@ void main(){
   col.a *= min(1.0, (size * uScale) * (size * uScale));
   vCol = col; vSize = s;
   gl_Position = col.a <= 0.0 ? vec4(2.0, 2.0, 2.0, 1.0) : clipOfPx(px);
-  gl_PointSize = s + 2.0;
+  gl_PointSize = s + ${atRes('2.0', '4.0')};
 }`);
   PH.grainCount = GX * GY;
   PH.grains = function (target, cam, o = {}) {

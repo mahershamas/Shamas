@@ -82,8 +82,15 @@
   every instruction of a shader whatever its branches.
   Transitions: inside a transition window main.js adds overlays from a scratch target, which drops premultiplied
   alpha, so the keyline and drop shadows only darken what is behind when the knotwork is drawn straight into C.
+  Output scale R (?res=2): pw (object px per fragment, from fwidth) is per physical px, so only the silhouette coverage
+  (and the tincture, field and rule coverage, the thread line) sharpens to 1 physical px. The look-defining ribbon terms
+  use pw x 2, the HD footprint: the specular anti-aliasing nvar, the groove and its highlight, and the gold-to-keyline
+  ramp gk (at 1 physical px the ribbons rendered narrower, whiter highlights and darker gaps, and the brighter upper
+  bevel edges lost more light than the lower ones, which read as the knot sitting ~0.12 HD px low). The pw floors are
+  halved so that pw x 2 equals the HD value also where a floor binds. The data textures and the 576-px leaf texture
+  are object space and do not change.
 */
-import { frag, HEADER_VS } from './glsl.js';
+import { frag, HEADER_VS, atRes } from './glsl.js';
 import { GOLD_GLSL, GOLD_RAMPS } from './gold.js';
 import { displayToScene, DEFAULTS, LOOKS } from './post.js';
 
@@ -390,7 +397,7 @@ vec4 ribbon(float sdf, vec2 g, float d, vec2 nF, float hw, float kl, float pw, f
   float x = 1.0 - clamp(w / hwi, 0.0, 1.0);
   float slope = uCushion * (1.25 * pow(x, 1.25) + 1.4 * pow(x, 6.0));
   float dsl = uCushion * (1.5625 * pow(x, 0.25) + 8.4 * pow(x, 5.0)) / hwi;   // d slope / d w
-  float nvar = pow(dsl * pw / (1.0 + slope * slope), 2.0) * 2.0;
+  float nvar = pow(dsl * pw${atRes('', ' * 2.0')} / (1.0 + slope * slope), 2.0) * 2.0;
   vec2 gh = -slope * g;                                // height gradient (height rises inward)
   // incised centre groove: a V cut along the centreline
   float gw = max(0.11 * hw, 0.55);
@@ -398,9 +405,9 @@ vec4 ribbon(float sdf, vec2 g, float d, vec2 nF, float hw, float kl, float pw, f
 #if GROOVE
   if (grooveOn > 0.5){
     float ad = abs(d);
-    gm = clamp((gw - ad) / pw + 0.5, 0.0, 1.0) * smoothstep(kl + 0.5, kl + 2.5, -sdf);
+    gm = clamp((gw - ad) / ${atRes('pw', '(pw * 2.0)')} + 0.5, 0.0, 1.0) * smoothstep(kl + 0.5, kl + 2.5, -sdf);
     float side = sign(d) * sign(nF.y + 1e-4);          // > 0 where the groove wall faces up (lower wall)
-    hl = clamp(min(ad - gw, gw + 1.1 - ad) / pw + 0.5, 0.0, 1.0) * step(0.0, side) * smoothstep(kl + 0.5, kl + 2.5, -sdf);
+    hl = clamp(min(ad - gw, gw + 1.1 - ad) / ${atRes('pw', '(pw * 2.0)')} + 0.5, 0.0, 1.0) * step(0.0, side) * smoothstep(kl + 0.5, kl + 2.5, -sdf);
     float tg = clamp(1.0 - ad / (gw * 2.2), 0.0, 1.0);
     gh += 0.9 * tg * sign(d) * nF;
   }
@@ -410,7 +417,7 @@ vec4 ribbon(float sdf, vec2 g, float d, vec2 nF, float hw, float kl, float pw, f
   float s = knotGoldS(N, fpx, opx, thick, nvar + (grooveOn > 0.5 ? 0.02 : 0.0)) + extraS + 0.16 * hl;
   s *= ao * (1.0 - 0.55 * gm);
   vec3 c = goldRamp(s) * uTint;
-  float gk = clamp(0.5 + (-sdf - kl) / pw, 0.0, 1.0);   // gold vs keyline
+  float gk = clamp(0.5 + (-sdf - kl) / ${atRes('pw', '(pw * 2.0)')}, 0.0, 1.0);   // gold vs keyline
   c = mix(uKeyCol, c, gk);
   return vec4(c * cov, cov);
 }
@@ -475,7 +482,7 @@ void main(){
   vec2 fpx = vPx;
   mat2 RX = rot2(uXf.w);
   vec2 p = uXf.xy + rot2(-uXf.w) * (fpx - uXf.xy) / uXf.z;         // band space (frame px before the xform)
-  float pw = max((fwidth(p.x) + fwidth(p.y)) * 0.75, 0.35);
+  float pw = max((fwidth(p.x) + fwidth(p.y)) * 0.75, ${atRes('0.35', '0.175')});
   // band frame: along t, outward n, along coordinate s (pattern), reveal distance rd and its gradient
   vec2 t, n; float s, d, rd; vec2 grd; float clip = -1e5; vec2 gclip = vec2(0.0);
   vec2 opx;
@@ -631,7 +638,7 @@ out vec4 o;
 void main(){
   vec2 fpx = vPx;
   vec2 p = uXf.xy + rot2(-uXf.w) * (fpx - uXf.xy) / uXf.z;
-  float pw = max((fwidth(p.x) + fwidth(p.y)) * 0.75, 0.35);
+  float pw = max((fwidth(p.x) + fwidth(p.y)) * 0.75, ${atRes('0.35', '0.175')});
   float S = uR.z / 88.0;
   vec2 q = p - uR.xy; float r = length(q);
   vec2 n = q / max(r, 1e-4);
@@ -712,7 +719,7 @@ void main(){
   if (q.x < 0.0 || q.y < 0.0 || q.x >= uDW.x || q.y >= uDW.y){ o = vec4(0.0); return; }
   ivec2 ip = ivec2(floor(q));
   vec4 TA = texelFetch(uData, ip, 0), TB = texelFetch(uData, ip + ivec2(int(uDW.x), 0), 0);
-  float pw = max((fwidth(q.x) + fwidth(q.y)) * 0.75, 0.3);
+  float pw = max((fwidth(q.x) + fwidth(q.y)) * 0.75, ${atRes('0.3', '0.15')});
   float dcA, dA, aA, bA, dcB, dB, aB, bB; vec2 gA, nA, gB, nB; int fA, fB;
   bool hA = passage(TA, q, dcA, gA, dA, nA, aA, bA, fA);
   bool hB = passage(TB, q, dcB, gB, dB, nB, aB, bB, fB);

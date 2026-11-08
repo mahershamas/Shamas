@@ -29,6 +29,16 @@
       the spec order: the dither is applied before the captions (saves one full-resolution pass, about 40 ms on the
       software rasteriser); caption edges are anti-aliased 8-bit coverage, so they need no dither.
 
+  Output scale R > 1 (G.R, ?res=2): the scene HDR target is W*R x H*R. Every post target below stays logical
+  (frame px), so the bloom, streak, ghost and dirt radii in frame px are the same at every R: an exact R x R
+  texelFetch box of the scene goes into post.d0 (W x H) first and the unchanged pyramid runs from it. The composite
+  still reads the full-resolution scene, so CA, vignette, face protection and the TPDF dither (one sample per
+  physical pixel) run at R x R per frame px. At R = 1 none of this exists (no d0 target, no box program, no pass).
+  CA at R > 1 (atRes branch, caHD): each R/B tap reproduces the R = 1 bilinear tap, i.e. the four scene samples
+  1 frame px apart around it mixed with the R = 1 weights fract(shift in frame px). A plain tap on the 4K scene
+  blurs half as much in frame px, so thin bright lines stayed thinner through the compressive tonemap and the
+  corners lost 3-5 LSB of red against HD; with caHD the smear has the HD profile.
+
   API
     const post = createPost(G)
     post.params(lookName | [{look, w}], ...overrides) -> params    (deep-merged; see DEFAULTS and LOOKS)
@@ -48,7 +58,7 @@
     faces: [[cx, cy, rx, ry], ...] frame-px ellipses (max 2) where the grade may not shift hue, faceProtect 0..1,
     lift [r,g,b] linear display lift added before encode (rarely needed).
 */
-import { frag } from './glsl.js';
+import { frag, atRes } from './glsl.js';
 import { mulberry32 } from './timeline.js';
 
 export const DEFAULTS = {
@@ -232,7 +242,16 @@ uniform highp sampler3D uLut, uLutBase; uniform float uLutA, uLutB;
 uniform float uExpo, uBloomBase, uCA, uVig, uFaceProtect;
 uniform uint uFrameIdx;
 uniform vec4 uFace[2]; uniform int uFaceN;
-out vec4 o;
+out vec4 o;${atRes('', `
+// R > 1: the R = 1 bilinear CA tap reproduced exactly. At R = 1 a tap at uv + duv lands between HD texels and the
+// bilinear filter widens thin bright lines (more light through the compressive tonemap); at R > 1 the same tap would
+// blur half as much in frame px. caHD mixes the four neighbours 1 frame px apart (exact texel centres at R = 2) with
+// the R = 1 weights fract(duv * uFrame), so the CA smear has the HD profile in frame px.
+vec3 caHD(vec2 uv, vec2 duv){
+  vec2 sp = duv * uFrame; vec2 f0 = floor(sp); vec2 f = sp - f0;
+  vec2 b = uv + f0 / uFrame, ox = vec2(1.0, 0.0) / uFrame, oy = vec2(0.0, 1.0) / uFrame;
+  return mix(mix(texture(uScene, b).rgb, texture(uScene, b + ox).rgb, f.x), mix(texture(uScene, b + oy).rgb, texture(uScene, b + ox + oy).rgb, f.x), f.y);
+}`)}
 void main(){
   vec2 uv = screenUV();
   vec2 d = uv - 0.5;
@@ -246,9 +265,11 @@ void main(){
   if (sh > 0.05){
     vec2 du = dp / max(length(dp), 1e-3) * sh / uFrame;     // the full shift in uv
     vec2 uR = uv + du, uB = uv - du;
-    float cr = (texture(uScene, uv + du * 0.5).r + texture(uScene, uR).r) * 0.5;
+${atRes(`    float cr = (texture(uScene, uv + du * 0.5).r + texture(uScene, uR).r) * 0.5;
     float cb = (texture(uScene, uv - du * 0.5).b + texture(uScene, uB).b) * 0.5;
-    float keep = 0.0;
+`, `    float cr = (caHD(uv, du * 0.5).r + caHD(uv, du).r) * 0.5;
+    float cb = (caHD(uv, -du * 0.5).b + caHD(uv, -du).b) * 0.5;
+`)}    float keep = 0.0;
     if (uHasNoCA == 1) keep = clamp(max(texture(uNoCA, uv).a, max(texture(uNoCA, uR).a, texture(uNoCA, uB).a)), 0.0, 1.0);
     c.r = mix(cr, c0.r, keep);
     c.b = mix(cb, c0.b, keep);
@@ -297,6 +318,17 @@ void main(){
     g *= mix(mix(vec3(1.0), uSplitS, uSplitAmt), mix(vec3(1.0), uSplitH, uSplitAmt), smoothstep(0.02, 0.6, l));
   }
   o = vec4(lin2srgb(g + uLift), 1.0);
+}`);
+
+// R > 1 only: exact R x R box of the full-resolution scene into a W x H (frame px) target
+const srcBox = r => frag(`
+uniform sampler2D uSrc;
+out vec4 o;
+void main(){
+  ivec2 p = ivec2(gl_FragCoord.xy) * ${r};
+  vec4 s = vec4(0.0);
+  for (int j = 0; j < ${r}; j++) for (int i = 0; i < ${r}; i++) s += texelFetch(uSrc, p + ivec2(i, j), 0);
+  o = s / ${r * r}.0;
 }`);
 
 // ---------- JS mirror of the tonemap and grade (for palette inversion)
@@ -394,6 +426,9 @@ export function createPost(G) {
     if (i < SQ - 1) su[i] = G.target('post.su' + i, Math.max(2, Math.round(W / (4 << i))), H / 4);
   }
   const gh = G.target('post.ghost', W / 8, H / 8);
+  // R > 1: the R x R box-down of the scene the pyramid starts from (created only then: nothing new at R = 1)
+  const d0 = G.R > 1 ? G.target('post.d0', W, H) : null;
+  const boxP = G.R > 1 ? G.program('post.box', srcBox(G.R)) : null;
   const wsum = LEVEL_W.reduce((a, b) => a + b, 0);
 
   // ---------- 3D LUTs (graded and base AgX), rebuilt only when the grade changes
@@ -444,6 +479,7 @@ export function createPost(G) {
     const expo = Math.pow(2, p.exposure || 0);
     // 2 bloom pyramid
     let src = hdr;
+    if (d0) { G.draw(boxP, { uSrc: hdr }, d0); src = d0; }   // R > 1: the first down pass expects a source of 2 x d1
     for (let i = 1; i <= 6; i++) {
       G.draw(P.down, { uSrc: src, uSrcTexel: [1 / src.w, 1 / src.h], uFirst: i === 1 ? 1 : 0, uThr: p.bloom.threshold, uKnee: Math.max(1e-3, p.bloom.knee), uExpo: expo }, d[i]);
       src = d[i];

@@ -2,19 +2,24 @@
   core/gl.js: WebGL2 context, program and uniform caches, fullscreen triangle, render targets, textures.
 
   API
-    const G = createGL(canvas, {width, height})
+    const G = createGL(canvas, {width, height, res = 1})
       G.gl            the WebGL2RenderingContext (preserveDrawingBuffer: true, no MSAA, opaque)
-      G.W, G.H        output size in frame px;  G.U = min(W,H)/1080
+      G.W, G.H        output size in frame px (logical: the layout size at every output scale);  G.U = min(W,H)/1080
+      G.R             output scale (glsl.RES): the canvas holds R x R physical px per frame px
+      G.PW, G.PH      canvas size in physical px (W*R, H*R)
       G.hdr           {internal, type, name}: RGBA16F when EXT_color_buffer_float exists, else RGBA8 (warned once)
       G.program(key, fragSrc, vertSrc = VERT_TRI) -> Program (cached by key; recompiles if the source changes)
       G.draw(prog, uniforms, target, opts)        one fullscreen-triangle pass (or opts.count/mode for points etc.)
-           target: an RT from G.target()/G.acquire(), or null for the canvas
+           target: an RT from G.target()/G.acquire(), or null for the canvas (viewport PW x PH, uRes = PW x PH,
+                   uScale = R)
            opts.blend: null | 'add' (ONE,ONE) | 'premul' (ONE,ONE_MINUS_SRC_ALPHA) | 'alpha' | 'max' | 'mul'
            opts.viewport: [x,y,w,h] in target texels (default: whole target)
            opts.clear: [r,g,b,a] clears the target first
            opts.mode / opts.count / opts.instances: draw arrays of gl_VertexID-driven primitives (no buffers)
            standard uniforms uRes, uScale, uFrame are filled from the target automatically
       G.target(name, w, h, opts) -> RT          persistent named render target (re-allocated on size/format change)
+           sizes are in texels and opts.scale (texels per frame px) defaults to 1: R is NOT applied here. A frame-
+           referenced target asks for W*s*R x H*s*R texels with scale s*R itself (non-frame targets stay as sized).
       G.acquire(w, h, opts) / G.release(rt)     transient pool
       G.rt(w, h, opts) -> RT                    unpooled
            RT = {tex, fbo, w, h, scale, format, mips}
@@ -24,7 +29,7 @@
       G.texture(source, {srgb, mips, wrap, filter, flipY}) -> Tex {tex, w, h}   from Image/Canvas/ImageData/ImageBitmap
       G.updateTexture(tex, source)              re-upload (same size)
       G.dataTexture(w, h, data, {format:'rgba32f'|'rg32f'|'r32f'|'rgba8'|'rgba16f', filter}) -> Tex
-      G.readPixels(target) -> Uint8Array (RGBA8 targets / canvas only; debug)
+      G.readPixels(target) -> Uint8Array (RGBA8 targets / canvas only, the canvas at PW x PH; debug)
     hex('#RRGGBB') -> [r,g,b] in 0..1 sRGB;  hexLin('#RRGGBB') -> linear [r,g,b]
 
   Uniform values: numbers, booleans, arrays / Float32Array (vecN, matN, arrays of them), Int32Array for ivec,
@@ -40,8 +45,8 @@ export function hex(h) {
 export function srgbToLin(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
 export function hexLin(h) { return hex(h).map(srgbToLin); }
 
-export function createGL(canvas, { width, height }) {
-  canvas.width = width; canvas.height = height;
+export function createGL(canvas, { width, height, res = 1 }) {
+  canvas.width = width * res; canvas.height = height * res;
   const gl = canvas.getContext('webgl2', {
     preserveDrawingBuffer: true, antialias: false, alpha: false, depth: false, stencil: false,
     premultipliedAlpha: false, powerPreference: 'high-performance', desynchronized: false,
@@ -52,7 +57,7 @@ export function createGL(canvas, { width, height }) {
   gl.getExtension('EXT_float_blend');
   if (!hasFloat) console.warn('EXT_color_buffer_float unavailable: HDR targets fall back to RGBA8 (banding and clipped highlights expected)');
 
-  const G = { gl, W: width, H: height, U: Math.min(width, height) / 1080, hasFloat };
+  const G = { gl, W: width, H: height, U: Math.min(width, height) / 1080, R: res, PW: width * res, PH: height * res, hasFloat };
   G.hdr = hasFloat ? { internal: gl.RGBA16F, format: gl.RGBA, type: gl.HALF_FLOAT, name: 'rgba16f' }
     : { internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, name: 'rgba8' };
   const vao = gl.createVertexArray();
@@ -227,7 +232,7 @@ export function createGL(canvas, { width, height }) {
 
   G.bindTarget = function (target, viewport) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, target ? target.fbo : null);
-    const w = target ? target.w : G.W, h = target ? target.h : G.H;
+    const w = target ? target.w : G.PW, h = target ? target.h : G.PH;
     if (viewport) gl.viewport(viewport[0], viewport[1], viewport[2], viewport[3]); else gl.viewport(0, 0, w, h);
   };
   G.clear = function (target, c = [0, 0, 0, 0]) {
@@ -255,8 +260,8 @@ export function createGL(canvas, { width, height }) {
     gl.useProgram(prog.prog);
     const unit = { n: 0 };
     const U = prog.uniforms;
-    const tw = target ? target.w : G.W, th = target ? target.h : G.H;
-    const sc = target ? (target.scale == null ? 1 : target.scale) : 1;
+    const tw = target ? target.w : G.PW, th = target ? target.h : G.PH;
+    const sc = target ? (target.scale == null ? 1 : target.scale) : G.R;
     if (U.uRes) gl.uniform2f(U.uRes.loc, tw, th);
     if (U.uScale) gl.uniform1f(U.uScale.loc, sc);
     if (U.uFrame) gl.uniform2f(U.uFrame.loc, G.W, G.H);
@@ -273,7 +278,7 @@ export function createGL(canvas, { width, height }) {
   };
   G.readPixels = function (target) {
     G.bindTarget(target);
-    const w = target ? target.w : G.W, h = target ? target.h : G.H;
+    const w = target ? target.w : G.PW, h = target ? target.h : G.PH;
     const px = new Uint8Array(w * h * 4);
     gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
     return px;

@@ -102,6 +102,8 @@ void main(){
   o = vec4(acc / ws, 1.0);
 }`;
 const COPY_FS = `uniform sampler2D uSrc; out vec4 o; void main(){ o = vec4(texture(uSrc, screenUV()).rgb, 1.0); }`;
+// PH.draw lod: any value > 0 selects the HD frame's cache mip, log2(2 / cam.sx); this one adds nothing visible to it
+const HD_LOD = 1e-6;
 // portrait: the bokeh discs (drawn into a scratch target) are added only over the picture, fading out towards its
 // dissolving top and bottom edges (uY: image top, image bottom, inset, fade length; frame px), never over the mist
 const BOKEHMASK_FS = `
@@ -167,8 +169,11 @@ export function createSoften(ctx) {
       return [x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)];
     });
     const C = G.acquire(target.w, target.h, { format: 'hdr', scale: s });
-    for (const v of vps) G.draw(P.copy, { uSrc: target }, C, { viewport: [Math.max(0, v[0] - 8), Math.max(0, v[1] - 8), v[2] + 16, v[3] + 16] });
-    boxes.forEach((r, i) => G.draw(P.soft, { uSrc: C, uBox: r.box, uF: [F, r.op, 0, ANISO], uTexel: [1 / target.w, 1 / target.h] }, target, { blend: 'premul', viewport: vps[i] }));
+    // the copy pad covers the kernel's reach (3 x 2.4 frame px) in texels; uTexel is one FRAME px in uv, so the
+    // softening keeps its frame-px size at every output scale (s = 1 at R = 1: pad 8, uTexel 1/size)
+    const pad = Math.ceil(8 * s);
+    for (const v of vps) G.draw(P.copy, { uSrc: target }, C, { viewport: [Math.max(0, v[0] - pad), Math.max(0, v[1] - pad), v[2] + 2 * pad, v[3] + 2 * pad] });
+    boxes.forEach((r, i) => G.draw(P.soft, { uSrc: C, uBox: r.box, uF: [F, r.op, 0, ANISO], uTexel: [s / target.w, s / target.h] }, target, { blend: 'premul', viewport: vps[i] }));
     G.release(C);
   };
 }
@@ -180,15 +185,34 @@ export function createMist(ctx) {
   const col = { a: S('#120C08'), b: S('#1A120C'), c: S('#3A2414') };
   return (target, t, alpha = 1) => { if (alpha > 0) ctx.G.draw(prog, { uA: col.a, uB: col.b, uC: col.c, uT: t - 73, uAl: alpha }, target, { blend: alpha < 1 ? 'premul' : null }); };
 }
+// the variance (texel^2) of BLUR_FS's discrete kernel for uSigma = s (its taps at whole texels 1 .. 2n), and the s of a
+// given variance (bisection; the variance grows with s): used at R > 1 to reproduce the HD kernel's spread
+const nPairs = s => Math.max(1, Math.min(32, Math.ceil(3 * s / 2)));
+function tapVar(s) {
+  const k = -0.5 / Math.max(s * s, 1e-4);
+  let w = 1, m = 0;
+  for (let x = 1; x <= 2 * nPairs(s); x++) { const e = Math.exp(x * x * k); w += 2 * e; m += 2 * x * x * e; }
+  return m / w;
+}
+function sigmaOfVar(v, hi) {
+  let lo = 0;
+  for (let i = 0; i < 48; i++) { const mid = 0.5 * (lo + hi); if (tapVar(mid) < v) lo = mid; else hi = mid; }
+  return 0.5 * (lo + hi);
+}
 export function createBlur(ctx) {
   const { G, glsl } = ctx;
   const P = { blur: G.program('s07.blur', glsl.frag(BLUR_FS)), copy: G.program('s07.copy', glsl.frag(COPY_FS)) };
   P.faceMix = G.program('s07.facemix', glsl.frag(FACEMIX_FS));
   // src: a full-resolution target; result written opaque into dst (sigma in frame px). rect (optional, frame px
-  // [x0, y0, x1, y1]): only that region of dst is needed (each pass is restricted to it plus the kernel's reach)
+  // [x0, y0, x1, y1]): only that region of dst is needed (each pass is restricted to it plus the kernel's reach).
+  // Sizes and texel steps come from the targets themselves (physical texels, src.scale / dst.scale texels per frame
+  // px); sigma, the branch threshold and the margins stay in frame px, so every output scale blurs the same and
+  // switches branch at the same instants.
   function blur(src, dst, sigma, rect) {
-    const W = ctx.W, H = ctx.H;
-    const n = s => Math.max(1, Math.min(32, Math.ceil(3 * s / 2)));
+    const H = ctx.H;                                  // logical: y flip of the frame-px rect
+    const ss = src.scale == null ? 1 : src.scale;     // src texels per frame px
+    const ds = dst.scale == null ? 1 : dst.scale;
+    const n = nPairs;
     const vpAt = (sc, tw, th, m) => {
       if (!rect) return null;
       const x0 = Math.max(0, Math.floor((rect[0] - m) * sc)), x1 = Math.min(tw, Math.ceil((rect[2] + m) * sc));
@@ -197,22 +221,42 @@ export function createBlur(ctx) {
     };
     const reach = 3 * sigma + 4;
     if (sigma < 0.5) {
-      const T = G.acquire(W, H, { format: 'hdr' });
-      G.draw(P.blur, { uSrc: src, uDir: [1 / W, 0], uSigma: sigma, uN: n(sigma) }, T, { viewport: vpAt(1, W, H, reach) });
-      G.draw(P.blur, { uSrc: T, uDir: [0, 1 / H], uSigma: sigma, uN: n(sigma) }, dst, { viewport: vpAt(1, W, H, 0) });
+      // R > 1: the HD passes take one pair of taps (1 and 2 px), so below 0.5 px they spread less than sigma; the finer
+      // texel would resolve the nominal Gaussian, so it gets the sigma (in texels) of the same variance instead
+      const st = ss > 1 ? sigmaOfVar(tapVar(sigma) * ss * ss, sigma * ss) : sigma * ss;
+      const T = G.acquire(src.w, src.h, { format: 'hdr', scale: ss });
+      G.draw(P.blur, { uSrc: src, uDir: [1 / src.w, 0], uSigma: st, uN: n(st) }, T, { viewport: vpAt(ss, T.w, T.h, reach) });
+      G.draw(P.blur, { uSrc: T, uDir: [0, 1 / T.h], uSigma: st, uN: n(st) }, dst, { viewport: vpAt(ds, dst.w, dst.h, 0) });
       G.release(T);
       return;
     }
-    const w = Math.ceil(W / 2), h = Math.ceil(H / 2);
+    // This branch runs on HD's own grid at every output scale. Its horizontal pass centres the linear-pair taps
+    // between two src texels, so at HD a detail lands up to about 0.3-0.5 frame px off. The offset varies with the
+    // detail's position modulo the 2-px half-res grid, and a finer grid would place it differently. The scene
+    // therefore hands this branch a frame-px source at R > 1 (render: hdGrid), and the passes below are HD's,
+    // unchanged. Only the last upsample writes the R x R dst; its 2 x 2 box-down is HD's result exactly, because
+    // bilinear from the 2-px grid is linear across each frame px.
+    // A finer src (ss = 2) is box-filtered to frame px first, with one bilinear tap at the centre of each 2 x 2 texel
+    // block. That lands closer to HD than a 1-px grid, but not exactly: the box keeps only about 0.7 of the Nyquist
+    // detail behind the offset. The margin covers the horizontal pass's reach beyond A's region (3 sigma + 3 px).
+    let S = src, D = null;
+    if (ss > 1) {
+      D = G.acquire(Math.round(src.w / ss), Math.round(src.h / ss), { format: 'hdr', scale: 1 });
+      G.draw(P.copy, { uSrc: src }, D, { viewport: vpAt(1, D.w, D.h, 2 * reach + 8) });
+      S = D;
+    }
+    const w = Math.ceil(S.w / 2), h = Math.ceil(S.h / 2);
     const A = G.acquire(w, h, { format: 'hdr', scale: 0.5 }), B = G.acquire(w, h, { format: 'hdr', scale: 0.5 });
-    G.draw(P.blur, { uSrc: src, uDir: [1 / W, 0], uSigma: sigma, uN: n(sigma) }, A, { viewport: vpAt(0.5, w, h, reach + 4) });   // horizontal, full-res taps, 2x down
+    G.draw(P.blur, { uSrc: S, uDir: [1 / S.w, 0], uSigma: sigma, uN: n(sigma) }, A, { viewport: vpAt(0.5, w, h, reach + 4) });   // horizontal, full-res taps, 2x down
     G.draw(P.blur, { uSrc: A, uDir: [0, 1 / h], uSigma: sigma / 2, uN: n(sigma / 2) }, B, { viewport: vpAt(0.5, w, h, 4) });   // vertical at half res
-    G.draw(P.copy, { uSrc: B }, dst, { viewport: vpAt(1, W, H, 0) });
+    G.draw(P.copy, { uSrc: B }, dst, { viewport: vpAt(ds, dst.w, dst.h, 0) });
     G.release(A); G.release(B);
+    if (D) G.release(D);
   }
   // the forgetting's depth of field with the faces protected: the room at `sigma`, the faces (ellipses `faces`, frame
   // px) at `faceSigma`, the two blended over a `feather` px edge. Only the faces' bounding box gets the second pass.
-  function blurFaces(src, dst, sigma, faceSigma, faces, feather) {
+  // faceSrc (default src): the faces' source, when it differs from the room's (render: hdGrid).
+  function blurFaces(src, dst, sigma, faceSigma, faces, feather, faceSrc = src) {
     blur(src, dst, sigma);
     const s = dst.scale == null ? 1 : dst.scale;
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -220,8 +264,8 @@ export function createBlur(ctx) {
     const vx0 = Math.max(0, Math.floor(x0 * s)), vx1 = Math.min(dst.w, Math.ceil(x1 * s));
     const vy0 = Math.max(0, Math.floor((ctx.H - y1) * s)), vy1 = Math.min(dst.h, Math.ceil((ctx.H - y0) * s));
     if (vx1 <= vx0 || vy1 <= vy0) return;
-    const F = G.acquire(ctx.W, ctx.H, { format: 'hdr' });
-    blur(src, F, faceSigma, [x0, y0, x1, y1]);
+    const F = G.acquire(dst.w, dst.h, { format: 'hdr', scale: s });
+    blur(faceSrc, F, faceSigma, [x0, y0, x1, y1]);
     G.draw(P.faceMix, { uSrc: F, uA: faces[0], uB: faces[1] || [0, 0, 1, 1], uF: feather }, dst, { blend: 'premul', viewport: [vx0, vy0, vx1 - vx0, vy1 - vy0] });
     G.release(F);
   }
@@ -263,18 +307,42 @@ const scene = {
     const cam = cam7(ctx, t);
     const s = this.state(ctx, t);
     const soft = s.dof > 0.05;
-    const R = soft ? G.acquire(ctx.W, ctx.H, { format: 'hdr' }) : target;
+    const sc = target.scale == null ? 1 : target.scale;
+    // the room goes to 14 px, the faces only to about 5 px (they soften, never smear)
+    const sig = s.dof * 0.5, fsig = Math.min(2.5, 0.36 * sig);
+    // R > 1 only. Once the room takes the half-resolution blur (sigma >= 0.5 px, the instant HD's own blur steps up),
+    // its source is drawn on the HD frame's grid: a frame-px scratch at scale 1. That blur places detail by the HD
+    // grid (see blur), so every blurred highlight lands where HD puts it. The photo then also takes HD's cache mip:
+    //  - the R = 2 photo shader picks its lod per physical px;
+    //  - lod > 0 selects log2(2 / cam.sx) as HD does above lod0Max 1.7 (portrait 73.0-77.4: 1.71 cache texels per
+    //    frame px);
+    //  - below that, both take mip 0.
+    // The depth of field blurs in scene light, after the photo's inverse tone map, so a finer sample would leave thin
+    // highlights (collar piping, catch lights) up to a third brighter once blurred. Below 0.5 px the blur is sub-pixel,
+    // and the full-resolution 4K sample stays. R is local, not the output scale.
+    const hdGrid = soft && sc > 1 && sig >= 0.5;
+    const R = !soft ? target : hdGrid ? G.acquire(Math.round(target.w / sc), Math.round(target.h / sc), { format: 'hdr', scale: 1 })
+      : G.acquire(target.w, target.h, { format: 'hdr', scale: sc });
     if (ctx.portrait) this.mist(R, t, 1);
-    PH.draw(R, cam, {
+    const po = {
       parallax: PH.parallax(cam, this.camRef),
       light: s.feel > 0 ? { I: 0.32 * s.feel, angle: s.ang, wash: 1.0, rim: 1.0 } : null,
       grade: { wb: s.wb, haze: s.haze },
       edgeFade: ctx.portrait ? { top: 80, bottom: 80 } : null,
-    });
+    };
+    const hdLod = hdGrid && 2 / cam.sx > 1.7;
+    PH.draw(R, cam, hdLod ? Object.assign({}, po, { lod: HD_LOD }) : po);
     if (soft) {
-      // the room goes to 14 px, the faces only to about 5 px (they soften, never smear)
-      const sig = s.dof * 0.5;
-      this.blur.faces(R, target, sig, Math.min(2.5, 0.36 * sig), this.faceZones(ctx, cam), 60 * ctx.U);
+      // R > 1: room on the HD grid, faces still sub-pixel (room 0.5-1.4 px, a few frames as the focus falls and
+      // returns). The faces keep a full-resolution source.
+      let RF = R;
+      if (hdGrid && fsig < 0.5) {
+        RF = G.acquire(target.w, target.h, { format: 'hdr', scale: sc });
+        if (ctx.portrait) this.mist(RF, t, 1);
+        PH.draw(RF, cam, po);
+      }
+      this.blur.faces(R, target, sig, fsig, this.faceZones(ctx, cam), 60 * ctx.U, RF);
+      if (RF !== R) G.release(RF);
       G.release(R);
     }
     if (s.blur > 0.002) {

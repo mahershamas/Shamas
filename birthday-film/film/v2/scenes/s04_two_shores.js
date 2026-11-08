@@ -18,6 +18,8 @@
     createShoreFx(ctx)             {draw(target, u, {viewport, smear, smearN})}: arc, lights, meridians, leaders, rule
     createShield(ctx, key)         {build(entries) -> half-res RT}: blurred caption mask for the engraved shield
 */
+import { atRes } from '../core/glsl.js';
+
 const T0 = 30.0;
 
 export function shoresLayout(ctx) {
@@ -75,6 +77,35 @@ export function toScene(ctx, h, look = 'night_sea', gain = 1) {
   return _col.get(k).map(v => v * gain);
 }
 
+// the line core and its shutter-smear box filter. R = 1: the original text, byte for byte (a 1 frame px AA ramp).
+// R = 2: the same integral 2h with a ramp w px wide (w = 0.5: one physical px), so lines are crisp at 4K; the h = 0
+// glow call keeps w = 1, where the R = 2 form equals the original exactly.
+const LINEBOX_R1 = `// analytic box filters (shutter smear): antiderivatives of the line core clamp(h + 0.5 - |x|, 0, 1) and of exp(-|x|/s)
+float Gc(float x, float h){
+  float a = abs(x), l = h - 0.5;
+  float g = a < l ? a : (a < h + 0.5 ? l + (h + 0.5) * (a - l) - 0.5 * (a * a - l * l) : h);
+  return sign(x) * g;
+}
+float Ge(float x, float s){ return sign(x) * s * (1.0 - exp(-abs(x) / s)); }
+// mean of (core(h) + g1 exp(-|x|/s1) + g2 exp(-|x|/s2)) over [x - v/2, x + v/2]
+float lineBox(float x, float v, float h, float g1, float s1, float g2, float s2){
+  if (v < 0.5){ float a = abs(x); return clamp(h + 0.5 - a, 0.0, 1.0) + g1 * exp(-a / s1) + g2 * exp(-a / s2); }
+  float lo = x - 0.5 * v, hi = x + 0.5 * v;
+  return (Gc(hi, h) - Gc(lo, h) + g1 * (Ge(hi, s1) - Ge(lo, s1)) + g2 * (Ge(hi, s2) - Ge(lo, s2))) / v;
+}`;
+const LINEBOX_R2 = `float Gc(float x, float h, float w){
+  float a = abs(x), l = h - 0.5 * w, u = h + 0.5 * w;
+  float g = a < l ? a : (a < u ? l + (u * (a - l) - 0.5 * (a * a - l * l)) / w : h);
+  return sign(x) * g;
+}
+float Ge(float x, float s){ return sign(x) * s * (1.0 - exp(-abs(x) / s)); }
+// mean of (core(h, w) + g1 exp(-|x|/s1) + g2 exp(-|x|/s2)) over [x - v/2, x + v/2]; core ramp width w px
+float lineBox(float x, float v, float h, float w, float g1, float s1, float g2, float s2){
+  if (v < 0.5){ float a = abs(x); return clamp((h - a) / w + 0.5, 0.0, 1.0) + g1 * exp(-a / s1) + g2 * exp(-a / s2); }
+  float lo = x - 0.5 * v, hi = x + 0.5 * v;
+  return (Gc(hi, h, w) - Gc(lo, h, w) + g1 * (Ge(hi, s1) - Ge(lo, s1)) + g2 * (Ge(hi, s2) - Ge(lo, s2))) / v;
+}`;
+
 // ------------------------------------------------------------------ the shore overlay (additive HDR)
 const FX_FS = `
 uniform vec2 uA, uB, uC; uniform float uLen; uniform float uLut[17];
@@ -121,19 +152,7 @@ vec2 sdBez(vec2 pos, vec2 A, vec2 B, vec2 C){
   float dx = dot(qx, qx), dy = dot(qy, qy);
   return dx < dy ? vec2(sqrt(dx), t.x) : vec2(sqrt(dy), t.y);
 }
-// analytic box filters (shutter smear): antiderivatives of the line core clamp(h + 0.5 - |x|, 0, 1) and of exp(-|x|/s)
-float Gc(float x, float h){
-  float a = abs(x), l = h - 0.5;
-  float g = a < l ? a : (a < h + 0.5 ? l + (h + 0.5) * (a - l) - 0.5 * (a * a - l * l) : h);
-  return sign(x) * g;
-}
-float Ge(float x, float s){ return sign(x) * s * (1.0 - exp(-abs(x) / s)); }
-// mean of (core(h) + g1 exp(-|x|/s1) + g2 exp(-|x|/s2)) over [x - v/2, x + v/2]
-float lineBox(float x, float v, float h, float g1, float s1, float g2, float s2){
-  if (v < 0.5){ float a = abs(x); return clamp(h + 0.5 - a, 0.0, 1.0) + g1 * exp(-a / s1) + g2 * exp(-a / s2); }
-  float lo = x - 0.5 * v, hi = x + 0.5 * v;
-  return (Gc(hi, h) - Gc(lo, h) + g1 * (Ge(hi, s1) - Ge(lo, s1)) + g2 * (Ge(hi, s2) - Ge(lo, s2))) / v;
-}
+${atRes(LINEBOX_R1, LINEBOX_R2)}
 float arcS(float t){ float x = t * 16.0; int i = int(min(floor(x), 15.0)); return mix(uLut[i], uLut[i + 1], x - float(i)) * uLen; }
 float star4(vec2 q, float s){
   vec2 a = abs(q);
@@ -168,7 +187,7 @@ vec3 shade(vec2 p){
         vec3 col = mix(base * uArcK.x, uLitC * uArcK.y, k) * (1.0 + 0.6 * max(lit - 1.0, 0.0));
         float sh = 1.0 + uArcK.w * (vn(vec2(s * 0.045, uTau * 0.7)) - 0.5);
         float gk = uArcK.z * (1.0 + 1.6 * k) * (1.0 - 0.6 * cool);
-        float prof = lineBox(vsw < 0.5 ? d : sd, vsw, 1.0, 0.20 * gk, 2.2, 0.05 * gk, 9.0);
+        float prof = lineBox(vsw < 0.5 ? d : sd, vsw, 1.0, ${atRes('', '0.5, ')}0.20 * gk, 2.2, 0.05 * gk, 9.0);
         c += col * prof * sh * drawn;
         c += uHazeC * (band + 0.3 * trail) * uBand.w * (exp(-0.5 * d * d / (9.0 * 9.0)) + 0.35 * exp(-0.5 * d * d / (22.0 * 22.0))) * drawn;
       }
@@ -214,7 +233,7 @@ vec3 shade(vec2 p){
     float dx = abs(p.x - M.x);
     if (M.w > 0.0){
       float inside = clamp(p.y - M.y + 0.5, 0.0, 1.0) * clamp(M.z - p.y + 0.5, 0.0, 1.0);
-      float core = clamp(1.25 - dx, 0.0, 1.0);
+      float core = ${atRes('clamp(1.25 - dx, 0.0, 1.0)', 'clamp((0.75 - dx) * 2.0 + 0.5, 0.0, 1.0)')};
       // the glow wraps round the line's ends (distance to the segment), so its top is not cut square
       float dyo = max(M.y - p.y, 0.0) + max(p.y - M.z, 0.0);
       float rg = length(vec2(dx, dyo));
@@ -233,7 +252,7 @@ vec3 shade(vec2 p){
     vec4 L = uLead[uIdx];
     float dx = abs(p.x - L.x);
     float inside = clamp(p.y - L.y + 0.5, 0.0, 1.0) * clamp(L.z - p.y + 0.5, 0.0, 1.0);
-    cf += uLeadC * (clamp(1.1 - dx, 0.0, 1.0) + 0.16 * exp(-dx / 2.0)) * inside * L.w;
+    cf += uLeadC * (${atRes('clamp(1.1 - dx, 0.0, 1.0)', 'clamp((0.6 - dx) * 2.0 + 0.5, 0.0, 1.0)')} + 0.16 * exp(-dx / 2.0)) * inside * L.w;
   }
 #endif
 #if PART == 5
@@ -242,7 +261,7 @@ vec3 shade(vec2 p){
     vec2 rn = vec2(-sin(uRule.z), cos(uRule.z));
     float sdr = dot(p - uSmear * 0.5 - vec2(uFrame.x * 0.5, uRule.x), rn);
     float vr = abs(dot(uSmear, rn));
-    float core = lineBox(sdr, vr, 0.75, 0.0, 1.0, 0.0, 1.0), glow = lineBox(sdr, vr, 0.0, 0.30, 2.0, 0.08, 6.0);
+    float core = lineBox(sdr, vr, 0.75, ${atRes('', '0.5, ')}0.0, 1.0, 0.0, 1.0), glow = lineBox(sdr, vr, 0.0, ${atRes('', '1.0, ')}0.30, 2.0, 0.08, 6.0);
     c += (uHotC * core + uRuleC * glow) * uRule.y;
   }
 #endif

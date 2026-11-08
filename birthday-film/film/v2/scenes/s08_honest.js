@@ -14,6 +14,7 @@
 */
 import { windowLayout, bandAround, createBackdrop } from './s06_window.js';
 import { cam7, fullRect, createMist } from './s07_beside_you.js';
+import { atRes } from '../core/glsl.js';
 
 const T0 = 90.0;
 
@@ -29,7 +30,7 @@ void main(){
   float hw = uW * 0.5 * (0.45 + 0.55 * taper);
   float dx = max(abs(p.x - uSeg.x) - hl, 0.0), dy = abs(p.y - uSeg.y);
   float d = length(vec2(dx, dy));
-  float fw = 0.75;
+  float fw = ${atRes('0.75', '0.375')};
   float core = 1.0 - smoothstep(hw - fw, hw + fw, d);
   // a specular travelling along the leaf (left to right, about 3 s a pass) and a faint leaf grain
   float u = (p.x - uSeg.x) / max(uSeg.z, 1.0) + 0.5;

@@ -20,6 +20,7 @@
   Exported: dusk(ctx) -> layout numbers, orbAt(ctx, t) -> {x, y, core, glow, I} (the orb scene 6 picks up at 64.5).
 */
 import { drawCaptionBands } from './s04_two_shores.js';
+import { atRes } from '../core/glsl.js';
 
 const T0 = 54.0;
 
@@ -240,6 +241,59 @@ void main(){
   o = vec4(off, hs, streak);
 }`;
 
+// Output scale R = 2 (atRes): the sun glitter. Near the horizon its sparkles are smaller than a frame px (ry 0.40) and
+// its cell rows are thinner than one, so HD point-samples one cell per frame px and shows each lit one as a 1-frame-px
+// dash at its peak. Sampled 4x as densely, R = 2 would light a different, busier set of finer sparkles (local energy
+// -17% to +23% against HD). R = 2 therefore picks and weighs every sparkle at the centre gp of its frame px exactly as
+// R = 1 does (same cells, flicker, density and crest), keeps the y weight of that HD sample and evaluates only the x
+// profile at the physical px. The x profile (rx >= 0.9 frame px on cells >= 3 frame px wide) is resolved at HD, so a
+// sharper x keeps each sparkle's energy; a sharper y (a sub-pixel split, or the natural y profile of the larger near
+// sparkles) reads dimmer through the tonemap.
+const GLITTER_R1 = `  if (max(dens, densM * uGl.w) > 0.0008 && uGl.x > 0.0){
+    vec3 gc = mix(uGlC, uMolC, uGl.w);
+    float crest = smoothstep(-0.10, 0.30, R.z);
+    for (int k = 0; k < 2; k++){
+      float ko = float(k);
+      vec2 cs = vec2(3.0 + 10.0 * nearK, 1.0) * uS;
+      float rowK = 26.0;
+      vec2 g = vec2((px.x - uSunS.x) / cs.x + ko * 0.5, log(max(dyw, 0.3)) * rowK + ko * 0.5);
+      vec2 cell = floor(g);
+      vec2 hc = h22(cell + vec2(17.0 + ko * 41.0, 3.0));
+      float tb = floor(uTau * 10.0 + hc.y * 0.999);
+      vec2 hv = h22(cell + vec2(tb * 37.0 + ko * 7.0, 11.0));
+      vec2 cc = cell + 0.25 + 0.5 * h22(cell + vec2(5.0 + ko, tb * 13.0 + 3.0));
+      float rowPx = max(dyw, 0.3) / rowK * uS;
+      float dxp = (g.x - cc.x) * cs.x, dyp = (g.y - cc.y) * rowPx;
+      float rx = (0.9 + 2.6 * nearK) * uS, ry = (0.40 + 0.9 * nearK) * uS;
+      float pt = exp(-(dxp * dxp / (rx * rx) + dyp * dyp / (ry * ry)));
+      float on = step(1.0 - dens * (0.55 + 0.4 * uGl.w), hv.x);
+      c += gc * uGl.x * on * pt * (0.5 + hv.y) * (0.45 + 0.55 * crest) * 5.0;
+    }`;
+const GLITTER_R2 = `  vec2 gp = floor(px) + 0.5, gq = toLayout(gp);
+  float gdyw = max(gq.y - uHz, 0.0), gnK = clamp(gdyw / uSpan, 0.0, 1.0);
+  float gnX = 0.5 * (gq.x - uGl2.y) / fl, gnZ = 0.5 * (gdyw - (uHz - uGl2.z)) / fl;
+  float gdens = exp(-0.5 * (gnX * gnX / (sx * sx) + gnZ * gnZ / (sz * sz)));
+  if (max(max(dens, gdens), densM * uGl.w) > 0.0008 && uGl.x > 0.0){
+    vec3 gc = mix(uGlC, uMolC, uGl.w);
+    float crest = smoothstep(-0.10, 0.30, texture(uR, pxToUV(gp)).z);
+    for (int k = 0; k < 2; k++){
+      float ko = float(k);
+      vec2 cs = vec2(3.0 + 10.0 * gnK, 1.0) * uS;
+      float rowK = 26.0;
+      vec2 g = vec2((gp.x - uSunS.x) / cs.x + ko * 0.5, log(max(gdyw, 0.3)) * rowK + ko * 0.5);
+      vec2 cell = floor(g);
+      vec2 hc = h22(cell + vec2(17.0 + ko * 41.0, 3.0));
+      float tb = floor(uTau * 10.0 + hc.y * 0.999);
+      vec2 hv = h22(cell + vec2(tb * 37.0 + ko * 7.0, 11.0));
+      vec2 cc = cell + 0.25 + 0.5 * h22(cell + vec2(5.0 + ko, tb * 13.0 + 3.0));
+      float rowPx = max(gdyw, 0.3) / rowK * uS;
+      // x at this physical px, y at the frame px centre
+      float dxp = (g.x - cc.x) * cs.x + (px.x - gp.x), dyp = (g.y - cc.y) * rowPx;
+      float rx = (0.9 + 2.6 * gnK) * uS, ry = (0.40 + 0.9 * gnK) * uS;
+      float pt = exp(-(dxp * dxp / (rx * rx) + dyp * dyp / (ry * ry)));
+      float on = step(1.0 - gdens * (0.55 + 0.4 * uGl.w), hv.x);
+      c += gc * uGl.x * on * pt * (0.5 + hv.y) * (0.45 + 0.55 * crest) * 5.0;
+    }`;
 const WATER_FS = CAM + `
 uniform sampler2D uA, uR, uMist;
 uniform vec3 uDeep, uMistB, uShore, uGlC, uMolC;
@@ -285,26 +339,7 @@ void main(){
   float xw = (q.x - uGl2.y) / max(dyw, 0.3);
   float nX = needX - 0.9 * R.x / (2.0 * fl) + 0.012 * (vn(vec2(xw * 3.0, zW * 0.7 + uTau * 0.4)) - 0.5);
   float densM = exp(-0.5 * (nX * nX / (sx * sx) + needZ * needZ / (sz * sz)));
-  if (max(dens, densM * uGl.w) > 0.0008 && uGl.x > 0.0){
-    vec3 gc = mix(uGlC, uMolC, uGl.w);
-    float crest = smoothstep(-0.10, 0.30, R.z);
-    for (int k = 0; k < 2; k++){
-      float ko = float(k);
-      vec2 cs = vec2(3.0 + 10.0 * nearK, 1.0) * uS;
-      float rowK = 26.0;
-      vec2 g = vec2((px.x - uSunS.x) / cs.x + ko * 0.5, log(max(dyw, 0.3)) * rowK + ko * 0.5);
-      vec2 cell = floor(g);
-      vec2 hc = h22(cell + vec2(17.0 + ko * 41.0, 3.0));
-      float tb = floor(uTau * 10.0 + hc.y * 0.999);
-      vec2 hv = h22(cell + vec2(tb * 37.0 + ko * 7.0, 11.0));
-      vec2 cc = cell + 0.25 + 0.5 * h22(cell + vec2(5.0 + ko, tb * 13.0 + 3.0));
-      float rowPx = max(dyw, 0.3) / rowK * uS;
-      float dxp = (g.x - cc.x) * cs.x, dyp = (g.y - cc.y) * rowPx;
-      float rx = (0.9 + 2.6 * nearK) * uS, ry = (0.40 + 0.9 * nearK) * uS;
-      float pt = exp(-(dxp * dxp / (rx * rx) + dyp * dyp / (ry * ry)));
-      float on = step(1.0 - dens * (0.55 + 0.4 * uGl.w), hv.x);
-      c += gc * uGl.x * on * pt * (0.5 + hv.y) * (0.45 + 0.55 * crest) * 5.0;
-    }
+${atRes(GLITTER_R1, GLITTER_R2)}
     // molten: liquid gold in rolling swell bands (world-anchored, filtered where they would alias)
     float mol = uGl.w * smoothstep(uGl2.x + 30.0, uGl2.x - 30.0, dyw);
     float res = 1.0 - smoothstep(0.12, 0.45, zW / max(dyw, 0.3) / uS * 1.4 / 6.283);
@@ -369,6 +404,10 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
   px = P;
   col = vec4(c * I, al);
 }`;
+// Output scale R = 2 (atRes): every glint here is a landing glint on a text.points home (a frame-pixel centre, a texel
+// corner at R = 2). Its arms are snapped across their width by 0.35 texel (0.7 / vSize in q: s), which keeps their R = 1
+// brightness to about 1 percent (unsnapped they lose a third; a full half-texel snap overshoots, as these arms are
+// wider than one pixel).
 const MOTE_FS = `
 in vec4 vCol; in float vSize; in float vGlint;
 out vec4 o;
@@ -376,9 +415,9 @@ void main(){
   vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
   float w;
   if (vGlint > 0.5){
-    vec2 a = abs(q);
+    ${atRes('vec2 a = abs(q);', 'vec2 a = abs(q), s = max(a - 0.7 / max(vSize, 1.0), 0.0);')}
     // a soft glint with an anamorphic (horizontal) bias: the vertical arm is a third as long
-    w = (exp(-a.y * 9.0) * max(1.0 - a.x, 0.0) + 0.6 * exp(-a.x * 9.0) * max(1.0 - 3.0 * a.y, 0.0)) * 0.9 + exp(-dot(q, q) * 7.0) * 1.2;
+    ${atRes('w = (exp(-a.y * 9.0) * max(1.0 - a.x, 0.0) + 0.6 * exp(-a.x * 9.0) * max(1.0 - 3.0 * a.y, 0.0)) * 0.9 + exp(-dot(q, q) * 7.0) * 1.2;', 'w = (exp(-s.y * 9.0) * max(1.0 - a.x, 0.0) + 0.6 * exp(-s.x * 9.0) * max(1.0 - 3.0 * a.y, 0.0)) * 0.9 + exp(-dot(q, q) * 7.0) * 1.2;')}
   } else w = exp(-dot(q, q) * 2.0);
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
 }`;
@@ -492,8 +531,8 @@ const scene = {
     const U = st.uni;
     const sc = target.scale == null ? 1 : target.scale;
     const W = ctx.W, H = ctx.H;
-    // 1 ridge tops per column
-    const lut = G.target('s05.lut', W, 1, { format: 'rgba32f' });
+    // 1 ridge tops per column (one texel per physical column: LAND samples it at u = px.x / uFrame.x)
+    const lut = G.target('s05.lut', W * sc, 1, { format: 'rgba32f', scale: sc });
     const R = D.ridges;
     const bumps = new Float32Array(64);
     R.forEach((r, i) => r.bumps.forEach((b, j) => bumps.set([b[0], b[1], b[2], 0], (i * 4 + j) * 4)));
@@ -513,13 +552,16 @@ const scene = {
     }
     if (hzS < H - 0.5) {
       const top = Math.max(0, Math.floor(hzS - 2));
-      // 4 the mirrored land (half res, mipmapped)
-      const A = G.target('s05.refl', W / 2 * sc, H / 2 * sc, { scale: 0.5 * sc, mips: true });
-      const ah = Math.ceil((H - top) / 2 * sc);
+      // 4 the mirrored land (half res, mipmapped). The mirror and the ripples keep the HD half-res density at every
+      // output scale: the water's textureLod levels (reflection blur, broad streak patch, portrait near blur) are tuned
+      // for 2 frame px per texel
+      const hs = sc / G.R;   // = sc at R = 1
+      const A = G.target('s05.refl', W / 2 * hs, H / 2 * hs, { scale: 0.5 * hs, mips: true });
+      const ah = Math.ceil((H - top) / 2 * hs);
       G.draw(this.P.mirror, Object.assign({ uLut: lut, uMist: mist }, U), A, { viewport: [0, 0, A.w, Math.min(A.h, ah + 1)] });
       G.mipmaps(A);
       // 5 ripples (half res)
-      const Rt = G.target('s05.ripple', W / 2 * sc, H / 2 * sc, { scale: 0.5 * sc });
+      const Rt = G.target('s05.ripple', W / 2 * hs, H / 2 * hs, { scale: 0.5 * hs });
       G.draw(this.P.ripple, Object.assign({ uZK: 1745 * 1.0, uRip: 0.0022, uFl: 1745 }, U), Rt, { viewport: [0, 0, Rt.w, Math.min(Rt.h, ah + 1)] });
       // 6 water
       const tl = ctx.tl;
