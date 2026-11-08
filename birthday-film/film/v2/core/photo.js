@@ -68,6 +68,9 @@
                a warm lamp (amber, brightest at the centre, crystals bright toward the edges; 4 px refraction only in the
                fully frosted zone), clearing from the faces' midpoint like breath on glass (a wide soft warm edge, a
                partial thinning while small); three droplets run down from the edge.
+        Output scale R = 2: the engraving's line-profile ramps keep their HD width in frame px (they set the plate's
+               tone; with physical-px ramps the 4K plate read 8 % darker overall and 13 % in the shadows), and the
+               frost texture is generated at R x its HD size (the same pattern, sampled at the 4K pixel density).
         edgeFade {top, bottom, left, right (frame px)}: the plate's edges dissolve (premultiplied alpha, fbm-broken)
                into whatever the scene drew behind (scene 7 portrait: 80 px into warm mist).
         debug true: the debug mask still (people mask, face box, ellipses, seat spline, landmarks) over the photo.
@@ -239,6 +242,11 @@ float pmask(vec2 src){ return textureLod(uMask, src / uSize, 0.0).r; }
 float ell(vec2 p, vec4 e, float feather){ vec2 q = (p - e.xy) / e.zw; float r = length(q); float f = feather / max(min(e.z, e.w), 1.0); return 1.0 - smoothstep(1.0 - f, 1.0 + f, r); }
 `;
 
+// ENGRAVE, output scale R = 2 (kept out of the shader text so that the R = 1 source stays byte-identical): aa1/aa2 are
+// the hatch line-profile ramps in z units. They are look-defining, not edge AA: the clipped smoothstep on f in [0, 0.5]
+// and the 1.15 boost do not preserve coverage, so lines thinner than the ramp (the shadow hatch, the whole cross-hatch)
+// take their tone from it. dFdx/dFdy are per physical px (half the HD value at R = 2), so the factor doubles there
+// (atRes 0.7 / 1.4) to keep the HD ramp in frame px and with it the plate's tone.
 const FS_MAIN = (defs) => frag(defs + GLSL_COMMON + `
 uniform sampler3D uInv; uniform int uUseInv;
 uniform float uExpo, uOpacity, uLod, uCover, uRetouch; uniform int uAlphaOut;
@@ -414,14 +422,14 @@ void main(){
   const vec2 N1 = vec2(-0.5735764, 0.8191520), N2 = vec2(0.5735764, 0.8191520);
   float z1 = dot(src, N1) / uSpacing + 0.45 * Lb;
   float f1 = abs(fract(z1) - 0.5);
-  float aa1 = max(length(vec2(dFdx(z1), dFdy(z1))) * 0.7, 1e-4);
+  float aa1 = max(length(vec2(dFdx(z1), dFdy(z1))) * ${atRes('0.7', '1.4')}, 1e-4);
   float w1 = engWidth(Lt);
   float ink1 = 1.0 - smoothstep(w1 - aa1, w1 + aa1, f1);
   ink1 = mix(ink1, 2.0 * w1, smoothstep(0.45, 0.8, aa1));     // sub-pixel lines fade into their average tone
   // cross-hatch below luma 0.35: a fine mesh that keeps the shadows engraved rather than empty
   float z2 = dot(src, N2) / uSpacing - 0.30 * Lb;
   float f2 = abs(fract(z2) - 0.5);
-  float aa2 = max(length(vec2(dFdx(z2), dFdy(z2))) * 0.7, 1e-4);
+  float aa2 = max(length(vec2(dFdx(z2), dFdy(z2))) * ${atRes('0.7', '1.4')}, 1e-4);
   float w2 = 0.085 * smoothstep(0.04, 0.14, Ls) * (1.0 - smoothstep(0.26, 0.36, Ls));
   float ink2 = (1.0 - smoothstep(w2 - aa2, w2 + aa2, f2)) * step(0.001, w2);
   ink2 = mix(ink2, 2.0 * w2, smoothstep(0.45, 0.8, aa2));
@@ -878,8 +886,10 @@ export function createPhotoRenderer(G, photo) {
   }
   inverseLut('photo');
 
-  // ---- frost texture (once)
-  const frostRT = G.rt(Math.round(PW / 2), Math.round(PH_ / 2), { format: 'rgba8', mips: true });
+  // ---- frost texture (once). FS_FROST is a pure function of source px (p = screenUV() * uSize), so the texel count only
+  // sets its sampling density: 2 / R source px per texel, so the plate magnifies it the same per physical px at every
+  // output scale (R = 1: 724 x 543, unchanged; R = 2: one texel per source px, not a 2.26x bilinear stretch on 4K)
+  const frostRT = G.rt(Math.round(PW / 2 * G.R), Math.round(PH_ / 2 * G.R), { format: 'rgba8', mips: true });
   G.draw(G.program('photo.frostgen', FS_FROST), { uSize: [PW, PH_] }, frostRT);
   G.mipmaps(frostRT);
 

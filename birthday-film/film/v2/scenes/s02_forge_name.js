@@ -101,12 +101,41 @@ float cloudFeather(vec2 px){
 }
 `;
 
-// Output scale R = 2 (atRes): a streak sprite gets size + 1 frame px so that it spans size + 2 frame px as at R = 1
-// (particles.js adds a 2-texel margin, which is only 1 frame px at R = 2; the spark grains fill their sprite, so their
-// energy follows its area). Harp-harmonic dust glints are marked vGlint = 2 (random positions, not snapped).
+// Output scale R = 2 (atRes): the grain shaders name PT_PAD, so particles.js gives every sprite a 2R-texel margin and
+// it spans size + 2 frame px as at R = 1 (round sprites keep their whole soft edge, streak capsules their length).
+// Harp-harmonic dust glints are marked vGlint = 2 (random positions, not snapped). The spark grains of the name are
+// drawn as sparkR2 below while they streak. sparkR2 itself exists at R = 2 only.
+const SPARK_R2 = `
+// R = 2: a spark name grain on the burst streak. At R = 1 the sprite (spark size + 2 px) is far shorter than the
+// capsule (sigma sa along the streak), so the capsule is cut at the sprite square, which R = 2 resolves into a hard
+// chip. It is drawn instead as a soft Gaussian with the energy and covariance C of that cut capsule (integrated over
+// the R = 1 sprite, i.e. averaged over the sub-pixel phase), so its light and spread at the 2x box-down stay those of
+// R = 1: A (exp(-d'Qd / 2) - exp(-m^2 / 2)), Q = C^-1, ending at Mahalanobis radius m = 3.5 (zero there, the energy
+// normalised for the cut). Scene 2 draws at scale R, so the R = 1 sprite is in frame px. Writes vStr = (Q.xx, Q.xy,
+// Q.yy, A), vGlint = -1 and a sprite that holds the kernel.
+void sparkR2(inout float size, vec4 st){
+  float h = 0.5 * (max(size, 1.0) + 2.0);
+  float s0 = max(st.w, 1.0) * 0.25, sp = max(s0, 0.6), sa = sqrt(s0 * s0 + st.z * st.z / 2.25);
+  float E = 0.0; vec3 M = vec3(0.0);
+  for (int j = 0; j < 12; j++) for (int i = 0; i < 12; i++){
+    vec2 d = (vec2(float(i), float(j)) + 0.5) * (h / 6.0) - h;
+    float al = dot(d, st.xy), pe = dot(d, vec2(-st.y, st.x));
+    float w = exp(-0.5 * (pe * pe / (sp * sp) + al * al / (sa * sa)));
+    E += w; M += w * vec3(d.x * d.x, d.x * d.y, d.y * d.y);
+  }
+  M /= max(E, 1e-12);
+  E *= (s0 * s0) / (sp * sa) * (h / 6.0) * (h / 6.0);
+  float det = max(M.x * M.z - M.y * M.y, 1e-6);
+  // integral of the cut kernel for C = I: 2 pi (1 - exp(-m^2 / 2)) - pi m^2 exp(-m^2 / 2) = 6.1853 at m = 3.5
+  vStr = vec4(vec3(M.z, -M.y, M.x) / det, E / (6.1853 * sqrt(det)));
+  vGlint = -1.0;
+  // the kernel's bounding box is m sqrt(C) per axis; the sprite reaches size / 2 + 1 frame px (+1/8 px of margin)
+  size = max(7.0 * sqrt(max(M.x, M.z)) - 1.75, 1.0);
+}
+`;
 const GRAINS = GRAIN_GLSL + `
 uniform int uNName;
-void particle(int id, out vec2 px, out float size, out vec4 col){
+${atRes('', SPARK_R2)}void particle(int id, out vec2 px, out float size, out vec4 col){
   float t = uTau, e = t - ${T0.toFixed(1)};
   vGlint = 0.0;
   bool dust = id >= uNName;
@@ -164,7 +193,7 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
       if (gl < 0.12){ vGlint = 1.0; size = 7.0 * uU; al = 1.0; I = 1.8 * (1.0 - gl / 0.12) * (0.5 + bri); c = mix(c, uC1, 0.6); }
       else al = 0.0;
     }
-    if (vGlint > 0.5) vStr = vec4(0.0);${atRes('', '\n    if (vStr.z > 0.0) size += 1.0;')}
+    if (vGlint > 0.5) vStr = vec4(0.0);${atRes('', '\n    if (spark > 0.5 && vStr.z > 0.0) sparkR2(size, vStr);')}
     col = vec4(min(c * I, vec3(6.0)), al * uNameI);
     return;
   }
@@ -197,7 +226,7 @@ void particle(int id, out vec2 px, out float size, out vec4 col){
       }
     }
   }
-  ${atRes('', 'if (vStr.z > 0.0) size += 1.0;\n  ')}col = vec4(min(c * I, vec3(6.0)), al);
+  col = vec4(min(c * I, vec3(6.0)), al);
 }`;
 
 // Output scale R = 2 (atRes): landing glints (vGlint 1) sit exactly on frame-pixel centres (text.points homes), which
@@ -208,7 +237,7 @@ export const GRAIN_FS = `
 in vec4 vCol; in float vSize; in float vGlint;
 out vec4 o;
 void main(){
-  vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
+  vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + ${atRes('2.0', 'PT_PAD')}) / max(vSize, 1.0);
   float w;
   if (vGlint > 0.5){
     // a fine four-point glint: thin tapering arms and a small hot core (not a soft diamond blob)
@@ -219,13 +248,19 @@ void main(){
   o = vec4(vCol.rgb * vCol.a * w, 0.0);
 }`;
 // the scene-2 grains: as GRAIN_FS, plus the radial motion streak of the burst (a capsule Gaussian along vStr.xy whose
-// total energy matches the round sprite)
+// total energy matches the round sprite). R = 2: the streaking spark grains (vGlint -1) draw the kernel of sparkR2.
 export const GRAIN_STREAK_FS = `
 in vec4 vCol; in float vSize; in float vGlint; in vec4 vStr;
 out vec4 o;
-void main(){
+void main(){${atRes('', `
+  if (vGlint < -0.5){
+    vec2 d = (gl_PointCoord - 0.5) * (vSize + PT_PAD) * 0.5;
+    float u2 = vStr.x * d.x * d.x + 2.0 * vStr.y * d.x * d.y + vStr.z * d.y * d.y;
+    o = vec4(vCol.rgb * vCol.a * (vStr.w * max(exp(-0.5 * u2) - 0.0021875, 0.0)), 0.0);
+    return;
+  }`)}
   if (vStr.z <= 0.0 || vGlint > 0.5){
-    vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
+    vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + ${atRes('2.0', 'PT_PAD')}) / max(vSize, 1.0);
     float w;
     if (vGlint > 0.5){
       ${atRes('vec2 a = abs(q);', 'vec2 a = abs(q), s = vGlint < 1.5 ? max(a - 1.0 / max(vSize, 1.0), 0.0) : a;')}
@@ -235,7 +270,7 @@ void main(){
     o = vec4(vCol.rgb * vCol.a * w, 0.0);
     return;
   }
-  vec2 d = (gl_PointCoord - 0.5) * (vSize + 2.0)${atRes('', ' * 0.5')};
+  vec2 d = (gl_PointCoord - 0.5) * (vSize + ${atRes('2.0', 'PT_PAD')})${atRes('', ' * 0.5')};
   // an elongated Gaussian: never thinner than about a pixel (no aliased combs), tapering at both ends, with the same
   // integral as the round sprite (sigma rs/4)
   float s0 = max(vStr.w, 1.0) * 0.25;

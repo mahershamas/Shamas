@@ -382,6 +382,28 @@ void main(){ float y = framePx().y; float k = clamp((y - uY.x) / (uY.y - uY.x), 
         const half = Math.hypot(geo.bandRect[2], geo.bandRect[3]) / 2;
         const d = blurPx / Math.max(half, 1);
         const taps = d > 0.0005 ? [-1, 0, 1] : [0];
+        if (ctx.R > 1 && taps.length === 3) {
+          // output scale R > 1: the three exposures are blurPx frame px apart at the band's corners, which merges into
+          // one soft line at HD but separates into ghost copies at 2+ physical px. Each exposure k is split into n
+          // sub-exposures spread evenly over its own third of the zoom (k - 1/2 .. k + 1/2), so that they are at most
+          // 1 physical px apart at the band's farthest point from the fixed point (n = 1: the three HD exposures).
+          // Each keeps the exposure's over-coverage: 1 - (1 - a)^(1/n) per sub-exposure. At 1 frame px apart (71.7)
+          // the 2x box-down of a thin line then gets exactly the HD 3-tap weights.
+          const br = geo.bandRect, F = ctx.portrait ? [br[0] + br[2] / 2, this.Fp[1]] : this.Fp;
+          const bs = br[2] / 1000, bc = [br[0] + br[2] / 2, br[1] + br[3] / 2];
+          let far = 0;                                         // roundels' outer extent: 597 x 472 layout px from the centre
+          for (const sx of [-1, 1]) for (const sy of [-1, 1]) far = Math.max(far, Math.hypot(bc[0] + sx * 597 * bs - F[0], bc[1] + sy * 472 * bs - F[1]));
+          const n = Math.max(1, Math.min(6, Math.ceil(far * d * ctx.R - 1e-6)));
+          for (const k of taps) {
+            const a = op / (k === 0 ? 2.2 : 3.2);
+            const b = n === 1 ? a : 1 - Math.pow(1 - a, 1 / n);
+            for (let j = 0; j < n; j++) {
+              const z = 1 + (k + (j + 0.5) / n - 0.5) * d;
+              const r = [F[0] + z * (br[0] - F[0]), F[1] + z * (br[1] - F[1]), br[2] * z, br[3] * z];
+              K.band.rect(target, bandAround(ctx, r, Object.assign({ opacity: b, shadow: 0.25 }, base)));
+            }
+          }
+        } else
         for (const k of taps) {
           const z = 1 + k * d;
           const br = geo.bandRect, F = ctx.portrait ? [br[0] + br[2] / 2, this.Fp[1]] : this.Fp;
