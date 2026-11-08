@@ -100,7 +100,7 @@ async function runWorker({ html, start, end, fps, segPath, width, height, idx })
     ? ['-vf', 'scale=out_color_matrix=bt709:out_range=pc:flags=accurate_rnd+full_chroma_int,format=yuv444p10le',
        '-c:v', 'libx264', '-profile:v', 'high444', '-crf', segcrf, '-preset', 'fast', '-g', '30',
        // bounded memory at 4K: default threads and lookahead cost about 5.5 GB per worker
-       '-threads', '3', '-x264-params', 'rc-lookahead=10',
+       '-threads', '3', '-bf', '0', '-x264-params', 'rc-lookahead=10',  // no B-frames: every frame at the same quality
        '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'pc']
     : ['-c:v', 'libx264rgb', '-qp', '0', '-preset', 'ultrafast', '-g', '30'];
   const ff = spawn('ffmpeg', ['-y', '-hide_banner', '-loglevel', 'error',
