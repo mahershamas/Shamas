@@ -412,7 +412,7 @@ const MOTE_FS = `
 in vec4 vCol; in float vSize; in float vGlint;
 out vec4 o;
 void main(){
-  vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + 2.0) / max(vSize, 1.0);
+  vec2 q = (gl_PointCoord * 2.0 - 1.0) * (vSize + ${atRes('2.0', 'PT_PAD')}) / max(vSize, 1.0);
   float w;
   if (vGlint > 0.5){
     ${atRes('vec2 a = abs(q);', 'vec2 a = abs(q), s = max(a - 0.7 / max(vSize, 1.0), 0.0);')}
