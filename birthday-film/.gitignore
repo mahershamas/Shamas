@@ -1,0 +1,5 @@
+# Private content never goes to this (public) repository
+private/
+out/
+node_modules/
+__pycache__/
