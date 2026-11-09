@@ -28,10 +28,11 @@
                   level up per doubling, while the bevel steps 2^lod stay in frame px. Level 0 gives the crisp edge.
                   Three R = 2 calibrations keep the leaf's HD light (the leaf is HDR and the tonemap is compressive and
                   per pixel, so resolved thin strokes, edges and ridges would display less light than at HD):
-                  the sharp key/fill lobe takes the bevel normal of the frame px centre (the stem ridges are far
-                  narrower than a pixel; per physical px they came and went with the glyph's sub-pixel phase); the leaf
-                  is raised by up to 30 % where the frame px is partly covered (mask level 1); and inside a gild
-                  crossfade (text masks) up to 30 % of the coverage comes from the frame px (mask level 1).
+                  the sharp key/fill lobe keeps the HD sample of its frame px centre (the stem ridges are far narrower
+                  than a pixel; per physical px they came and went with the glyph's sub-pixel phase), spread over the
+                  four physical px where the lobe lies (SHARP_R2); the leaf is raised by up to 30 % where the frame px
+                  is partly covered (mask level 1); and inside a gild crossfade (text masks) up to 30 % of the coverage
+                  comes from the frame px (mask level 1).
       rect        [x, y, w, h] frame px that the mask covers
       maskFlipY   true when the mask is a GL render target (bottom-up rows), e.g. from text.drawMask()
       textMask    true for text.drawMask() masks: coverage from r (with gild/reveal), bevel from a
@@ -98,6 +99,65 @@ GOLD_RAMPS.winter_gold[6] = [7.0, 5.6, 2.6];
 }
 const f3 = v => `vec3(${v.map(x => x.toFixed(6)).join(', ')})`;
 
+// Output scale R = 2 (atRes): the sharp key and fill lobes (GGX, roughness 0.2). Down a bevel they are a bright line
+// far narrower than a frame px (often under 1/8 px), so HD point-samples them at the frame px centre and shows a ridge
+// wherever that line crosses a centre. R = 2 keeps that sample as the frame px's sharp light, so every frame px keeps
+// its HD light (a lobe sampled or area-filtered per physical px lit or dropped whole stem ridges against HD), and
+// spreads it over the frame px's four physical px in proportion to where the lobe lies (a 4x4 grid over the frame px):
+// the ridge takes its native 4K shape instead of a chain of 2x2 blocks. The bevel gradient around the frame px centre
+// is a linear field (gC, gCx, gCy) from the four sub-samples of the bevel loop.
+// For small type (lod 0.5, blending out by lod 1) the bevel is about as wide as the glyph's anti-aliasing, so where the
+// lobe falls depends on the raster: the 2x raster put a hairline lobe on a frame px centre where the HD raster did not
+// (a static hot texel at a stroke junction). There the sample is the median of row medians over a 3x3 grid 1/8 px
+// apart: a lobe that only grazes the centre is dropped, one that covers it is kept.
+const SHARP_FN_R2 = `float goldSharpAt(vec2 g, vec3 bn, float bump, vec3 V, vec3 L, vec3 L2, float rough, float keyI, float fillI){
+  vec3 Nd = normalize(normalize(vec3(-g * bump * 0.5, 1.0)) + bn);
+  float v = ggx(Nd, V, L, rough, vec3(1.0)).x * keyI;
+  if (fillI > 0.0) v += ggx(Nd, V, L2, rough, vec3(1.0)).x * fillI;
+  return v;
+}
+`;
+const CENTRE_R2 = `
+  vec2 gC, gCx, gCy, fcC; vec3 bnC;
+  {
+    fcC = floor(fragPx) + 0.5 - fragPx;
+    vec2 us = uv + duvDx * fcC.x + duvDy * fcC.y;
+    vec2 hs = vec2(0.0), hjx = vec2(0.0), hjy = vec2(0.0);
+    for (int k = 0; k < 4; k++){
+      vec2 o = (vec2(k == 1 || k == 2 ? 0.5 : -0.5, k >= 2 ? 0.5 : -0.5) + vec2(0.13, -0.11)) * 0.5;
+      vec2 c = us + (duvDx * o.x + duvDy * o.y) * exp2(lod);
+      vec2 h = vec2(textureLod(mask, c + sx, lod + 1.0).a - textureLod(mask, c - sx, lod + 1.0).a,
+                    textureLod(mask, c + sy, lod + 1.0).a - textureLod(mask, c - sy, lod + 1.0).a);
+      hs += h; hjx += k == 1 || k == 2 ? h : -h; hjy += k >= 2 ? h : -h;
+    }
+    gC = hs * 0.25; gCx = hjx / exp2(lod); gCy = hjy / exp2(lod);
+    vec2 bs = vec2(vn((fragPx + fcC) * 0.30 + 1.3), vn((fragPx + fcC) * 0.30 + 8.9)) - 0.5;
+    bnC = vec3(bs * 0.05 * thick * goldDetail, 0.0);
+  }`;
+const SHARP_R2 = `{
+    vec2 pc = fragPx + fcC;
+    vec3 Lc = normalize(vec3(keyPos.xy - pc, keyPos.z)), L2c = normalize(vec3(fillPos.xy - pc, fillPos.z));
+    float mf = mix(1.0, lt.x, 0.6) * sharp;
+    float s0 = s < 1.0 ? s : 1.0 + 0.35 * (1.0 - exp(-(s - 1.0) / 0.35));
+    float rm[3], ctr = 0.0;
+    for (int j = 0; j < 3; j++){
+      float a0 = goldSharpAt(gC + gCx * -0.125 + gCy * (float(j) - 1.0) * 0.125, bnC, bump, V, Lc, L2c, rough, keyI, fillI);
+      float a1 = goldSharpAt(gC + gCy * (float(j) - 1.0) * 0.125, bnC, bump, V, Lc, L2c, rough, keyI, fillI);
+      float a2 = goldSharpAt(gC + gCx * 0.125 + gCy * (float(j) - 1.0) * 0.125, bnC, bump, V, Lc, L2c, rough, keyI, fillI);
+      rm[j] = max(min(a0, a1), min(max(a0, a1), a2));
+      if (j == 1) ctr = a1;
+    }
+    float sl = s + mix(ctr, max(min(rm[0], rm[1]), min(max(rm[0], rm[1]), rm[2])), clamp(2.0 - 2.0 * lod, 0.0, 1.0)) * mf;
+    float X = (sl < 1.0 ? sl : 1.0 + 0.35 * (1.0 - exp(-(sl - 1.0) / 0.35))) - s0;
+    float ft = 0.0, fo = 0.0;
+    for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++){
+      vec2 d = vec2(float(i), float(j)) * 0.25 - 0.375;
+      float sd = s + goldSharpAt(gC + gCx * d.x + gCy * d.y, bnC, bump, V, Lc, L2c, rough, keyI, fillI) * mf;
+      float f = (sd < 1.0 ? sd : 1.0 + 0.35 * (1.0 - exp(-(sd - 1.0) / 0.35))) - s0;
+      ft += f; fo += d.x * fcC.x < 0.0 && d.y * fcC.y < 0.0 ? f : 0.0;
+    }
+    s = s0 + X * (fo + 0.01) / (0.25 * ft + 0.01);
+  }`;
 function shadingGLSL(rampDecl) {
   return `
 ${rampDecl}
@@ -144,7 +204,7 @@ vec3 goldLeafTex(vec2 fragPx, float thick){
   crack *= smoothstep(0.35, 0.65, vn(fragPx / 9.0 + 4.1));
   return vec3(mix(1.0, tone, thick * goldDetail), crack, seam);
 }
-float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 keyPos, float keyI, vec3 fillPos, float fillI,
+${atRes('', SHARP_FN_R2)}float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 keyPos, float keyI, vec3 fillPos, float fillI,
             float bump, float lod, vec4 sweep, float sweepY){
   float st = exp2(lod) * 0.9;
   vec2 sx = duvDx * st, sy = duvDy * st;
@@ -165,26 +225,7 @@ float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 k
   float crack = lt.y;
   // beaten leaf: a fine low-amplitude ripple in the normal (catches the key light as a broken sheen)
   vec2 bt = vec2(vn(fragPx * 0.30 + 1.3), vn(fragPx * 0.30 + 8.9)) - 0.5;
-  N = normalize(N + vec3(bt * 0.05 * thick * goldDetail, 0.0));${atRes('', `
-  // R = 2: the sharp key and fill lobes take the bevel normal of this fragment's frame px centre. That lobe is far
-  // narrower than a pixel (the bright ridge down a stem), so a frame point-samples it: per frame px, as at HD, the ridge
-  // keeps the HD width and energy wherever it falls (per physical px it came and went with the glyph's sub-pixel
-  // phase, e.g. 239 -> 100 at a stem centre of 120.2). Everything else stays per physical px.
-  vec3 Ns;
-  {
-    vec2 fc = floor(fragPx) + 0.5 - fragPx;
-    vec2 us = uv + duvDx * fc.x + duvDy * fc.y;
-    float hx = 0.0, hy = 0.0;
-    for (int k = 0; k < 4; k++){
-      vec2 o = (vec2(k == 1 || k == 2 ? 0.5 : -0.5, k >= 2 ? 0.5 : -0.5) + vec2(0.13, -0.11)) * 0.5;
-      vec2 c = us + (duvDx * o.x + duvDy * o.y) * exp2(lod);
-      hx += textureLod(mask, c + sx, lod + 1.0).a - textureLod(mask, c - sx, lod + 1.0).a;
-      hy += textureLod(mask, c + sy, lod + 1.0).a - textureLod(mask, c - sy, lod + 1.0).a;
-    }
-    Ns = normalize(vec3(-vec2(hx, hy) * 0.25 * bump * 0.5, 1.0));
-    vec2 bs = vec2(vn((fragPx + fc) * 0.30 + 1.3), vn((fragPx + fc) * 0.30 + 8.9)) - 0.5;
-    Ns = normalize(Ns + vec3(bs * 0.05 * thick * goldDetail, 0.0));
-  }`)}
+  N = normalize(N + vec3(bt * 0.05 * thick * goldDetail, 0.0));${atRes('', CENTRE_R2)}
   float mott = fbm(fragPx * 0.018 + 5.3, 3);
   float grain = vn(fragPx * 0.45) * thick * goldDetail;
   float rough = 0.20 + 0.22 * crack;
@@ -196,12 +237,12 @@ float goldS(sampler2D mask, vec2 uv, vec2 duvDx, vec2 duvDy, vec2 fragPx, vec3 k
   vec3 V = vec3(0.0, 0.0, 1.0);
   vec3 L = normalize(vec3(keyPos.xy - fragPx, keyPos.z));
   float sharp = 0.12 * (0.35 + 0.65 * goldDetail);
-  float spec = ggx(${atRes('N', 'Ns')}, V, L, rough, vec3(1.0)).x * keyI * sharp + ggx(N, V, L, 0.70, vec3(1.0)).x * keyI * 0.09;
-  if (fillI > 0.0){ vec3 L2 = normalize(vec3(fillPos.xy - fragPx, fillPos.z)); spec += ggx(${atRes('N', 'Ns')}, V, L2, rough, vec3(1.0)).x * fillI * sharp + ggx(N, V, L2, 0.70, vec3(1.0)).x * fillI * 0.09; }
+  float spec = ${atRes('ggx(N, V, L, rough, vec3(1.0)).x * keyI * sharp + ', '')}ggx(N, V, L, 0.70, vec3(1.0)).x * keyI * 0.09;
+  if (fillI > 0.0){ vec3 L2 = normalize(vec3(fillPos.xy - fragPx, fillPos.z)); spec += ${atRes('ggx(N, V, L2, rough, vec3(1.0)).x * fillI * sharp + ', '')}ggx(N, V, L2, 0.70, vec3(1.0)).x * fillI * 0.09; }
   spec *= mix(1.0, lt.x, 0.6);
   // speculars roll off past white-hot so small type never sparkles into noise; strikes (below) may go further
   float s = env * 0.84 + spec;
-  s = s < 1.0 ? s : 1.0 + 0.35 * (1.0 - exp(-(s - 1.0) / 0.35));
+  ${atRes('s = s < 1.0 ? s : 1.0 + 0.35 * (1.0 - exp(-(s - 1.0) / 0.35));', SHARP_R2)}
   // struck-metal sweep: a slanted band of light that flashes the flat leaf and catches the bevels
   if (sweep.z > 0.0){
     float b = exp(-pow((fragPx.x - sweep.x + (fragPx.y - sweepY) * sweep.w) / max(sweep.y, 1.0), 2.0));
